@@ -1,0 +1,74 @@
+# budgetclaw configuration example
+#
+# Default location: $XDG_CONFIG_HOME/budgetclaw/config.toml
+#                   (i.e. ~/.config/budgetclaw/config.toml)
+#
+# Create or edit with:
+#   budgetclaw init
+#   budgetclaw limit set --project myapp --period daily --cap 5.00 --action kill
+#
+# This file is intentionally over-commented. Strip comments once you
+# understand the options.
+
+# [general] block is optional. Override built-in defaults here.
+[general]
+  # Path to the Claude Code projects directory. Defaults to
+  # $HOME/.claude/projects. You should not need to change this.
+  # claude_projects_dir = "~/.claude/projects"
+
+  # How often the watcher flushes the event rollup to SQLite. Smaller
+  # values mean more accurate breach detection at the cost of disk
+  # writes. Default 5s.
+  # flush_interval = "5s"
+
+  # Timezone for daily/weekly/monthly period boundaries. Defaults to
+  # the system timezone.
+  # timezone = "Asia/Bangkok"
+
+
+# [alerts.ntfy] configures the phone push client.
+# Leave the section out entirely to disable push.
+[alerts.ntfy]
+  # Public ntfy.sh (easy, not self-hosted) or your own server. The
+  # launch-day default is the RoninForge-hosted push.roninforge.org.
+  server = "https://ntfy.sh"
+
+  # Topic is like a password. Use a long unguessable string and keep
+  # it out of shared config. You can generate one with:
+  #   openssl rand -hex 24
+  topic  = "budgetclaw-REPLACE-ME"
+
+  # Threshold below which alerts are suppressed (prevents spam on
+  # cheap sessions). Default $0.50.
+  # min_cost_usd = 0.50
+
+
+# [[limit]] blocks define the budget rules. Rules are matched
+# most-specific-first: a rule with both project and branch wins over
+# one with only project. Wildcards "*" are allowed.
+
+# Example 1: global $10/day cap across all projects and branches.
+# Warn only (no kill).
+[[limit]]
+  project = "*"
+  branch  = "*"
+  period  = "daily"
+  cap_usd = 10.00
+  action  = "warn"
+
+# Example 2: "myapp" project, main branch, $5/day, kill on breach.
+[[limit]]
+  project = "myapp"
+  branch  = "main"
+  period  = "daily"
+  cap_usd = 5.00
+  action  = "kill"
+
+# Example 3: any "feature/expensive-*" branch, weekly $2 cap, kill.
+# Useful for AI-assisted exploratory branches that tend to run wild.
+[[limit]]
+  project = "myapp"
+  branch  = "feature/expensive-*"
+  period  = "weekly"
+  cap_usd = 2.00
+  action  = "kill"

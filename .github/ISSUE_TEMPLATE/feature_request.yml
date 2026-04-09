@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a new capability or improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        budgetclaw has a sharp scope: local spend monitoring for Claude Code. Features that stay inside that scope get priority. Features that expand the scope (cloud sync, multi-vendor proxies, AI features) will be discussed but may be declined.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the use case. Not the solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: How could budgetclaw help? A sketch is fine.
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What are you doing today without this feature?
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This feature stays within "local spend monitoring for Claude Code"
+          required: true

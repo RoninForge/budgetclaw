@@ -1,0 +1,23 @@
+# Binaries and build output
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+*.prof
+coverage.txt
+coverage.html
+
+# Go tooling
+vendor/
+
+# Editor and OS noise
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Goreleaser artifacts
+.goreleaser/

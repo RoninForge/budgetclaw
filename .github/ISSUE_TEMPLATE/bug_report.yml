@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible bug
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. The more detail you give, the faster we can fix it.
+  - type: input
+    id: version
+    attributes:
+      label: budgetclaw version
+      description: Output of `budgetclaw version`
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.3 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: claude_code_version
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version` if applicable
+      placeholder: "v2.1.96"
+    validations:
+      required: false
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and why it's wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Minimal steps to reproduce. Include the exact commands you ran.
+      placeholder: |
+        1. `budgetclaw init`
+        2. `budgetclaw limit set ...`
+        3. Run `claude` in project X
+        4. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Run with `--verbose` and paste relevant output. Scrub anything sensitive.
+      render: shell
+    validations:
+      required: false

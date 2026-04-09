@@ -1,0 +1,31 @@
+[general]
+timezone = "Asia/Bangkok"
+
+[alerts.ntfy]
+server = "https://push.example.com"
+topic = "test-topic-aaaa"
+min_cost_usd = 0.25
+
+# Global warning rule
+[[limit]]
+project = "*"
+branch = "*"
+period = "daily"
+cap_usd = 20.00
+action = "warn"
+
+# Strict cap on main of myapp
+[[limit]]
+project = "myapp"
+branch = "main"
+period = "daily"
+cap_usd = 5.00
+action = "kill"
+
+# Any feature branch of myapp, weekly cap
+[[limit]]
+project = "myapp"
+branch = "feature/*"
+period = "weekly"
+cap_usd = 3.00
+action = "kill"

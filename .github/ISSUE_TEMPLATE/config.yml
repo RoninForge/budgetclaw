@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/RoninForge/budgetclaw#readme
+    about: The README covers install, configuration, and quick start.
+  - name: Security vulnerability
+    url: https://github.com/RoninForge/budgetclaw/blob/main/SECURITY.md
+    about: Do not file public issues for security bugs. See SECURITY.md.

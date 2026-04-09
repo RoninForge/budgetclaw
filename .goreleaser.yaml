@@ -1,0 +1,123 @@
+# .goreleaser.yaml v2
+#
+# Goreleaser is the de-facto release tool for Go CLIs. It handles:
+#   - cross-compilation to darwin/linux amd64/arm64
+#   - archives with checksums
+#   - SBOM generation
+#   - GitHub release with changelog
+#   - Homebrew tap (uncomment when the tap repo exists)
+#
+# Release flow:
+#   1. git tag v0.1.0 && git push --tags
+#   2. GitHub Actions workflow (.github/workflows/release.yml) triggers
+#   3. goreleaser builds, signs, publishes
+#
+# Local dry-run:
+#   goreleaser release --snapshot --clean
+version: 2
+
+project_name: budgetclaw
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: budgetclaw
+    main: ./cmd/budgetclaw
+    binary: budgetclaw
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/RoninForge/budgetclaw/internal/version.version={{.Version}}
+      - -X github.com/RoninForge/budgetclaw/internal/version.commit={{.FullCommit}}
+      - -X github.com/RoninForge/budgetclaw/internal/version.buildDate={{.Date}}
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+      - examples/config.toml
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: Bug fixes
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Docs
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 2
+    - title: Other
+      order: 999
+  filters:
+    exclude:
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "Merge pull request"
+      - "Merge branch"
+
+release:
+  github:
+    owner: RoninForge
+    name: budgetclaw
+  draft: false
+  prerelease: auto
+  header: |
+    ## budgetclaw {{ .Tag }}
+
+    Local spend monitor for Claude Code. Zero key, zero prompts, zero latency added.
+
+    **Install:**
+
+    ```sh
+    curl -fsSL https://devs.army/get | sh
+    ```
+
+  footer: |
+    ---
+
+    **Full changelog**: https://github.com/RoninForge/budgetclaw/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Uncomment when the homebrew-tap repo exists.
+# brews:
+#   - name: budgetclaw
+#     repository:
+#       owner: RoninForge
+#       name: homebrew-tap
+#     homepage: "https://roninforge.org/budgetclaw"
+#     description: "Local spend monitor for Claude Code"
+#     license: "MIT"
+#     install: |
+#       bin.install "budgetclaw"
+#     test: |
+#       system "#{bin}/budgetclaw", "version", "--short"
