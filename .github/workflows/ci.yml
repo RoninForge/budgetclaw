@@ -51,7 +51,7 @@ jobs:
           go-version: stable
           cache: true
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           # v2.x of golangci-lint is built with Go 1.25+ and supports
           # our go.mod's `go 1.25.0` directive. The default `latest`
