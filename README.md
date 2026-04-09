@@ -5,7 +5,7 @@
 **Zero key. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It parses what Claude Code already writes to disk locally.
 
 ```sh
-curl -fsSL https://devs.army/get | sh
+curl -fsSL https://roninforge.org/get | sh
 ```
 
 ## What it does
@@ -42,7 +42,7 @@ No data leaves your machine unless you explicitly opt into a future hosted tier.
 ### One-liner
 
 ```sh
-curl -fsSL https://devs.army/get | sh
+curl -fsSL https://roninforge.org/get | sh
 ```
 
 ### From source

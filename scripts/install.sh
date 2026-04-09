@@ -6,7 +6,7 @@
 # installs it to a directory on $PATH.
 #
 # Usage:
-#   curl -fsSL https://devs.army/get | sh
+#   curl -fsSL https://roninforge.org/get | sh
 #
 # Environment overrides:
 #   BUDGETCLAW_VERSION  pin a specific version (default: latest)

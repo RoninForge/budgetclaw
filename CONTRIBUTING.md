@@ -10,7 +10,7 @@ Thanks for considering a contribution. This is a small tool with a sharp scope: 
 
 ## Development setup
 
-Requires Go 1.24 or later.
+Requires Go 1.25 or later.
 
 ```sh
 git clone https://github.com/RoninForge/budgetclaw.git
@@ -54,16 +54,18 @@ Keep commits small and focused. Squash before merge if your branch has WIP noise
 ## Code layout
 
 ```
-cmd/budgetclaw/   thin main() entrypoint
-internal/cli/     cobra command tree
-internal/version/ build-time version metadata
-internal/paths/   XDG filesystem paths
-internal/parser/  JSONL tail-reader  (not yet)
-internal/pricing/ model → cost table (not yet)
-internal/budget/  limit evaluator    (not yet)
-internal/enforcer/ SIGTERM + lockfile (not yet)
-internal/ntfy/    push client        (not yet)
-internal/db/      SQLite rollups     (not yet)
+cmd/budgetclaw/    thin main() entrypoint
+internal/cli/      cobra command tree
+internal/version/  build-time version metadata
+internal/paths/    XDG filesystem paths
+internal/parser/   JSONL tail-reader and event types
+internal/pricing/  model to cost-rate table
+internal/budget/   config, rule matching, period evaluator
+internal/enforcer/ SIGTERM enforcement and lockfile store
+internal/ntfy/     push notification client
+internal/db/       SQLite event and rollup persistence
+internal/watcher/  fsnotify-based JSONL file tailer
+internal/pipeline/ wires all packages into the watcher handler
 ```
 
 Packages are `internal/` unless there's a compelling reason to export. External users should use the CLI, not the Go API.

@@ -73,14 +73,18 @@ var baseRates = map[string]struct {
 	// Opus: highest-capability tier.
 	"claude-opus-4-6": {Input: 15.00, Output: 75.00},
 
-	// Sonnet: mid tier. 4.6 and 4.5 share the same published rates.
+	// Sonnet: mid tier. Both undated and dated variants included
+	// because Claude Code emits both forms in the wild.
 	"claude-sonnet-4-6":          {Input: 3.00, Output: 15.00},
+	"claude-sonnet-4-5":          {Input: 3.00, Output: 15.00},
 	"claude-sonnet-4-5-20250929": {Input: 3.00, Output: 15.00},
 
-	// Haiku: cheapest tier. The dated and undated identifiers both
-	// resolve to the same rates.
+	// Haiku: cheapest tier. Both undated and dated variants.
 	"claude-haiku-4-5":          {Input: 1.00, Output: 5.00},
 	"claude-haiku-4-5-20251001": {Input: 1.00, Output: 5.00},
+
+	// Opus: undated variant for forward-compat.
+	"claude-opus-4-5": {Input: 15.00, Output: 75.00},
 }
 
 // RatesFor returns the pricing rates for a model, including derived

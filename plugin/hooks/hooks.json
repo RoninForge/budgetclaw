@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "command -v budgetclaw >/dev/null 2>&1 && budgetclaw status --short 2>/dev/null || echo '[budgetclaw not installed - run: curl -fsSL roninforge.org/get | sh]'",
+            "command": "command -v budgetclaw >/dev/null 2>&1 && budgetclaw status 2>/dev/null || echo '[budgetclaw not installed - run: curl -fsSL https://roninforge.org/get | sh]'",
             "timeout": 5
           }
         ]

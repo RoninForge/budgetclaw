@@ -100,7 +100,7 @@ release:
     **Install:**
 
     ```sh
-    curl -fsSL https://devs.army/get | sh
+    curl -fsSL https://roninforge.org/get | sh
     ```
 
   footer: |

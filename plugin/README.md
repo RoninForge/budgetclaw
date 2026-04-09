@@ -12,7 +12,7 @@ Adds a `/spend` slash command and a session-start hook to Claude Code.
 BudgetClaw must be installed:
 
 ```sh
-curl -fsSL roninforge.org/get | sh
+curl -fsSL https://roninforge.org/get | sh
 budgetclaw init
 ```
 
