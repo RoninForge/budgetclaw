@@ -53,7 +53,11 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
+          # v2.x of golangci-lint is built with Go 1.25+ and supports
+          # our go.mod's `go 1.25.0` directive. The default `latest`
+          # resolves to v1.x on action v6, which is built with Go 1.24
+          # and errors with "targeted Go version is higher than build".
+          version: "v2.11.4"
 
   build:
     name: Build
