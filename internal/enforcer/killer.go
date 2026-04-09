@@ -63,6 +63,7 @@ type processSource interface {
 // match elsewhere.
 type gopsutilSource struct{}
 
+// Processes implements processSource using gopsutil.
 func (gopsutilSource) Processes(ctx context.Context) ([]processInfo, error) {
 	procs, err := process.ProcessesWithContext(ctx)
 	if err != nil {

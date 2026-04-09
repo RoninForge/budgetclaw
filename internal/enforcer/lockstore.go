@@ -87,7 +87,7 @@ func NewLockStore() (*LockStore, error) {
 // NewLockStoreAt creates a store at an explicit directory. Used
 // by tests that want an isolated temp dir.
 func NewLockStoreAt(dir string) (*LockStore, error) {
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, fmt.Errorf("create lock dir %s: %w", dir, err)
 	}
 	return &LockStore{dir: dir}, nil
@@ -121,7 +121,7 @@ func (s *LockStore) Acquire(l Lock) error {
 	final := filepath.Join(s.dir, lockFilename(l.Project, l.Branch))
 	tmp := final + ".tmp"
 
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return fmt.Errorf("write temp lock: %w", err)
 	}
 	if err := os.Rename(tmp, final); err != nil {

@@ -50,7 +50,7 @@ func runInit(out io.Writer) error {
 		if err != nil {
 			return fmt.Errorf("resolve %s dir: %w", d.label, err)
 		}
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return fmt.Errorf("create %s dir %s: %w", d.label, dir, err)
 		}
 		resolved[d.label] = dir

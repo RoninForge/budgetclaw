@@ -49,10 +49,10 @@ func WriteDefault(path string) error {
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(defaultConfigTOML), 0o644)
+	return os.WriteFile(path, []byte(defaultConfigTOML), 0o600)
 }
 
 // AddLimit loads the config file, appends a new [[limit]] rule,
@@ -174,12 +174,12 @@ func loadTOML(path string) (*tomlConfig, error) {
 // tmp-file-plus-rename so a crash mid-write cannot leave a
 // corrupted config.
 func writeTOML(path string, t *tomlConfig) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return err
 	}
 
 	tmp := path + ".tmp"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}

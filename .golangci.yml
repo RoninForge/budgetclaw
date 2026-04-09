@@ -38,6 +38,14 @@ linters:
     - unparam
 
   settings:
+    errcheck:
+      exclude-functions:
+        # CLI output to stdout/stderr. If the pipe is broken the
+        # program is already dying; checking the error on every
+        # Fprintf adds noise without recoverable value.
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
     revive:
       rules:
         - name: exported
@@ -56,3 +64,4 @@ linters:
         linters:
           - gosec
           - unparam
+          - errcheck
