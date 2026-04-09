@@ -1,0 +1,15 @@
+{
+  "name": "budgetclaw",
+  "version": "0.1.0",
+  "description": "Local spend monitor for Claude Code. Per-project, per-branch budget caps with SIGTERM enforcement.",
+  "author": {
+    "name": "RoninForge",
+    "url": "https://github.com/RoninForge"
+  },
+  "homepage": "https://roninforge.org",
+  "repository": "https://github.com/RoninForge/budgetclaw",
+  "license": "MIT",
+  "keywords": ["spend-monitor", "budget", "cost", "claude-code", "telemetry"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}
