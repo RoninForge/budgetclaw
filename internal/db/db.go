@@ -128,7 +128,7 @@ func Open(path string) (*DB, error) {
 		if err != nil {
 			return nil, fmt.Errorf("resolve state dir: %w", err)
 		}
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
 			return nil, fmt.Errorf("create state dir: %w", err)
 		}
 		path = filepath.Join(dir, "state.db")
