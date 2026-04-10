@@ -310,6 +310,15 @@ func TestHandleAlreadyLockedReKills(t *testing.T) {
 	}}
 	p := buildPipeline(t, cfg, notifier, fk)
 
+	// Pin the clock to the same day as sampleEvent (2026-04-09)
+	// so the lock's ExpiresAt (end of that day) is still in the
+	// future. Without this, running the test on a later date
+	// causes CheckLocked to auto-release the expired lock, and
+	// the second event re-evaluates instead of short-circuiting.
+	p.Now = func() time.Time {
+		return time.Date(2026, 4, 9, 14, 0, 0, 0, time.UTC)
+	}
+
 	// First event: triggers the initial kill breach.
 	if err := p.Handle(context.Background(), sampleEvent("u1", "app", "main"), ""); err != nil {
 		t.Fatal(err)
