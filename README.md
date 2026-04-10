@@ -94,6 +94,31 @@ When the XDG variables are unset, defaults are `~/.config`, `~/.local/state`, `~
 
 See [`examples/config.toml`](examples/config.toml) for a documented template.
 
+## Phone alerts via ntfy
+
+budgetclaw pushes breach notifications to your phone via [ntfy.sh](https://ntfy.sh) (or any self-hosted ntfy instance). When a budget cap is breached, you get an instant push notification with the project, branch, and spend amount.
+
+Setup takes 60 seconds:
+
+```sh
+# 1. Install the ntfy app on your phone (iOS or Android)
+#    https://ntfy.sh/docs/subscribe/phone/
+
+# 2. Generate a secret topic name
+TOPIC="budgetclaw-$(openssl rand -hex 12)"
+echo "Your topic: $TOPIC"
+
+# 3. Subscribe to that topic in the ntfy app
+
+# 4. Configure budgetclaw
+budgetclaw alerts setup --server https://ntfy.sh --topic "$TOPIC"
+
+# 5. Test delivery
+budgetclaw alerts test
+```
+
+You should see a "budgetclaw test" notification on your phone. From now on, warn and kill breaches will push automatically. Kill actions use max priority to bypass Do Not Disturb.
+
 ## Security
 
 budgetclaw only reads from `$HOME/.claude/projects/` and only SIGTERMs processes named `claude`. It writes only to its own XDG directories. See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.
