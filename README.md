@@ -45,6 +45,12 @@ No data leaves your machine unless you explicitly opt into a future hosted tier.
 curl -fsSL https://roninforge.org/get | sh
 ```
 
+### Via Homebrew (macOS, Linux)
+
+```sh
+brew install roninforge/tap/budgetclaw
+```
+
 ### From source
 
 ```sh
