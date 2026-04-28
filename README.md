@@ -13,6 +13,7 @@ curl -fsSL https://roninforge.org/get | sh
 - Per-project and per-git-branch cost tracking from Claude Code session logs
 - Hard budget caps with SIGTERM enforcement on breach
 - Phone push alerts via self-hosted or public [ntfy.sh](https://ntfy.sh)
+- **Daily audit against Anthropic's models API** -- new models are detected within 24 hours and surfaced via a GitHub issue, so the pricing table cannot silently lag a release
 - Works offline, no account, no telemetry leaves your machine
 - Single static Go binary, no runtime, no Python, no Node
 
@@ -124,6 +125,18 @@ budgetclaw alerts test
 ```
 
 You should see a "budgetclaw test" notification on your phone. From now on, warn and kill breaches will push automatically. Kill actions use max priority to bypass Do Not Disturb.
+
+## Pricing freshness
+
+Anthropic ships new models often, and a missing model in the pricing table means events get silently skipped from the rollups (no cost recorded, no cap fired). budgetclaw guards against that with a daily GitHub Action ([`.github/workflows/pricing-audit.yml`](.github/workflows/pricing-audit.yml)) that:
+
+1. Calls Anthropic's `/v1/models` metadata endpoint (free, no inference billed).
+2. Diffs the model list against the embedded pricing table.
+3. Opens a GitHub issue if a new model is detected.
+
+A maintainer then verifies pricing on the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and ships a patch release. **Detection is automated; pricing is verified by hand** -- a wrong auto-merged price would compromise the kill action, so the verification step stays human.
+
+If you ever notice `budgetclaw status` reporting suspiciously low spend, run `budgetclaw pricing diagnose` to see which models the local logs contain and whether any are missing from the table. The same fix flow applies: open an issue, we add the entry, you upgrade and run `budgetclaw backfill` to recover historical attribution.
 
 ## Security
 
