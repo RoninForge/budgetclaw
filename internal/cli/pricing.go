@@ -176,13 +176,25 @@ func runPricingDiagnose(out io.Writer, dir string, asJSON bool) error {
 // returns a map of model ID to assistant-event count. Non-existent
 // or empty dirs yield an empty map without error so a fresh install
 // reports cleanly rather than panicking.
+//
+// Filesystem reads are scoped through os.Root so a symlink under
+// the user's $HOME/.claude/projects directory cannot redirect the
+// scanner outside that root (gosec G122). The user's logs are
+// already on a trusted local FS, but the boundary is cheap.
 func scanModelsFromJSONL(dir string) (map[string]int, error) {
 	counts := make(map[string]int)
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
+
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return counts, nil
+		}
+		return nil, fmt.Errorf("open %s: %w", dir, err)
+	}
+	defer func() { _ = root.Close() }()
+
+	err = fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
-			if os.IsNotExist(walkErr) {
-				return filepath.SkipAll
-			}
 			return walkErr
 		}
 		if d.IsDir() {
@@ -191,16 +203,16 @@ func scanModelsFromJSONL(dir string) (map[string]int, error) {
 		if !strings.HasSuffix(path, ".jsonl") {
 			return nil
 		}
-		f, err := os.Open(path)
+		f, err := root.Open(path)
 		if err != nil {
 			return err
 		}
 		defer func() { _ = f.Close() }()
 
 		scanner := bufio.NewScanner(f)
-		// Some Claude Code lines (large tool inputs) exceed the default
-		// 64KB scanner buffer. Bump to 8 MiB so we don't silently drop
-		// long lines.
+		// Some Claude Code lines (large tool inputs) exceed the
+		// default 64KB scanner buffer. Bump to 8 MiB so we don't
+		// silently drop long lines.
 		scanner.Buffer(make([]byte, 64*1024), 8*1024*1024)
 		for scanner.Scan() {
 			ev, perr := parser.Parse(scanner.Bytes())
