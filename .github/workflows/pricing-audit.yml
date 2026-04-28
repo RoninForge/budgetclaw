@@ -103,7 +103,7 @@ jobs:
           fi
 
           body=$(cat <<EOF
-          The weekly \`pricing-audit\` workflow detected models on Anthropic's \`/v1/models\` endpoint that the embedded pricing table does not know about.
+          The daily \`pricing-audit\` workflow detected models on Anthropic's \`/v1/models\` endpoint that the embedded pricing table does not know about.
 
           **New models**
 

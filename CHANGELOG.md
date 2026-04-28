@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `budgetclaw backfill` subcommand walks `$HOME/.claude/projects/**/*.jsonl`, prices every assistant event, and inserts rollups into the local state DB. Safe to run repeatedly thanks to the existing `ON CONFLICT(uuid) DO NOTHING` constraint. Use after upgrading to a release that adds new model pricing to recover attribution for events the prior watcher dropped.
+- Pricing table now recognizes two more dated Opus variants the daily audit detected on Anthropic's `/v1/models`: `claude-opus-4-5-20251101` and `claude-opus-4-1-20250805`. Both at the established Opus tier ($15 input / $75 output per MTok).
+
+### Changed
+
+- Issue body opened by `pricing-audit` workflow now correctly says "daily" rather than "weekly" (the cron schedule was changed to daily on the same day as v0.1.2; the body template was overlooked).
+
 ### Fixed
 
 - Pricing table now recognizes `claude-opus-4-7`. Previously the watcher logged `pricing: unknown model, skipping event` for every Opus 4.7 tool-call, causing silent under-attribution: spend was not counted, rollups stayed at $0, and `kill`-action caps could never fire on Opus 4.7 sessions. Rates set to the established Opus tier ($15 input / $75 output per MTok), matching 4-5 and 4-6.

@@ -25,6 +25,8 @@ func TestRatesForKnownModels(t *testing.T) {
 		{"claude-opus-4-7", 15.00, 75.00},
 		{"claude-opus-4-6", 15.00, 75.00},
 		{"claude-opus-4-5", 15.00, 75.00},
+		{"claude-opus-4-5-20251101", 15.00, 75.00},
+		{"claude-opus-4-1-20250805", 15.00, 75.00},
 		{"claude-sonnet-4-6", 3.00, 15.00},
 		{"claude-sonnet-4-5", 3.00, 15.00},
 		{"claude-sonnet-4-5-20250929", 3.00, 15.00},

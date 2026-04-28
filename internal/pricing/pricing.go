@@ -59,7 +59,8 @@ const (
 // USD. Cache rates are derived from the input rate using the
 // multipliers above.
 //
-// Last updated: 2026-04-28. Source: Anthropic pricing page.
+// Last updated: 2026-04-28 (v0.1.3 — added 4-5/4-1 dated variants).
+// Source: Anthropic pricing page + /v1/models audit.
 //
 // When adding a model:
 //  1. Add an entry here.
@@ -71,10 +72,14 @@ var baseRates = map[string]struct {
 	Output float64
 }{
 	// Opus: highest-capability tier. Pricing has held at
-	// $15 input / $75 output across 4-5, 4-6, and 4-7.
-	"claude-opus-4-7": {Input: 15.00, Output: 75.00},
-	"claude-opus-4-6": {Input: 15.00, Output: 75.00},
-	"claude-opus-4-5": {Input: 15.00, Output: 75.00},
+	// $15 input / $75 output across 4-1, 4-5, 4-6, and 4-7.
+	// Both undated and dated variants are listed because Claude
+	// Code emits both forms in the wild.
+	"claude-opus-4-7":            {Input: 15.00, Output: 75.00},
+	"claude-opus-4-6":            {Input: 15.00, Output: 75.00},
+	"claude-opus-4-5":            {Input: 15.00, Output: 75.00},
+	"claude-opus-4-5-20251101":   {Input: 15.00, Output: 75.00},
+	"claude-opus-4-1-20250805":   {Input: 15.00, Output: 75.00},
 
 	// Sonnet: mid tier. Both undated and dated variants included
 	// because Claude Code emits both forms in the wild.
