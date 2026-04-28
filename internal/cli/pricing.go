@@ -27,7 +27,54 @@ func newPricingCmd() *cobra.Command {
 		Use:   "pricing",
 		Short: "Inspect the model pricing table and diagnose drift",
 	}
-	cmd.AddCommand(newPricingListCmd(), newPricingDiagnoseCmd())
+	cmd.AddCommand(newPricingListCmd(), newPricingRatesCmd(), newPricingDiagnoseCmd())
+	return cmd
+}
+
+// pricingRateRow is the per-model record emitted by `pricing rates`.
+// JSON tags are stable so the cross-check workflow can rely on them.
+type pricingRateRow struct {
+	Model        string  `json:"model"`
+	InputPerMTok float64 `json:"input_per_mtok"`
+	OutputPerMTok float64 `json:"output_per_mtok"`
+}
+
+func newPricingRatesCmd() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "rates",
+		Short: "Print every model in the pricing table along with its input/output rates",
+		Long: `Print model -> input/output rate per million tokens for every
+entry in the embedded pricing table. Use --json for the
+machine-readable form consumed by the pricing-cross-check
+GitHub Action.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			rows := make([]pricingRateRow, 0, len(pricing.KnownModels()))
+			for _, m := range pricing.KnownModels() {
+				r, err := pricing.RatesFor(m)
+				if err != nil {
+					return fmt.Errorf("rates for %s: %w", m, err)
+				}
+				rows = append(rows, pricingRateRow{
+					Model:        m,
+					InputPerMTok: r.InputPerMTok,
+					OutputPerMTok: r.OutputPerMTok,
+				})
+			}
+			out := cmd.OutOrStdout()
+			if asJSON {
+				return json.NewEncoder(out).Encode(rows)
+			}
+			tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
+			fmt.Fprintln(tw, "MODEL\tINPUT/MTOK\tOUTPUT/MTOK")
+			for _, r := range rows {
+				fmt.Fprintf(tw, "%s\t$%.2f\t$%.2f\n", r.Model, r.InputPerMTok, r.OutputPerMTok)
+			}
+			return tw.Flush()
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "emit JSON output for scripting")
 	return cmd
 }
 

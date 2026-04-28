@@ -25,6 +25,33 @@ func TestPricingListLines(t *testing.T) {
 	}
 }
 
+// TestPricingRatesEmitsCorrectShape verifies the --json output of
+// pricing rates is a valid array of {model, input_per_mtok,
+// output_per_mtok} objects with realistic values for a known model.
+func TestPricingRatesEmitsCorrectShape(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "rates", "--json")
+	if err != nil {
+		t.Fatalf("pricing rates --json: %v", err)
+	}
+	var rows []pricingRateRow
+	if err := json.Unmarshal([]byte(stdout), &rows); err != nil {
+		t.Fatalf("output not valid JSON: %v\nraw: %q", err, stdout)
+	}
+	var found bool
+	for _, r := range rows {
+		if r.Model == "claude-opus-4-7" {
+			found = true
+			if r.InputPerMTok != 5.00 || r.OutputPerMTok != 25.00 {
+				t.Errorf("claude-opus-4-7 rates = %v/%v, want 5.00/25.00",
+					r.InputPerMTok, r.OutputPerMTok)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("claude-opus-4-7 missing from rates output")
+	}
+}
+
 // TestPricingListJSON verifies the --json flag emits a valid array
 // usable by the pricing-audit GitHub Action.
 func TestPricingListJSON(t *testing.T) {
