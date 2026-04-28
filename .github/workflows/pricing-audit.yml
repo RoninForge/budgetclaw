@@ -1,0 +1,132 @@
+name: pricing-audit
+
+# Detects new Anthropic models that the embedded pricing table does
+# not know about yet, and opens a GitHub issue when one is found.
+#
+# This workflow never auto-merges prices. Pricing is the load-bearing
+# input for the kill action; a wrong auto-merged price could fire
+# kills too early or too late, breaking the trust pitch. Detection
+# is automated; pricing is not.
+#
+# Requires repository secret `ANTHROPIC_API_KEY` with permission to
+# call the metadata-only `GET /v1/models` endpoint. That endpoint is
+# not billed under Anthropic's published pricing (only inference is).
+
+on:
+  schedule:
+    # Daily at 14:00 UTC. Bangkok 21:00, US morning, EU afternoon.
+    # /v1/models is metadata-only and not billed, so daily polling
+    # is essentially free; the cost is one issue when drift happens.
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: pricing-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: true
+
+      - name: Build budgetclaw
+        run: make build
+
+      - name: Snapshot known models
+        run: ./bin/budgetclaw pricing list --json > known.json
+
+      - name: Fetch Anthropic models
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY repo secret is not set. Add it under Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          curl -fsS \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            https://api.anthropic.com/v1/models > anthropic-raw.json
+          # The endpoint returns {"data":[{"id":"<model>","type":"model",...}]}.
+          # Filter to claude-* IDs so unrelated catalog entries don't
+          # bleed in.
+          jq '[.data[].id | select(startswith("claude-"))]' anthropic-raw.json > available.json
+          echo "Anthropic /v1/models returned $(jq 'length' available.json) claude-* model(s)."
+
+      - name: Diff against pricing table
+        id: diff
+        run: |
+          jq -n \
+            --argjson known "$(cat known.json)" \
+            --argjson avail "$(cat available.json)" \
+            '$avail - $known' > new-models.json
+          count=$(jq 'length' new-models.json)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -eq 0 ]; then
+            echo "Pricing table is current. No new models detected."
+          else
+            list=$(jq -r 'join(", ")' new-models.json)
+            echo "list=$list" >> "$GITHUB_OUTPUT"
+            {
+              echo "models_json<<MODELS_EOF"
+              cat new-models.json
+              echo "MODELS_EOF"
+            } >> "$GITHUB_OUTPUT"
+            echo "Detected new model(s): $list"
+          fi
+
+      - name: Open issue if drift detected
+        if: steps.diff.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_LIST: ${{ steps.diff.outputs.list }}
+          NEW_JSON: ${{ steps.diff.outputs.models_json }}
+        run: |
+          title="pricing: new model(s) detected: $NEW_LIST"
+
+          # Avoid duplicate issues for the same model set. Search for
+          # any open issue with the same title before opening a new one.
+          existing=$(gh issue list --state open --search "$title in:title" --json number --jq '. | length')
+          if [ "$existing" -gt 0 ]; then
+            echo "Open issue with matching title already exists; skipping."
+            exit 0
+          fi
+
+          body=$(cat <<EOF
+          The weekly \`pricing-audit\` workflow detected models on Anthropic's \`/v1/models\` endpoint that the embedded pricing table does not know about.
+
+          **New models**
+
+          \`\`\`json
+          $NEW_JSON
+          \`\`\`
+
+          **What to do**
+
+          1. Verify per-million-token rates for each model on the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing).
+          2. Add entries to \`internal/pricing/pricing.go\` (the \`baseRates\` map) and corresponding test cases in \`internal/pricing/pricing_test.go\` (\`TestRatesForKnownModels\`).
+          3. Bump the "Last updated" date in the \`pricing.go\` comment.
+          4. Open a PR titled \`fix(pricing): add <model-id> to pricing table\`.
+          5. After merge, tag a patch release so users get the update via \`go install\` or the next release binary.
+
+          **Why this is not auto-fixed**
+
+          Pricing is the load-bearing input for the \`kill\` action. A wrong auto-merged price could fire kills too early (loses user trust) or too late (defeats the purpose). Detection is automatable; pricing is not.
+
+          Generated by \`.github/workflows/pricing-audit.yml\`.
+          EOF
+          )
+
+          gh issue create \
+            --title "$title" \
+            --body "$body"

@@ -22,6 +22,7 @@ func TestRatesForKnownModels(t *testing.T) {
 		wantInput  float64
 		wantOutput float64
 	}{
+		{"claude-opus-4-7", 15.00, 75.00},
 		{"claude-opus-4-6", 15.00, 75.00},
 		{"claude-opus-4-5", 15.00, 75.00},
 		{"claude-sonnet-4-6", 3.00, 15.00},

@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/RoninForge/budgetclaw/internal/budget"
@@ -56,6 +57,17 @@ type Pipeline struct {
 	// Logger receives structured debug and error messages. Quiet
 	// by default so daemon mode does not spam stderr.
 	Logger *slog.Logger
+
+	// unknownModelsMu guards unknownModels. The watcher dispatches
+	// Handle from a single goroutine today, but the lock keeps the
+	// dedupe correct if that ever changes.
+	unknownModelsMu sync.Mutex
+	// unknownModels remembers which model IDs already produced a
+	// loud WARN in this watcher run so a single Opus 4.7 session
+	// burning thousands of unpriceable events does not flood
+	// stderr. Run `budgetclaw pricing diagnose` for ground-truth
+	// detection across the historical log corpus.
+	unknownModels map[string]int
 }
 
 // normalized returns the logger and now-function, filling in
@@ -97,9 +109,13 @@ func (p *Pipeline) Handle(ctx context.Context, e *parser.Event, _ string) error 
 		CacheWrite1h: e.CacheCreation1hTokens,
 	})
 	if err != nil {
-		// Unknown model — log and drop this event. Ignoring is
-		// safer than guessing: a wrong cost would poison rollups.
-		log.Warn("pricing: unknown model, skipping event",
+		if errors.Is(err, pricing.ErrUnknownModel) {
+			p.logUnknownModel(log, e.Model, e.UUID)
+			return nil
+		}
+		// Some other pricing failure (shouldn't happen with the
+		// current implementation, but keep the path safe).
+		log.Warn("pricing: unexpected error, skipping event",
 			"uuid", e.UUID, "model", e.Model, "err", err)
 		return nil
 	}
@@ -193,6 +209,42 @@ func (p *Pipeline) dispatch(ctx context.Context, e *parser.Event, v budget.Verdi
 				"project", e.Project, "err", err)
 		}
 	}
+}
+
+// logUnknownModel emits a loud WARN the first time a model is seen
+// in this watcher run, and a quiet DEBUG for every event after.
+// Returns the new total count for the model; tests use it to verify
+// dedupe behavior.
+func (p *Pipeline) logUnknownModel(log *slog.Logger, model, uuid string) int {
+	p.unknownModelsMu.Lock()
+	if p.unknownModels == nil {
+		p.unknownModels = make(map[string]int)
+	}
+	count := p.unknownModels[model] + 1
+	p.unknownModels[model] = count
+	p.unknownModelsMu.Unlock()
+
+	if count == 1 {
+		log.Warn("pricing: unknown model — events skipped until next release; run `budgetclaw pricing diagnose` for the full set",
+			"model", model, "uuid", uuid)
+	} else {
+		log.Debug("pricing: unknown model (suppressed repeat)",
+			"model", model, "count", count)
+	}
+	return count
+}
+
+// UnknownModels returns a snapshot of model IDs the pipeline has
+// skipped this run, paired with their event counts. Useful for
+// status output and tests; safe for concurrent callers.
+func (p *Pipeline) UnknownModels() map[string]int {
+	p.unknownModelsMu.Lock()
+	defer p.unknownModelsMu.Unlock()
+	out := make(map[string]int, len(p.unknownModels))
+	for k, v := range p.unknownModels {
+		out[k] = v
+	}
+	return out
 }
 
 // discardWriter is a no-op io.Writer used by the default logger

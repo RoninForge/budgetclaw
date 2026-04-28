@@ -36,6 +36,7 @@ It never touches API traffic. Zero key, zero prompts, zero latency added.`,
 		newLocksCmd(),
 		newConfigCmd(),
 		newWatchCmd(),
+		newPricingCmd(),
 	)
 	return cmd
 }

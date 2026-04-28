@@ -153,6 +153,34 @@ func TestHandleUnknownModelDroppedSilently(t *testing.T) {
 	}
 }
 
+// TestHandleUnknownModelDedupesPerRun feeds three events with the
+// same unknown model and one with a different unknown model, then
+// asserts the pipeline tracks one count per model rather than one
+// per event. The verbatim WARN-flood reproduced in production
+// (claude-opus-4-7 before the fix) is what motivated this dedupe.
+func TestHandleUnknownModelDedupesPerRun(t *testing.T) {
+	p := buildPipeline(t, nil, nil, nil)
+
+	for i, model := range []string{"gpt-5-xl", "gpt-5-xl", "gpt-5-xl", "future-claude-99"} {
+		e := sampleEvent("u-"+string(rune('a'+i)), "app", "main")
+		e.Model = model
+		if err := p.Handle(context.Background(), e, ""); err != nil {
+			t.Fatalf("Handle %d: %v", i, err)
+		}
+	}
+
+	got := p.UnknownModels()
+	if got["gpt-5-xl"] != 3 {
+		t.Errorf("gpt-5-xl count = %d, want 3", got["gpt-5-xl"])
+	}
+	if got["future-claude-99"] != 1 {
+		t.Errorf("future-claude-99 count = %d, want 1", got["future-claude-99"])
+	}
+	if len(got) != 2 {
+		t.Errorf("expected 2 distinct unknown models, got %d: %v", len(got), got)
+	}
+}
+
 // TestHandleNoConfigInsertsButDoesNotEvaluate verifies that a
 // missing (nil) budget.Config still stores the event — the CLI's
 // `status` command must work even before any rules exist.
