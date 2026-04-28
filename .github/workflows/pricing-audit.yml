@@ -1,22 +1,32 @@
 name: pricing-audit
 
-# Detects new Anthropic models that the embedded pricing table does
-# not know about yet, and opens a GitHub issue when one is found.
+# Daily pricing audit. Runs two checks against the embedded
+# pricing table and bundles the results into one issue:
 #
-# This workflow never auto-merges prices. Pricing is the load-bearing
-# input for the kill action; a wrong auto-merged price could fire
-# kills too early or too late, breaking the trust pitch. Detection
-# is automated; pricing is not.
+# 1. New-model detection. Calls Anthropic's /v1/models and flags
+#    any claude-* IDs missing from the table. For each missing
+#    model, the issue body also looks up LiteLLM's rate so the
+#    maintainer has a starting suggestion (still verified by hand).
 #
-# Requires repository secret `ANTHROPIC_API_KEY` with permission to
-# call the metadata-only `GET /v1/models` endpoint. That endpoint is
-# not billed under Anthropic's published pricing (only inference is).
+# 2. Rate cross-check. For every model already in the table,
+#    compares input + output rates to BerriAI/litellm's
+#    model_prices_and_context_window.json. Disagreements above
+#    a $0.01/MTok tolerance are surfaced.
+#
+# Why combined: a new-model launch often coincides with price
+# cuts on older models (Opus 4.7 launched and 4.5/4.6 dropped to
+# the new lower tier in the same release). Treating both signals
+# as one event keeps the maintainer's mental model simple — one
+# issue, one PR, one release.
+#
+# Detection is automated; rates stay a human verification step
+# because a wrong auto-merged rate would compromise the kill
+# action.
+#
+# Requires repo secret ANTHROPIC_API_KEY (metadata-only, free).
 
 on:
   schedule:
-    # Daily at 14:00 UTC. Bangkok 21:00, US morning, EU afternoon.
-    # /v1/models is metadata-only and not billed, so daily polling
-    # is essentially free; the cost is one issue when drift happens.
     - cron: '0 14 * * *'
   workflow_dispatch:
 
@@ -42,91 +52,174 @@ jobs:
       - name: Build budgetclaw
         run: make build
 
-      - name: Snapshot known models
-        run: ./bin/budgetclaw pricing list --json > known.json
+      - name: Snapshot embedded rates
+        run: ./bin/budgetclaw pricing rates --json > ours.json
 
-      - name: Fetch Anthropic models
+      - name: Fetch Anthropic /v1/models
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::error::ANTHROPIC_API_KEY repo secret is not set. Add it under Settings → Secrets and variables → Actions."
+            echo "::error::ANTHROPIC_API_KEY repo secret is not set."
             exit 1
           fi
           curl -fsS \
             -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             https://api.anthropic.com/v1/models > anthropic-raw.json
-          # The endpoint returns {"data":[{"id":"<model>","type":"model",...}]}.
-          # Filter to claude-* IDs so unrelated catalog entries don't
-          # bleed in.
-          jq '[.data[].id | select(startswith("claude-"))]' anthropic-raw.json > available.json
-          echo "Anthropic /v1/models returned $(jq 'length' available.json) claude-* model(s)."
+          jq '[.data[].id | select(startswith("claude-"))]' anthropic-raw.json > anthropic.json
+          echo "Anthropic returned $(jq 'length' anthropic.json) claude-* model(s)."
 
-      - name: Diff against pricing table
-        id: diff
+      - name: Fetch LiteLLM
         run: |
-          jq -n \
-            --argjson known "$(cat known.json)" \
-            --argjson avail "$(cat available.json)" \
-            '$avail - $known' > new-models.json
-          count=$(jq 'length' new-models.json)
-          echo "count=$count" >> "$GITHUB_OUTPUT"
-          if [ "$count" -eq 0 ]; then
-            echo "Pricing table is current. No new models detected."
+          curl -fsSL \
+            "https://raw.githubusercontent.com/BerriAI/litellm/main/litellm/model_prices_and_context_window_backup.json" \
+            > litellm.json
+          echo "LiteLLM JSON fetched ($(wc -c < litellm.json) bytes)."
+
+      - name: Combined audit
+        id: audit
+        run: |
+          python3 - <<'PY' > report.json
+          import json
+          import sys
+
+          with open("ours.json") as f:
+              ours = json.load(f)
+          with open("anthropic.json") as f:
+              anthropic = json.load(f)
+          with open("litellm.json") as f:
+              litellm = json.load(f)
+
+          our_set = {r["model"] for r in ours}
+          our_rates = {r["model"]: (r["input_per_mtok"], r["output_per_mtok"]) for r in ours}
+
+          tolerance = 0.01  # USD/MTok; whole-dollar pricing means
+                            # a real change is at least $0.50.
+
+          def litellm_rate(model):
+              entry = litellm.get(model) or litellm.get(f"anthropic/{model}")
+              if entry is None:
+                  return None
+              return (
+                  entry.get("input_cost_per_token", 0) * 1_000_000,
+                  entry.get("output_cost_per_token", 0) * 1_000_000,
+              )
+
+          # 1. New models on Anthropic's API not yet in our table.
+          new_models = []
+          for m in anthropic:
+              if m in our_set:
+                  continue
+              ll = litellm_rate(m)
+              new_models.append({
+                  "model": m,
+                  "ll_in": ll[0] if ll else None,
+                  "ll_out": ll[1] if ll else None,
+              })
+
+          # 2. Rate disagreements on models already in our table.
+          rate_diffs = []
+          for m, (our_in, our_out) in our_rates.items():
+              ll = litellm_rate(m)
+              if ll is None:
+                  continue
+              ll_in, ll_out = ll
+              if abs(ll_in - our_in) > tolerance or abs(ll_out - our_out) > tolerance:
+                  rate_diffs.append({
+                      "model": m,
+                      "ours_in": our_in, "ours_out": our_out,
+                      "ll_in": ll_in, "ll_out": ll_out,
+                  })
+
+          json.dump({"new_models": new_models, "rate_diffs": rate_diffs}, sys.stdout)
+          PY
+
+          new_count=$(jq '.new_models | length' report.json)
+          diff_count=$(jq '.rate_diffs | length' report.json)
+          total=$((new_count + diff_count))
+
+          echo "new_count=$new_count" >> "$GITHUB_OUTPUT"
+          echo "diff_count=$diff_count" >> "$GITHUB_OUTPUT"
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+
+          if [ "$total" -eq 0 ]; then
+            echo "Pricing audit clean: no new models, no rate disagreements."
           else
-            list=$(jq -r 'join(", ")' new-models.json)
-            echo "list=$list" >> "$GITHUB_OUTPUT"
-            {
-              echo "models_json<<MODELS_EOF"
-              cat new-models.json
-              echo "MODELS_EOF"
-            } >> "$GITHUB_OUTPUT"
-            echo "Detected new model(s): $list"
+            echo "Found $new_count new model(s), $diff_count rate disagreement(s):"
+            jq . report.json
           fi
 
-      - name: Open issue if drift detected
-        if: steps.diff.outputs.count != '0'
+      - name: Open combined issue
+        if: steps.audit.outputs.total != '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NEW_LIST: ${{ steps.diff.outputs.list }}
-          NEW_JSON: ${{ steps.diff.outputs.models_json }}
+          NEW_COUNT: ${{ steps.audit.outputs.new_count }}
+          DIFF_COUNT: ${{ steps.audit.outputs.diff_count }}
         run: |
-          title="pricing: new model(s) detected: $NEW_LIST"
+          new_list=$(jq -r '.new_models | map(.model) | join(", ")' report.json)
+          diff_list=$(jq -r '.rate_diffs | map(.model) | join(", ")' report.json)
 
-          # Avoid duplicate issues for the same model set. Search for
-          # any open issue with the same title before opening a new one.
+          if [ "$NEW_COUNT" -gt 0 ] && [ "$DIFF_COUNT" -gt 0 ]; then
+            title="pricing: new model(s) [$new_list] + rate change(s) [$diff_list]"
+          elif [ "$NEW_COUNT" -gt 0 ]; then
+            title="pricing: new model(s) detected: $new_list"
+          else
+            title="pricing: rate disagreement vs LiteLLM for $diff_list"
+          fi
+
           existing=$(gh issue list --state open --search "$title in:title" --json number --jq '. | length')
           if [ "$existing" -gt 0 ]; then
             echo "Open issue with matching title already exists; skipping."
             exit 0
           fi
 
+          new_section=""
+          if [ "$NEW_COUNT" -gt 0 ]; then
+            new_table=$(jq -r '
+              "| Model | LiteLLM rate (in / out per MTok) | Suggested action |\n|---|---|---|\n" +
+              (.new_models | map(
+                "| `\(.model)` | " +
+                (if .ll_in == null then "(not in LiteLLM yet)" else "$\(.ll_in) / $\(.ll_out)" end) +
+                " | Verify on Anthropic pricing page, then add to pricing.go |"
+              ) | join("\n"))
+            ' report.json)
+            new_section=$'\n## New models on Anthropic\'s API\n\n'"$new_table"$'\n'
+          fi
+
+          diff_section=""
+          if [ "$DIFF_COUNT" -gt 0 ]; then
+            diff_table=$(jq -r '
+              "| Model | Ours (in / out per MTok) | LiteLLM (in / out per MTok) |\n|---|---|---|\n" +
+              (.rate_diffs | map(
+                "| `\(.model)` | $\(.ours_in) / $\(.ours_out) | $\(.ll_in) / $\(.ll_out) |"
+              ) | join("\n"))
+            ' report.json)
+            note=""
+            if [ "$NEW_COUNT" -gt 0 ]; then
+              note=$'A new model launch often coincides with price cuts on older models in the same tier. The rate change(s) above are likely related to the new-model row(s) earlier in this issue.\n\n'
+            fi
+            diff_section=$'\n## Rate disagreements (existing models)\n\n'"$note""$diff_table"$'\n'
+          fi
+
           body=$(cat <<EOF
-          The daily \`pricing-audit\` workflow detected models on Anthropic's \`/v1/models\` endpoint that the embedded pricing table does not know about.
+          The daily \`pricing-audit\` workflow detected drift against Anthropic's \`/v1/models\` and/or BerriAI/litellm's pricing data.
+          $new_section
+          $diff_section
+          ## What to do
 
-          **New models**
-
-          \`\`\`json
-          $NEW_JSON
-          \`\`\`
-
-          **What to do**
-
-          1. Verify per-million-token rates for each model on the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing).
-          2. Add entries to \`internal/pricing/pricing.go\` (the \`baseRates\` map) and corresponding test cases in \`internal/pricing/pricing_test.go\` (\`TestRatesForKnownModels\`).
+          1. Open the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and verify every rate above.
+          2. Update \`internal/pricing/pricing.go\` (the \`baseRates\` map) and the corresponding test cases.
           3. Bump the "Last updated" date in the \`pricing.go\` comment.
-          4. Open a PR titled \`fix(pricing): add <model-id> to pricing table\`.
-          5. After merge, tag a patch release so users get the update via \`go install\` or the next release binary.
+          4. Open a PR titled \`fix(pricing): refresh after Anthropic model/price change\`. Ship a patch release.
+          5. After the release, users on the prior version need to run \`budgetclaw backfill --rebuild\` to recompute historical rollups; without that, idempotent inserts leave the old rate baked into existing rows.
 
-          **Why this is not auto-fixed**
+          ## Why this is not auto-fixed
 
-          Pricing is the load-bearing input for the \`kill\` action. A wrong auto-merged price could fire kills too early (loses user trust) or too late (defeats the purpose). Detection is automatable; pricing is not.
+          Pricing is the load-bearing input for the \`kill\` action. A wrong auto-merged rate could fire kills too early or too late. Detection is automated; the rate value remains a human verification step.
 
           Generated by \`.github/workflows/pricing-audit.yml\`.
           EOF
           )
 
-          gh issue create \
-            --title "$title" \
-            --body "$body"
+          gh issue create --title "$title" --body "$body"

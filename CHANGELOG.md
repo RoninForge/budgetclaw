@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `budgetclaw backfill --rebuild` flag truncates events and rollups before scanning so a pricing correction is reflected in historical totals. Without `--rebuild`, idempotent inserts leave the old rate baked into existing rollup rows.
 - `budgetclaw pricing rates [--json]` subcommand prints every model with its input + output rate per MTok. Used by the new cross-check workflow.
-- Daily `pricing-cross-check` GitHub Action compares embedded rates against BerriAI/litellm's `model_prices_and_context_window.json` (a community-maintained source updated within days of upstream changes). Opens an issue when an Anthropic model in our table disagrees with LiteLLM on input or output rate. Closes the gap left by the model-audit workflow, which only catches new model IDs and not changes to existing rates. Like the model audit, detection is automated and the rate value still requires human verification before it lands in `pricing.go`.
+- The daily `pricing-audit` workflow now also cross-checks every embedded rate against BerriAI/litellm's `model_prices_and_context_window.json`. Closes the gap that v0.1.4 surfaced: `/v1/models` returns IDs only, so price changes on existing models would slip past the model-only audit. The two checks run as one workflow because new-model launches typically coincide with price cuts on older models in the same tier (Opus 4.7 + simultaneous 4.5/4.6 price cut), so bundling them keeps maintainer triage to one issue, one PR, one release. The standalone `pricing-cross-check.yml` from earlier in this release was rolled into `pricing-audit.yml`.
 
 ### Changed
 
