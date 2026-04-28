@@ -29,7 +29,10 @@ import (
 // (because the model was unknown) become attributable as soon as
 // backfill is run with the new binary.
 func newBackfillCmd() *cobra.Command {
-	var dir string
+	var (
+		dir     string
+		rebuild bool
+	)
 	cmd := &cobra.Command{
 		Use:   "backfill",
 		Short: "Re-scan historical JSONL logs to seed the rollup database",
@@ -40,13 +43,20 @@ their UUID and the rollup is only incremented once.
 
 Use after upgrading to a release that adds new model pricing —
 historical events the prior watcher saw but skipped (because the
-model was unknown) become attributable on the next run.`,
+model was unknown) become attributable on the next run.
+
+--rebuild truncates the events and rollups tables before scanning,
+so a pricing correction is reflected in historical totals. Use
+after a release fixes a wrong rate for a model that already has
+rollups in the DB; without --rebuild, the old rate stays baked
+into the rollup row because Insert is idempotent on uuid.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runBackfill(cmd.Context(), cmd.OutOrStdout(), dir)
+			return runBackfill(cmd.Context(), cmd.OutOrStdout(), dir, rebuild)
 		},
 	}
 	cmd.Flags().StringVar(&dir, "dir", "", "log directory to scan (default: $HOME/.claude/projects)")
+	cmd.Flags().BoolVar(&rebuild, "rebuild", false, "wipe events + rollups before scanning (use after a pricing correction)")
 	return cmd
 }
 
@@ -61,7 +71,7 @@ type backfillStats struct {
 	unknown     map[string]int // count per unpriceable model
 }
 
-func runBackfill(ctx context.Context, out io.Writer, dir string) error {
+func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) error {
 	if dir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -75,6 +85,13 @@ func runBackfill(ctx context.Context, out io.Writer, dir string) error {
 		return fmt.Errorf("open db: %w", err)
 	}
 	defer func() { _ = store.Close() }()
+
+	if rebuild {
+		if err := store.Reset(ctx); err != nil {
+			return fmt.Errorf("reset db: %w", err)
+		}
+		fmt.Fprintln(out, "wiped events + rollups (rebuild mode)")
+	}
 
 	stats := backfillStats{
 		models:  make(map[string]int),

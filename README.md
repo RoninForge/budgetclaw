@@ -138,6 +138,8 @@ A maintainer then verifies pricing on the [Anthropic pricing page](https://docs.
 
 If you ever notice `budgetclaw status` reporting suspiciously low spend, run `budgetclaw pricing diagnose` to see which models the local logs contain and whether any are missing from the table. The same fix flow applies: open an issue, we add the entry, you upgrade and run `budgetclaw backfill` to recover historical attribution.
 
+The model audit catches new model IDs but not changes to existing rates -- Anthropic's `/v1/models` returns metadata only, no pricing. As a second line of defense, the maintainer cross-checks rates against the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and the community-maintained [`model_prices_and_context_window.json`](https://github.com/BerriAI/litellm/blob/main/litellm/model_prices_and_context_window_backup.json) periodically. v0.1.4 corrected the Opus 4.5 / 4.6 / 4.7 rates from the pre-cut $15 / $75 to the current $5 / $25 after a cross-check turned up the gap. If a price correction lands, run `budgetclaw backfill --rebuild` to recompute historical rollups; without `--rebuild`, idempotent inserts leave the old rate baked into existing rows.
+
 ## Security
 
 budgetclaw only reads from `$HOME/.claude/projects/` and only SIGTERMs processes named `claude`. It writes only to its own XDG directories. See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.

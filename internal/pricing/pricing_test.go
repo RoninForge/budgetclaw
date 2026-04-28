@@ -22,10 +22,10 @@ func TestRatesForKnownModels(t *testing.T) {
 		wantInput  float64
 		wantOutput float64
 	}{
-		{"claude-opus-4-7", 15.00, 75.00},
-		{"claude-opus-4-6", 15.00, 75.00},
-		{"claude-opus-4-5", 15.00, 75.00},
-		{"claude-opus-4-5-20251101", 15.00, 75.00},
+		{"claude-opus-4-7", 5.00, 25.00},
+		{"claude-opus-4-6", 5.00, 25.00},
+		{"claude-opus-4-5", 5.00, 25.00},
+		{"claude-opus-4-5-20251101", 5.00, 25.00},
 		{"claude-opus-4-1-20250805", 15.00, 75.00},
 		{"claude-sonnet-4-6", 3.00, 15.00},
 		{"claude-sonnet-4-5", 3.00, 15.00},
@@ -88,9 +88,12 @@ func TestCacheMultipliersDerived(t *testing.T) {
 
 // TestCostArithmetic locks in cost calculation at known-round values
 // so rounding changes or unit-conversion bugs are caught immediately.
-// Values picked so the math is easy to verify by hand.
+// Values picked so the math is easy to verify by hand. We anchor on
+// claude-opus-4-1-20250805 because it remained on the original
+// $15/$75 tier when Opus 4.5+ moved to $5/$25 — using a stable
+// price point keeps the arithmetic predictable across rate changes.
 func TestCostArithmetic(t *testing.T) {
-	r, err := RatesFor("claude-opus-4-6")
+	r, err := RatesFor("claude-opus-4-1-20250805")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +170,7 @@ func TestCostRealisticFixtureEvent(t *testing.T) {
 	//   cache_1h:     1000 / 1e6 * 30.00  = 0.03000
 	//   total:                             0.11025 USD
 	want := 0.11025
-	got, err := CostForModel("claude-opus-4-6", Usage{
+	got, err := CostForModel("claude-opus-4-1-20250805", Usage{
 		Input:        100,
 		Output:       50,
 		CacheWrite5m: 4000,
@@ -205,13 +208,13 @@ func TestKnownModelsSorted(t *testing.T) {
 	}
 	found := false
 	for _, m := range got {
-		if m == "claude-opus-4-6" {
+		if m == "claude-opus-4-7" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("claude-opus-4-6 missing from KnownModels")
+		t.Error("claude-opus-4-7 missing from KnownModels")
 	}
 }
 

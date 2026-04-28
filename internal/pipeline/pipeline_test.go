@@ -92,7 +92,11 @@ func buildPipeline(t *testing.T, cfg *budget.Config, notifier *ntfy.Client, fk *
 }
 
 // sampleEvent returns a parser.Event with the given identity.
-// Token counts are fixed so cost math is predictable.
+// Token counts are fixed so cost math is predictable. Anchored on
+// claude-opus-4-1-20250805 because it is the only Opus variant that
+// stayed on the original $15/$75 tier when 4.5+ moved to $5/$25;
+// using a stable rate point keeps test arithmetic resilient to
+// future pricing corrections that touch the active models.
 func sampleEvent(uuid, project, branch string) *parser.Event {
 	return &parser.Event{
 		UUID:                  uuid,
@@ -101,9 +105,9 @@ func sampleEvent(uuid, project, branch string) *parser.Event {
 		CWD:                   "/home/u/" + project,
 		Project:               project,
 		GitBranch:             branch,
-		Model:                 "claude-opus-4-6",
+		Model:                 "claude-opus-4-1-20250805",
 		ServiceTier:           "standard",
-		InputTokens:           1_000_000, // $15 at opus rates
+		InputTokens:           1_000_000, // $15 at the legacy opus tier
 		OutputTokens:          0,
 		CacheReadTokens:       0,
 		CacheCreation5mTokens: 0,

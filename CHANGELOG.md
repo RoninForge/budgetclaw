@@ -7,10 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Opus 4.5 / 4.6 / 4.7 input + output rates corrected from $15 / $75 to $5 / $25 per MTok.** Anthropic moved Opus 4.5+ to a new lower tier; the original maintainer's snapshot from 2026-04-09 captured the pre-cut prices, and prior releases inherited the wrong rate by tier-pattern. Discovered by cross-checking against BerriAI/litellm's `model_prices_and_context_window.json`, then confirmed against the maintainer's screenshot of the Anthropic pricing page. Existing rollups are not auto-corrected because `Insert` is idempotent on uuid; run `budgetclaw backfill --rebuild` to wipe rollups and recompute every historical event at the corrected rates. Opus 4.1 stays at $15 / $75 (still on the legacy tier per Anthropic's published pricing).
+
+### Added
+
+- `budgetclaw backfill --rebuild` flag truncates events and rollups before scanning so a pricing correction is reflected in historical totals. Without `--rebuild`, idempotent inserts leave the old rate baked into existing rollup rows.
+
+### Changed
+
+- Pricing table comment now names the cross-check methodology (Anthropic page + LiteLLM JSON) and the date, so the next maintainer knows where to verify.
+
+## [v0.1.3] - 2026-04-28
+
 ### Added
 
 - `budgetclaw backfill` subcommand walks `$HOME/.claude/projects/**/*.jsonl`, prices every assistant event, and inserts rollups into the local state DB. Safe to run repeatedly thanks to the existing `ON CONFLICT(uuid) DO NOTHING` constraint. Use after upgrading to a release that adds new model pricing to recover attribution for events the prior watcher dropped.
-- Pricing table now recognizes two more dated Opus variants the daily audit detected on Anthropic's `/v1/models`: `claude-opus-4-5-20251101` and `claude-opus-4-1-20250805`. Both at the established Opus tier ($15 input / $75 output per MTok).
+- Pricing table now recognizes two more dated Opus variants the daily audit detected on Anthropic's `/v1/models`: `claude-opus-4-5-20251101` and `claude-opus-4-1-20250805`. (Initial rates were Opus tier at the time; v0.1.4 corrects 4-5-20251101 to $5/$25.)
 
 ### Changed
 

@@ -166,6 +166,31 @@ func OpenMemory() (*DB, error) { return Open(":memory:") }
 // Close closes the underlying connection.
 func (d *DB) Close() error { return d.sql.Close() }
 
+// Reset truncates the events and rollups tables so a subsequent
+// backfill can re-attribute every historical event from scratch.
+// Used by `budgetclaw backfill --rebuild` after a pricing-table
+// correction lands: existing rollups are stuck at the old (wrong)
+// rate because Insert is idempotent on uuid, so the only way to
+// recompute them is to wipe and replay.
+//
+// The tables are truncated inside a single transaction so a crash
+// mid-reset cannot leave half-empty state behind.
+func (d *DB) Reset(ctx context.Context) error {
+	tx, err := d.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM rollups`); err != nil {
+		return fmt.Errorf("truncate rollups: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM events`); err != nil {
+		return fmt.Errorf("truncate events: %w", err)
+	}
+	return tx.Commit()
+}
+
 // applyPragmas sets the pragmas we rely on. WAL and synchronous are
 // skipped for in-memory databases where they're meaningless.
 func applyPragmas(db *sql.DB, memory bool) error {
