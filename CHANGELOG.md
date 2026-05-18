@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.6] - 2026-05-18
+
+### Changed
+
+- Dependency bumps: `github.com/shirou/gopsutil/v4` 4.26.3 -> 4.26.4 (#15), `modernc.org/sqlite` 1.50.0 -> 1.50.1 (#18), `github.com/fsnotify/fsnotify` 1.9.0 -> 1.10.1 (#17, applied manually on top of #15 and #18 to resolve a `go.sum` conflict).
+
+### Added
+
+- `AGENTS.md` at the repo root for AI coding agents (Claude Code, Cursor) operating on the codebase.
+
+### Changed
+
+- CI: model-audit and the LiteLLM cross-check are now a single bundled workflow (`pricing-audit.yml`). Reduces maintainer triage to one issue, one PR, one release when a new Anthropic launch coincides with a price cut on the legacy tier (the Opus 4.7 launch + 4.5 / 4.6 price-cut pattern, see v0.1.4).
+
+## [v0.1.5] - 2026-04-28
+
+### Added
+
+- `budgetclaw pricing rates [--json]` subcommand prints every model with its input + output rate per MTok. Feeds the daily LiteLLM cross-check workflow.
+- The daily `pricing-audit` workflow now also cross-checks every embedded rate against BerriAI/litellm's `model_prices_and_context_window.json`. Closes the gap that v0.1.4 surfaced: `/v1/models` returns IDs only, so price changes on existing models would slip past the model-only audit. (Bundled into a single `pricing-audit.yml` workflow in v0.1.6.)
+
+## [v0.1.4] - 2026-04-28
+
 ### Fixed
 
 - **Opus 4.5 / 4.6 / 4.7 input + output rates corrected from $15 / $75 to $5 / $25 per MTok.** Anthropic moved Opus 4.5+ to a new lower tier; the original maintainer's snapshot from 2026-04-09 captured the pre-cut prices, and prior releases inherited the wrong rate by tier-pattern. Discovered by cross-checking against BerriAI/litellm's `model_prices_and_context_window.json`, then confirmed against the maintainer's screenshot of the Anthropic pricing page. Existing rollups are not auto-corrected because `Insert` is idempotent on uuid; run `budgetclaw backfill --rebuild` to wipe rollups and recompute every historical event at the corrected rates. Opus 4.1 stays at $15 / $75 (still on the legacy tier per Anthropic's published pricing).
@@ -14,8 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `budgetclaw backfill --rebuild` flag truncates events and rollups before scanning so a pricing correction is reflected in historical totals. Without `--rebuild`, idempotent inserts leave the old rate baked into existing rollup rows.
-- `budgetclaw pricing rates [--json]` subcommand prints every model with its input + output rate per MTok. Used by the new cross-check workflow.
-- The daily `pricing-audit` workflow now also cross-checks every embedded rate against BerriAI/litellm's `model_prices_and_context_window.json`. Closes the gap that v0.1.4 surfaced: `/v1/models` returns IDs only, so price changes on existing models would slip past the model-only audit. The two checks run as one workflow because new-model launches typically coincide with price cuts on older models in the same tier (Opus 4.7 + simultaneous 4.5/4.6 price cut), so bundling them keeps maintainer triage to one issue, one PR, one release. The standalone `pricing-cross-check.yml` from earlier in this release was rolled into `pricing-audit.yml`.
 
 ### Changed
 
