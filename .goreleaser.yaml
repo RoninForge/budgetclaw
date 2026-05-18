@@ -123,6 +123,8 @@ brews:
     homepage: "https://roninforge.org/budgetclaw"
     description: "Local spend monitor for Claude Code"
     license: "MIT"
+    # Prereleases (tags like v0.1.7-rc1) never overwrite the tap formula.
+    skip_upload: auto
     install: |
       bin.install "budgetclaw"
     test: |
