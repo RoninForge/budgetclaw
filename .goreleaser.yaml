@@ -108,16 +108,22 @@ release:
 
     **Full changelog**: https://github.com/RoninForge/budgetclaw/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-# Uncomment when the homebrew-tap repo exists.
-# brews:
-#   - name: budgetclaw
-#     repository:
-#       owner: RoninForge
-#       name: homebrew-tap
-#     homepage: "https://roninforge.org/budgetclaw"
-#     description: "Local spend monitor for Claude Code"
-#     license: "MIT"
-#     install: |
-#       bin.install "budgetclaw"
-#     test: |
-#       system "#{bin}/budgetclaw", "version", "--short"
+brews:
+  - name: budgetclaw
+    repository:
+      owner: RoninForge
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: roninforge-bot
+      email: bot@roninforge.org
+    commit_msg_template: "budgetclaw {{ .Tag }}"
+    directory: Formula
+    homepage: "https://roninforge.org/budgetclaw"
+    description: "Local spend monitor for Claude Code"
+    license: "MIT"
+    install: |
+      bin.install "budgetclaw"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/budgetclaw version")
