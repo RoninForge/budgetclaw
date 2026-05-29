@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.7] - 2026-05-29
+
 ### Added
 
 - Claude Opus 4.8 (`claude-opus-4-8`) added to the pricing table at $5/MTok input, $25/MTok output (the same tier as Opus 4.5/4.6/4.7). Before this, Opus 4.8 events were silently skipped as an unknown model. Re-verified every existing rate against the live Anthropic pricing page on 2026-05-29: no older model changed price, cache multipliers unchanged.
