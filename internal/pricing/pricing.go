@@ -59,12 +59,16 @@ const (
 // USD. Cache rates are derived from the input rate using the
 // multipliers above.
 //
-// Last updated: 2026-04-28 (v0.1.4 — corrected Opus 4.5/4.6/4.7
-// rates after a LiteLLM cross-check + maintainer screenshot of the
-// Anthropic pricing page revealed they had moved to a new tier).
-// Source: docs.anthropic.com/en/docs/about-claude/pricing,
-// cross-checked against BerriAI/litellm's
-// model_prices_and_context_window.json.
+// Last updated: 2026-05-29 (added Opus 4.8 at $5/$25, the same tier
+// as 4.5/4.6/4.7. Re-verified every existing entry against the live
+// Anthropic pricing page on the same day: no older model changed
+// price, and the cache multipliers are unchanged. Opus 4.8's 1M
+// context window is billed at standard rates, so no long-context
+// tier is needed).
+// Source: platform.claude.com/docs/en/docs/about-claude/pricing.
+// The 2026-04-28 (v0.1.4) update corrected Opus 4.5/4.6/4.7 rates
+// after a LiteLLM cross-check + maintainer screenshot revealed
+// Anthropic had moved them to a new lower tier.
 //
 // When adding a model:
 //  1. Add an entry here.
@@ -79,7 +83,10 @@ var baseRates = map[string]struct {
 	// pricing for 4.5+ to a new lower tier ($5/$25); 4.1 and
 	// older remain at the original $15/$75. Both undated and
 	// dated variants are listed because Claude Code emits both
-	// forms in the wild.
+	// forms in the wild. The 1M context variant (display ID
+	// "...[1m]") is billed at standard rates and never reaches
+	// message.model in the JSONL, so it needs no separate entry.
+	"claude-opus-4-8":          {Input: 5.00, Output: 25.00},
 	"claude-opus-4-7":          {Input: 5.00, Output: 25.00},
 	"claude-opus-4-6":          {Input: 5.00, Output: 25.00},
 	"claude-opus-4-5":          {Input: 5.00, Output: 25.00},

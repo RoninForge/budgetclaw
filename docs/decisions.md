@@ -177,3 +177,9 @@ Cost: none — the UUID is already there. Upside: the dedupe guarantee survives 
 **Alternatives:** free-form commit messages, separate CHANGELOG edits.
 
 **Reason:** conventional commits are low-ceremony once you're used to them, and goreleaser's group rules mean the release notes write themselves. Hand-maintaining CHANGELOG.md on every PR is tedious and drifts from reality.
+
+## 15i. Pricing table updates: add new models, re-verify all existing rates same day
+
+**Decision:** When a new Claude model ships, add it to `pricing.baseRates` AND re-check every existing entry against the live Anthropic pricing page in the same edit. Record the date and outcome in the `baseRates` comment.
+
+**Reason:** Anthropic has twice shipped a new flagship at the same time as a price cut on the legacy tier (Opus 4.7 launch + 4.5/4.6 cut, see CHANGELOG v0.1.4). Adding the new model without re-checking the old ones leaves stale rates on models users are still running. On 2026-05-29 the parser was silently dropping ~62 real `claude-opus-4-8` events because the model was unknown (events with an unknown model are logged and skipped, never priced). Re-verification that day confirmed no older model had changed price, so only the new entry was added. The 1M context variant (Claude Code display ID `...[1m]`) is billed at standard rates and never appears in the JSONL `message.model` field, so it needs no separate table entry.
