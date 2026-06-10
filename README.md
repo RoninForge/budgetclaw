@@ -162,3 +162,18 @@ MIT. See [LICENSE](LICENSE).
 ## About
 
 budgetclaw is part of [RoninForge](https://roninforge.org), a small venture building honest tools for the army of one. Source: [github.com/RoninForge/budgetclaw](https://github.com/RoninForge/budgetclaw).
+
+
+## More from RoninForge
+
+Free, local-first tools for developers working with AI coding assistants. No accounts, MIT licensed.
+
+- [Hanko](https://roninforge.org/hanko) - validate Claude Code plugin manifests
+- [Tsuba](https://roninforge.org/tsuba) - scaffold Claude Code plugins and skills
+- [Goei](https://roninforge.org/goei) - unified AI provider cost dashboard
+
+Free web tools (run in your browser, nothing uploaded):
+
+- [GitHub Copilot AI Credits calculator](https://roninforge.org/copilot-credits-calculator) - estimate your monthly credit burn under usage-based billing
+- [Copilot usage CSV analyzer](https://roninforge.org/copilot-csv-analyzer) - break your usage report down by model, day, and SKU
+- [LLM API pricing comparison](https://roninforge.org/llm-pricing) - Claude, GPT, Gemini, DeepSeek, Mistral, and Grok token prices side by side
