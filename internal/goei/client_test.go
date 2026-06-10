@@ -29,20 +29,20 @@ func TestValidToken(t *testing.T) {
 	}
 }
 
-func TestProjectLabel(t *testing.T) {
+func TestBranchFor(t *testing.T) {
 	cases := []struct {
-		project, branch string
-		include         bool
-		want            string
+		branch  string
+		include bool
+		want    string
 	}{
-		{"app", "main", true, "app (main)"},
-		{"app", "main", false, "app"},
-		{"app", "", true, "app"},
-		{"app", "", false, "app"},
+		{"main", true, "main"},
+		{"main", false, ""},
+		{"", true, ""},
+		{"", false, ""},
 	}
 	for _, c := range cases {
-		if got := ProjectLabel(c.project, c.branch, c.include); got != c.want {
-			t.Errorf("ProjectLabel(%q,%q,%v) = %q, want %q", c.project, c.branch, c.include, got, c.want)
+		if got := branchFor(c.branch, c.include); got != c.want {
+			t.Errorf("branchFor(%q,%v) = %q, want %q", c.branch, c.include, got, c.want)
 		}
 	}
 }
@@ -99,13 +99,16 @@ func TestBuildPayloadsBasic(t *testing.T) {
 	if len(p.Spend) != 2 {
 		t.Fatalf("got %d spend records, want 2", len(p.Spend))
 	}
-	// First aggregate: cost 1.50 -> 150 cents, project label with branch.
+	// First aggregate: cost 1.50 -> 150 cents, bare project + branch field.
 	s0 := p.Spend[0]
 	if s0.AmountCents != 150 {
 		t.Errorf("spend[0].AmountCents = %d, want 150", s0.AmountCents)
 	}
-	if s0.Project != "app (main)" {
-		t.Errorf("spend[0].Project = %q, want 'app (main)'", s0.Project)
+	if s0.Project != "app" {
+		t.Errorf("spend[0].Project = %q, want 'app' (bare)", s0.Project)
+	}
+	if s0.Branch != "main" {
+		t.Errorf("spend[0].Branch = %q, want 'main'", s0.Branch)
 	}
 	if s0.Currency != "USD" {
 		t.Errorf("spend[0].Currency = %q, want USD", s0.Currency)
@@ -127,6 +130,9 @@ func TestBuildPayloadsBasic(t *testing.T) {
 		if u.BreakdownKey != "project" {
 			t.Errorf("usage breakdownKey = %q, want project", u.BreakdownKey)
 		}
+		if u.BreakdownValue != "app" {
+			t.Errorf("usage breakdownValue = %q, want 'app' (bare, no branch suffix)", u.BreakdownValue)
+		}
 	}
 	if !foundCacheCreation {
 		t.Error("missing cache_creation_tokens usage record")
@@ -139,7 +145,10 @@ func TestBuildPayloadsNoBranch(t *testing.T) {
 	}
 	p := BuildPayloads(aggs, false)
 	if p[0].Spend[0].Project != "app" {
-		t.Errorf("project = %q, want 'app' (branch suppressed)", p[0].Spend[0].Project)
+		t.Errorf("project = %q, want 'app'", p[0].Spend[0].Project)
+	}
+	if p[0].Spend[0].Branch != "" {
+		t.Errorf("branch = %q, want empty (suppressed by --no-branch)", p[0].Spend[0].Branch)
 	}
 }
 

@@ -11,8 +11,14 @@
 //
 //   - Authorization: Bearer goei_dt_<32-hex>   (exactly 40 chars)
 //   - body: {provider, spend[], usage?}        provider must be "anthropic"
-//   - spend dedup key:  (period_start, model, project)
+//   - spend dedup key:  (period_start, model, project, branch)
 //   - usage dedup key:  (period_start, metric_type, model, breakdown_key, breakdown_value)
+//
+// Per-branch attribution (a budgetclaw differentiator) rides on the
+// spend record's own optional branch field, so the project field always
+// carries the bare project name. With --no-branch the branch is omitted
+// and all branches of a project collapse server-side. Usage records
+// break down by bare project name regardless.
 //
 // Both arrays dedupe server-side via upsert, so re-running sync is
 // idempotent: the same day re-sent overwrites, it does not double-count.
@@ -43,7 +49,9 @@ const (
 	maxUsagePerRequest = 4500
 )
 
-// SpendRecord is one daily per-(model, project) dollar amount.
+// SpendRecord is one daily per-(model, project, branch) dollar amount.
+// Branch is optional: when empty (the --no-branch case) the server
+// collapses every branch of a project into a single project-level row.
 type SpendRecord struct {
 	PeriodStart string `json:"periodStart"`
 	PeriodEnd   string `json:"periodEnd"`
@@ -51,6 +59,7 @@ type SpendRecord struct {
 	Currency    string `json:"currency"`
 	Model       string `json:"model,omitempty"`
 	Project     string `json:"project,omitempty"`
+	Branch      string `json:"branch,omitempty"`
 }
 
 // UsageRecord is one daily per-(model, project) token count for a
@@ -95,16 +104,15 @@ func ValidToken(t string) bool {
 	return strings.HasPrefix(t, "goei_dt_") && len(t) == 40
 }
 
-// ProjectLabel renders the project string sent to Goei. Goei's spend
-// record has no separate branch field, so per-branch attribution (a
-// budgetclaw differentiator) is encoded into the project label as
-// "project (branch)". With includeBranch false, or an empty branch,
-// the bare project name is used.
-func ProjectLabel(project, branch string, includeBranch bool) string {
-	if !includeBranch || branch == "" {
-		return project
+// branchFor resolves the branch sent on a spend record. With
+// includeBranch false the branch is dropped (empty), which tells Goei to
+// collapse every branch of a project into one project-level row. With
+// includeBranch true the aggregate's branch is sent as-is.
+func branchFor(branch string, includeBranch bool) string {
+	if !includeBranch {
+		return ""
 	}
-	return project + " (" + branch + ")"
+	return branch
 }
 
 // BuildPayloads converts aggregates into one or more ingest payloads,
@@ -164,7 +172,6 @@ func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []Usage
 
 	for _, a := range aggs {
 		start, end := dayBounds(a.Day)
-		project := ProjectLabel(a.Project, a.GitBranch, includeBranch)
 
 		spend = append(spend, SpendRecord{
 			PeriodStart: start,
@@ -172,7 +179,8 @@ func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []Usage
 			AmountCents: centsFromUSD(a.CostUSD),
 			Currency:    "USD",
 			Model:       a.Model,
-			Project:     project,
+			Project:     a.Project,
+			Branch:      branchFor(a.GitBranch, includeBranch),
 		})
 
 		metrics := []struct {
@@ -195,7 +203,7 @@ func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []Usage
 				MetricValue:    m.val,
 				Model:          a.Model,
 				BreakdownKey:   "project",
-				BreakdownValue: project,
+				BreakdownValue: a.Project,
 			})
 		}
 	}

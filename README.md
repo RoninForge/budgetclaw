@@ -154,7 +154,7 @@ token = "goei_dt_..."
 # endpoint = "https://goei.roninforge.org/api/ingest"  # optional override for self-hosting
 ```
 
-Re-running sync is safe. Goei deduplicates by (day, model, project), so the same day re-sent overwrites rather than double-counting. Useful flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--no-branch` to aggregate at project level instead of per git branch, and `--dry-run`.
+Each spend record carries the branch as its own field, so Goei keeps the per-branch breakdown without mangling the project name. Re-running sync is safe. Goei deduplicates by (day, model, project, branch), so the same day re-sent overwrites rather than double-counting. Useful flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--no-branch` to omit the branch field so Goei collapses every branch of a project into one project-level row, and `--dry-run`.
 
 ## Pricing freshness
 
