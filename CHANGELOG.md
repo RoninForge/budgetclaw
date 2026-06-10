@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.9] - 2026-06-10
+
+### Fixed
+
+- **Cost overcount of 2.5-2.85x, all prior versions affected.** Claude Code writes the same assistant API response across multiple JSONL lines (identical `message.id` and `requestId`, distinct line uuids), and budgetclaw counted every line as a separate event. Events carrying a message id now dedup on `(message_id, request_id)` with last-line-wins semantics, matching how the same response is reconciled by Anthropic billing. Verified against an independent reference computed from the same logs: all closed days matched exactly after the fix. **After upgrading, run `budgetclaw backfill --rebuild` once** to clean an existing database; until then, totals remain inflated.
+
+### Added
+
+- `budgetclaw sync` pushes locally-computed daily spend and token aggregates to a Goei dashboard (https://goei.roninforge.org) using a device token. Zero-key: only dollar-and-token rollups leave the machine, never prompts or API keys. Flags: `--days`, `--since`, `--no-branch`, `--dry-run`; token via `--token`, `GOEI_DEVICE_TOKEN`, or `[goei].token` in config.
+- Spend records sent to Goei carry the git branch as a dedicated field, with the project name kept bare, enabling clean per-project and per-branch attribution server-side. `--no-branch` omits the field so branches collapse into one project row.
+
+### Changed
+
+- modernc.org/sqlite bumped from 1.50.1 to 1.51.0.
+
 ## [v0.1.8] - 2026-06-10
 
 ### Added
