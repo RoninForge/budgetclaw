@@ -417,25 +417,28 @@ type existingEvent struct {
 // it matches on uuid. Returns found=false (zero value) if no such row
 // exists yet.
 func lookupExisting(ctx context.Context, tx *sql.Tx, e *parser.Event) (existingEvent, error) {
-	var (
-		where string
-		args  []any
-	)
-	if e.MessageID != "" {
-		where = "message_id = ? AND request_id = ?"
-		args = []any{e.MessageID, e.RequestID}
-	} else {
-		where = "uuid = ?"
-		args = []any{e.UUID}
-	}
-
-	var ex existingEvent
-	row := tx.QueryRowContext(ctx, `
+	const byMessageSQL = `
 		SELECT uuid, project, git_branch, ts,
 		       input_tokens, output_tokens,
 		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
 		       cost_usd
-		FROM events WHERE `+where+` LIMIT 1`, args...)
+		FROM events WHERE message_id = ? AND request_id = ? LIMIT 1`
+	const byUUIDSQL = `
+		SELECT uuid, project, git_branch, ts,
+		       input_tokens, output_tokens,
+		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+		       cost_usd
+		FROM events WHERE uuid = ? LIMIT 1`
+
+	query := byUUIDSQL
+	args := []any{e.UUID}
+	if e.MessageID != "" {
+		query = byMessageSQL
+		args = []any{e.MessageID, e.RequestID}
+	}
+
+	var ex existingEvent
+	row := tx.QueryRowContext(ctx, query, args...)
 	err := row.Scan(
 		&ex.uuid, &ex.project, &ex.branch, &ex.ts,
 		&ex.input, &ex.output,
