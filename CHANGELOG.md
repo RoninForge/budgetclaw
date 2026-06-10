@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.1.8] - 2026-06-10
+
+### Added
+
+- Claude Fable 5 (`claude-fable-5`) added to the pricing table at $10/MTok input, $50/MTok output, a new flagship tier above Opus introduced in the 2026-06-09 Fable 5 / Mythos 5 launch. Before this, Fable 5 events were silently skipped as an unknown model (verified against live local logs: 322 `claude-fable-5` events were going unpriced). Re-verified every existing rate against the live Anthropic pricing page on 2026-06-10: no older model changed price, cache multipliers unchanged. Mythos 5 ships at the same $10/$50 rate but is restricted-access (Project Glasswing), has no published API model ID, and never reaches Claude Code's JSONL, so it is intentionally not added.
+
 ## [v0.1.7] - 2026-05-29
 
 ### Added

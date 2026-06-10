@@ -59,12 +59,16 @@ const (
 // USD. Cache rates are derived from the input rate using the
 // multipliers above.
 //
-// Last updated: 2026-05-29 (added Opus 4.8 at $5/$25, the same tier
-// as 4.5/4.6/4.7. Re-verified every existing entry against the live
+// Last updated: 2026-06-10 (added Claude Fable 5 at $10/$50, a new
+// flagship tier above Opus, after the 2026-06-09 Fable 5 / Mythos 5
+// launch. Before this, Fable 5 events were silently skipped as an
+// unknown model. Re-verified every existing entry against the live
 // Anthropic pricing page on the same day: no older model changed
-// price, and the cache multipliers are unchanged. Opus 4.8's 1M
-// context window is billed at standard rates, so no long-context
-// tier is needed).
+// price, and the cache multipliers are unchanged. Mythos 5 ships at
+// the same $10/$50 rate but is restricted-access (Project Glasswing
+// cybersecurity + biology researchers), has no published API model
+// ID, and never reaches Claude Code's JSONL, so it gets no entry.
+// The prior 2026-05-29 update added Opus 4.8 at $5/$25.
 // Source: platform.claude.com/docs/en/docs/about-claude/pricing.
 // The 2026-04-28 (v0.1.4) update corrected Opus 4.5/4.6/4.7 rates
 // after a LiteLLM cross-check + maintainer screenshot revealed
@@ -79,6 +83,13 @@ var baseRates = map[string]struct {
 	Input  float64
 	Output float64
 }{
+	// Fable: new flagship tier above Opus, launched 2026-06-09 at
+	// $10/$50. Claude Code emits the undated form "claude-fable-5"
+	// in message.model (verified against live logs). The 1M context
+	// variant (display ID "...[1m]") is billed at standard rates and
+	// never reaches message.model, so it needs no separate entry.
+	"claude-fable-5": {Input: 10.00, Output: 50.00},
+
 	// Opus: highest-capability tier. Anthropic dropped Opus
 	// pricing for 4.5+ to a new lower tier ($5/$25); 4.1 and
 	// older remain at the original $15/$75. Both undated and
