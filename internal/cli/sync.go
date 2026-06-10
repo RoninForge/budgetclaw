@@ -16,7 +16,7 @@ import (
 // envToken is the environment variable checked for a Goei device token
 // when --token is not passed. Lets users keep the token out of the
 // config file and out of shell history.
-const envToken = "GOEI_DEVICE_TOKEN"
+const envToken = "GOEI_DEVICE_TOKEN" // #nosec G101 -- env var name, not a credential
 
 // newSyncCmd creates the `budgetclaw sync` command. It reads the local
 // rollups and pushes per-(project, branch, model, day) aggregates to a
