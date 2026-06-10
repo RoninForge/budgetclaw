@@ -42,9 +42,20 @@ import (
 // consumers (rollups, budget evaluator, enforcer).
 type Event struct {
 	// Identity
-	UUID      string    // message uuid, unique per event (dedupe key)
+	UUID      string    // line uuid, unique per JSONL line (fallback dedupe key)
 	SessionID string    // Claude Code session uuid
 	Timestamp time.Time // message timestamp in UTC
+
+	// Response identity. Claude Code writes the SAME assistant API
+	// response on multiple JSONL lines (one per tool-result roundtrip),
+	// each line carrying that response's usage but a DIFFERENT line
+	// uuid. MessageID (message.id) plus RequestID (top-level requestId)
+	// identify the response, so the db layer dedupes on that pair
+	// instead of UUID. Older Claude Code versions may omit message.id;
+	// when MessageID is empty the db falls back to UUID dedupe. This
+	// matches ccusage, the community-standard cost tool.
+	MessageID string // message.id, e.g. "msg_01..."; "" on old schemas
+	RequestID string // top-level requestId, e.g. "req_01..."
 
 	// Attribution
 	CWD       string // working directory from the JSONL line
@@ -71,11 +82,13 @@ var ErrMalformed = errors.New("malformed JSONL line")
 type rawLine struct {
 	Type      string `json:"type"`
 	UUID      string `json:"uuid"`
+	RequestID string `json:"requestId"`
 	SessionID string `json:"sessionId"`
 	Timestamp string `json:"timestamp"`
 	CWD       string `json:"cwd"`
 	GitBranch string `json:"gitBranch"`
 	Message   struct {
+		ID    string `json:"id"`
 		Model string `json:"model"`
 		Usage struct {
 			InputTokens              int `json:"input_tokens"`
@@ -146,6 +159,8 @@ func Parse(line []byte) (*Event, error) {
 
 	return &Event{
 		UUID:      r.UUID,
+		MessageID: r.Message.ID,
+		RequestID: r.RequestID,
 		SessionID: r.SessionID,
 		Timestamp: ts.UTC(),
 

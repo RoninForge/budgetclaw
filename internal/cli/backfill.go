@@ -22,12 +22,16 @@ import (
 // newBackfillCmd creates the `budgetclaw backfill` subcommand. It
 // re-scans every JSONL log under the user's Claude Code projects
 // directory and inserts any missing rollups into the local state
-// database. Idempotent on event UUID, so repeated runs are safe.
+// database. Idempotent, so repeated runs are safe: the db dedupes
+// each API response on (message_id, request_id), falling back to the
+// line uuid for older schemas.
 //
 // The primary use case is recovering attribution after a release
 // adds new model pricing: events the prior watcher saw but skipped
 // (because the model was unknown) become attributable as soon as
-// backfill is run with the new binary.
+// backfill is run with the new binary. Use --rebuild after upgrading
+// from a binary that double-counted streamed responses (pre-dedupe),
+// which wipes and replays so the historical totals are corrected.
 func newBackfillCmd() *cobra.Command {
 	var (
 		dir     string
@@ -38,18 +42,20 @@ func newBackfillCmd() *cobra.Command {
 		Short: "Re-scan historical JSONL logs to seed the rollup database",
 		Long: `backfill walks $HOME/.claude/projects/**/*.jsonl, prices
 every assistant event, and inserts the rollups into the local
-state database. Safe to run repeatedly: events are deduped on
-their UUID and the rollup is only incremented once.
+state database. Safe to run repeatedly: each API response is deduped
+on (message_id, request_id) so the rollup counts it once. Claude Code
+writes the same response on several lines, so this is what keeps the
+totals honest.
 
-Use after upgrading to a release that adds new model pricing —
+Use after upgrading to a release that adds new model pricing -
 historical events the prior watcher saw but skipped (because the
 model was unknown) become attributable on the next run.
 
 --rebuild truncates the events and rollups tables before scanning,
-so a pricing correction is reflected in historical totals. Use
-after a release fixes a wrong rate for a model that already has
-rollups in the DB; without --rebuild, the old rate stays baked
-into the rollup row because Insert is idempotent on uuid.`,
+then replays from the logs. Use it after a pricing correction, or
+after upgrading from a binary that double-counted streamed responses:
+the wipe clears the old uuid-keyed rows so the rescan produces a
+fully deduped, correctly priced dataset.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runBackfill(cmd.Context(), cmd.OutOrStdout(), dir, rebuild)

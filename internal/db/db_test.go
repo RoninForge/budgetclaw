@@ -160,6 +160,217 @@ func TestInsertIdempotent(t *testing.T) {
 	}
 }
 
+// TestInsertDedupesByMessageRequestID is the regression test for the
+// 2.5-2.75x cost overcount. Claude Code writes the SAME assistant API
+// response on multiple JSONL lines: same message.id + requestId, a
+// DIFFERENT line uuid each time, and (in the streaming case) growing
+// output tokens. Before the fix, each line became its own events row
+// keyed by uuid, double/triple-counting the response. Now the db
+// dedupes on (message_id, request_id): exactly one event survives,
+// carrying the LAST line's usage, and the rollup is not multiplied.
+func TestInsertDedupesByMessageRequestID(t *testing.T) {
+	d := newTestDB(t)
+	ctx := context.Background()
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	// Three lines for one response. Same message.id + request_id,
+	// different uuids, output tokens growing as the response streams.
+	lines := []struct {
+		uuid   string
+		output int
+		cost   float64
+	}{
+		{"line-1", 100, 0.10},
+		{"line-2", 250, 0.25},
+		{"line-3", 400, 0.40}, // last line wins
+	}
+	for _, ln := range lines {
+		e := testEvent(ln.uuid, "myapp", "main", ts)
+		e.MessageID = "msg_aaa"
+		e.RequestID = "req_bbb"
+		e.OutputTokens = ln.output
+		if err := d.Insert(ctx, e, ln.cost); err != nil {
+			t.Fatalf("Insert %s: %v", ln.uuid, err)
+		}
+	}
+
+	// events: exactly one row, carrying the last line's usage + uuid.
+	var (
+		count     int
+		gotUUID   string
+		gotOutput int
+		gotCost   float64
+		gotMsgID  string
+		gotReqID  string
+	)
+	if err := d.sql.QueryRow(`SELECT COUNT(*) FROM events`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Fatalf("events row count = %d, want 1 (dedupe failed)", count)
+	}
+	if err := d.sql.QueryRow(
+		`SELECT uuid, output_tokens, cost_usd, message_id, request_id FROM events`,
+	).Scan(&gotUUID, &gotOutput, &gotCost, &gotMsgID, &gotReqID); err != nil {
+		t.Fatal(err)
+	}
+	if gotUUID != "line-3" {
+		t.Errorf("surviving uuid = %q, want line-3 (last line)", gotUUID)
+	}
+	if gotOutput != 400 {
+		t.Errorf("output_tokens = %d, want 400 (last line's usage)", gotOutput)
+	}
+	if math.Abs(gotCost-0.40) > epsilon {
+		t.Errorf("cost_usd = %v, want 0.40 (last line's cost)", gotCost)
+	}
+	if gotMsgID != "msg_aaa" || gotReqID != "req_bbb" {
+		t.Errorf("stored (message_id,request_id) = (%q,%q), want (msg_aaa,req_bbb)", gotMsgID, gotReqID)
+	}
+
+	// rollup: one event, last line's output tokens and cost, NOT the
+	// sum across the three lines.
+	r, err := d.RollupForDay(ctx, "myapp", "main", ts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r == nil {
+		t.Fatal("rollup missing")
+	}
+	if r.EventCount != 1 {
+		t.Errorf("EventCount = %d, want 1 (response counted once)", r.EventCount)
+	}
+	if r.OutputTokens != 400 {
+		t.Errorf("rollup OutputTokens = %d, want 400 (no double-count)", r.OutputTokens)
+	}
+	if math.Abs(r.CostUSD-0.40) > epsilon {
+		t.Errorf("rollup CostUSD = %v, want 0.40 (no double-count)", r.CostUSD)
+	}
+}
+
+// TestInsertIdenticalDuplicateLinesNetZero proves the common case where
+// the duplicate lines carry IDENTICAL usage (not growing): the rollup
+// must stay at one response's worth, and re-inserting is a net-zero
+// rollup change. This is the dominant real-world pattern.
+func TestInsertIdenticalDuplicateLinesNetZero(t *testing.T) {
+	d := newTestDB(t)
+	ctx := context.Background()
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	for _, uuid := range []string{"l1", "l2", "l3", "l4"} {
+		e := testEvent(uuid, "myapp", "main", ts)
+		e.MessageID = "msg_same"
+		e.RequestID = "req_same"
+		if err := d.Insert(ctx, e, 0.50); err != nil {
+			t.Fatalf("Insert %s: %v", uuid, err)
+		}
+	}
+
+	r, err := d.RollupForDay(ctx, "myapp", "main", ts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.EventCount != 1 {
+		t.Errorf("EventCount = %d, want 1", r.EventCount)
+	}
+	// testEvent uses OutputTokens=500.
+	if r.OutputTokens != 500 {
+		t.Errorf("OutputTokens = %d, want 500 (counted once)", r.OutputTokens)
+	}
+	if math.Abs(r.CostUSD-0.50) > epsilon {
+		t.Errorf("CostUSD = %v, want 0.50 (counted once)", r.CostUSD)
+	}
+}
+
+// TestInsertFallsBackToUUIDWhenNoMessageID confirms older-schema events
+// (no message.id) keep the original uuid-keyed idempotent behavior.
+func TestInsertFallsBackToUUIDWhenNoMessageID(t *testing.T) {
+	d := newTestDB(t)
+	ctx := context.Background()
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	// Two distinct uuids with no message_id are two distinct events.
+	e1 := testEvent("u1", "myapp", "main", ts)
+	e2 := testEvent("u2", "myapp", "main", ts)
+	if err := d.Insert(ctx, e1, 0.25); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Insert(ctx, e2, 0.25); err != nil {
+		t.Fatal(err)
+	}
+	// Re-insert e1: idempotent no-op on uuid.
+	if err := d.Insert(ctx, e1, 0.25); err != nil {
+		t.Fatal(err)
+	}
+
+	r, err := d.RollupForDay(ctx, "myapp", "main", ts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.EventCount != 2 {
+		t.Errorf("EventCount = %d, want 2 (two distinct uuids)", r.EventCount)
+	}
+	if math.Abs(r.CostUSD-0.50) > epsilon {
+		t.Errorf("CostUSD = %v, want 0.50 (e1 not double-counted)", r.CostUSD)
+	}
+}
+
+// TestMigrationAddsColumnsToOldDB simulates upgrading a database
+// created by a pre-fix binary (events table without message_id /
+// request_id) and confirms Open migrates it in place so inserts and
+// the unique index work.
+func TestMigrationAddsColumnsToOldDB(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "old.db")
+
+	// Build a pre-fix events table by hand (no message_id/request_id).
+	raw, err := openRawSQLite(path)
+	if err != nil {
+		t.Fatalf("open raw: %v", err)
+	}
+	if _, err := raw.Exec(`CREATE TABLE events (
+		uuid TEXT PRIMARY KEY, session_id TEXT NOT NULL, ts DATETIME NOT NULL,
+		cwd TEXT NOT NULL, project TEXT NOT NULL, git_branch TEXT NOT NULL,
+		model TEXT NOT NULL, service_tier TEXT NOT NULL,
+		input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL,
+		cache_read_tokens INTEGER NOT NULL, cache_write_5m_tokens INTEGER NOT NULL,
+		cache_write_1h_tokens INTEGER NOT NULL, cost_usd REAL NOT NULL,
+		inserted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)`); err != nil {
+		t.Fatalf("create old events: %v", err)
+	}
+	if err := raw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Open via the real path: should migrate, not error.
+	d, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open migrated db: %v", err)
+	}
+	t.Cleanup(func() { _ = d.Close() })
+
+	// New columns must be queryable and the dedupe index must function.
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	e := testEvent("l1", "myapp", "main", ts)
+	e.MessageID = "msg_x"
+	e.RequestID = "req_x"
+	if err := d.Insert(context.Background(), e, 0.30); err != nil {
+		t.Fatalf("insert after migration: %v", err)
+	}
+	e2 := testEvent("l2", "myapp", "main", ts) // duplicate response, new uuid
+	e2.MessageID = "msg_x"
+	e2.RequestID = "req_x"
+	if err := d.Insert(context.Background(), e2, 0.30); err != nil {
+		t.Fatalf("insert duplicate after migration: %v", err)
+	}
+	var count int
+	if err := d.sql.QueryRow(`SELECT COUNT(*) FROM events`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 1 {
+		t.Errorf("events count = %d, want 1 (dedupe after migration)", count)
+	}
+}
+
 // TestMultipleEventsSameDayRollUp verifies aggregation correctness
 // when many distinct events share a (project, branch, day).
 func TestMultipleEventsSameDayRollUp(t *testing.T) {

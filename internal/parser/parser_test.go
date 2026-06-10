@@ -116,6 +116,51 @@ func TestParseFixture(t *testing.T) {
 	// absent from the slice. That's the contract.
 }
 
+// TestParseExtractsMessageAndRequestID confirms the parser pulls
+// message.id and the top-level requestId into the event, so the db
+// layer can dedupe the multiple JSONL lines Claude Code writes per
+// response. Drawn from real field names (top-level requestId,
+// message.id).
+func TestParseExtractsMessageAndRequestID(t *testing.T) {
+	line := `{"type":"assistant","uuid":"line-uuid","sessionId":"s","timestamp":"2026-06-01T00:00:00Z","cwd":"/home/u/p","gitBranch":"main","requestId":"req_011CbBK3dFWb7oQprf2Yo7FV","message":{"id":"msg_01SpU4a72sJs3G4h8WPdgWsC","model":"claude-opus-4-6","usage":{"input_tokens":10,"output_tokens":5}}}`
+	e, err := Parse([]byte(line))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if e == nil {
+		t.Fatal("expected event, got nil")
+	}
+	if e.MessageID != "msg_01SpU4a72sJs3G4h8WPdgWsC" {
+		t.Errorf("MessageID = %q, want msg_01SpU4a72sJs3G4h8WPdgWsC", e.MessageID)
+	}
+	if e.RequestID != "req_011CbBK3dFWb7oQprf2Yo7FV" {
+		t.Errorf("RequestID = %q, want req_011CbBK3dFWb7oQprf2Yo7FV", e.RequestID)
+	}
+	if e.UUID != "line-uuid" {
+		t.Errorf("UUID = %q, want line-uuid", e.UUID)
+	}
+}
+
+// TestParseMissingMessageIDIsEmpty documents that an older-schema line
+// with no message.id parses fine, leaving MessageID empty so the db
+// layer falls back to uuid dedupe.
+func TestParseMissingMessageIDIsEmpty(t *testing.T) {
+	line := `{"type":"assistant","uuid":"u","sessionId":"s","timestamp":"2026-06-01T00:00:00Z","cwd":"/home/u/p","gitBranch":"main","message":{"model":"claude-opus-4-6","usage":{"input_tokens":10,"output_tokens":5}}}`
+	e, err := Parse([]byte(line))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if e == nil {
+		t.Fatal("expected event, got nil")
+	}
+	if e.MessageID != "" {
+		t.Errorf("MessageID = %q, want empty for missing message.id", e.MessageID)
+	}
+	if e.RequestID != "" {
+		t.Errorf("RequestID = %q, want empty for missing requestId", e.RequestID)
+	}
+}
+
 // TestParseSkipsNonBillable confirms that every line type other than
 // assistant returns (nil, nil). Blank lines and whitespace also skip.
 func TestParseSkipsNonBillable(t *testing.T) {

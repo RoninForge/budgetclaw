@@ -3,12 +3,21 @@
 //
 // Two tables:
 //
-//	events   one row per (uuid) billable assistant message.
-//	         UUID is the primary key and dedupe guarantee: re-inserting
-//	         the same event is a no-op. Frozen historical fact.
+//	events   one row per billable assistant API response.
+//	         Claude Code writes the same response on multiple JSONL
+//	         lines (one per tool-result roundtrip), each with its own
+//	         line uuid but a shared (message_id, request_id) pair and
+//	         the same response usage. We dedupe on that pair so the
+//	         response is counted once, matching ccusage. Lines with no
+//	         message_id (older Claude Code schemas) fall back to uuid
+//	         dedupe. A later line for the same response REPLACEs the
+//	         stored row, so the most complete usage wins and
+//	         re-processing stays idempotent.
 //	rollups  one row per (project, git_branch, day) aggregate.
 //	         Updated atomically with the event insert so the budget
-//	         evaluator can do O(1) reads for cap checks.
+//	         evaluator can do O(1) reads for cap checks. A replace
+//	         updates the rollup by the delta (new minus old) so a
+//	         redundant line never double-counts.
 //
 // SQLite is opened with WAL journal mode on file-backed databases,
 // enabling the CLI to read while the watcher writes from a separate
@@ -32,6 +41,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite" // pure-Go driver, registered as "sqlite"
@@ -60,6 +70,8 @@ CREATE TABLE IF NOT EXISTS events (
 	cache_write_5m_tokens     INTEGER NOT NULL,
 	cache_write_1h_tokens     INTEGER NOT NULL,
 	cost_usd                  REAL    NOT NULL,
+	message_id                TEXT    NOT NULL DEFAULT '',
+	request_id                TEXT    NOT NULL DEFAULT '',
 	inserted_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -67,6 +79,14 @@ CREATE INDEX IF NOT EXISTS idx_events_project_branch_ts
 	ON events(project, git_branch, ts);
 CREATE INDEX IF NOT EXISTS idx_events_ts          ON events(ts);
 CREATE INDEX IF NOT EXISTS idx_events_session_id  ON events(session_id);
+
+-- Response dedupe: Claude Code writes one API response across several
+-- JSONL lines (different uuid, same message_id + request_id). The
+-- partial index makes (message_id, request_id) the uniqueness key
+-- whenever message_id is present, leaving older message_id-less rows
+-- on the uuid primary key. Insert upserts against this index.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_message_request
+	ON events(message_id, request_id) WHERE message_id != '';
 
 CREATE TABLE IF NOT EXISTS rollups (
 	project                   TEXT    NOT NULL,
@@ -150,12 +170,56 @@ func Open(path string) (*DB, error) {
 		_ = sqlDB.Close()
 		return nil, err
 	}
+	// Column migrations run before the schema DDL so the unique index
+	// in schema can reference message_id/request_id on a database
+	// created by an older binary.
+	if err := migrate(sqlDB); err != nil {
+		_ = sqlDB.Close()
+		return nil, err
+	}
 	if _, err := sqlDB.Exec(schema); err != nil {
 		_ = sqlDB.Close()
 		return nil, fmt.Errorf("apply schema: %w", err)
 	}
 
 	return &DB{sql: sqlDB}, nil
+}
+
+// migrate brings an events table created by an older binary up to the
+// current shape. CREATE TABLE IF NOT EXISTS never alters an existing
+// table, so new columns are added here with idempotent ALTER TABLE
+// statements (SQLite errors with "duplicate column name" if the column
+// already exists, which we treat as success). A freshly created table
+// already has the columns via schema, so the ALTERs are no-ops there
+// too. Must run before the schema's unique index on (message_id,
+// request_id) is created.
+func migrate(db *sql.DB) error {
+	alters := []string{
+		`ALTER TABLE events ADD COLUMN message_id TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE events ADD COLUMN request_id TEXT NOT NULL DEFAULT ''`,
+	}
+	// The events table may not exist yet on a brand-new database; in
+	// that case the schema DDL creates it with the columns already
+	// present, so skip the ALTERs entirely.
+	var name string
+	err := db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type='table' AND name='events'`,
+	).Scan(&name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("inspect events table: %w", err)
+	}
+	for _, stmt := range alters {
+		if _, err := db.Exec(stmt); err != nil {
+			if strings.Contains(err.Error(), "duplicate column name") {
+				continue // column already present, idempotent
+			}
+			return fmt.Errorf("migrate events: %w", err)
+		}
+	}
+	return nil
 }
 
 // OpenMemory returns an in-memory database for tests. Equivalent to
@@ -213,8 +277,22 @@ func applyPragmas(db *sql.DB, memory bool) error {
 }
 
 // Insert stores a billable event and updates its rollup row inside
-// a single transaction. Idempotent on e.UUID: re-inserting the same
-// event is a no-op (the rollup is not double-counted).
+// a single transaction.
+//
+// Dedupe key:
+//   - When e.MessageID is non-empty, uniqueness is (message_id,
+//     request_id). Claude Code writes the same API response across
+//     several JSONL lines (each with its own uuid), so this is the
+//     key that counts one response once and matches ccusage.
+//   - When e.MessageID is empty (older Claude Code schemas), the key
+//     falls back to e.UUID, preserving the original behavior.
+//
+// A second line for an already-stored response REPLACEs the row:
+// later lines of a streaming response can carry more complete usage,
+// and replacing makes re-processing idempotent. The rollup is updated
+// by the delta (new contribution minus the old row's), so a redundant
+// or growing line never double-counts. When the redundant line is
+// identical the delta is zero and the rollup is untouched.
 //
 // costUSD is passed in so the db package stays independent of the
 // pricing table. Callers should compute it via pricing.CostForModel
@@ -230,37 +308,161 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 	}
 	defer func() { _ = tx.Rollback() }() // no-op if Commit succeeded
 
-	res, err := tx.ExecContext(ctx, `
-		INSERT INTO events (
-			uuid, session_id, ts, cwd, project, git_branch,
-			model, service_tier,
-			input_tokens, output_tokens,
-			cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-			cost_usd
-		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-		ON CONFLICT(uuid) DO NOTHING
-	`,
+	// Look up any row already representing this response so we can
+	// compute the rollup delta and remove a stale row if its uuid
+	// differs from this line's. existing.found is false on first sight.
+	existing, err := lookupExisting(ctx, tx, e)
+	if err != nil {
+		return err
+	}
+
+	// First sighting of this response: plain insert, full rollup add.
+	if !existing.found {
+		if _, err := tx.ExecContext(ctx, insertEventSQL,
+			e.UUID, e.SessionID, e.Timestamp.UTC(),
+			e.CWD, e.Project, e.GitBranch,
+			e.Model, e.ServiceTier,
+			e.InputTokens, e.OutputTokens,
+			e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
+			costUSD, e.MessageID, e.RequestID,
+		); err != nil {
+			return fmt.Errorf("insert event: %w", err)
+		}
+		if err := applyRollupDelta(ctx, tx, e.Project, e.GitBranch,
+			e.Timestamp, 1,
+			e.InputTokens, e.OutputTokens,
+			e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
+			costUSD,
+		); err != nil {
+			return err
+		}
+		return tx.Commit()
+	}
+
+	// Already-stored response. Replace its row with this line's values
+	// and fold the delta into the rollup. The old contribution is
+	// removed from its original rollup key (project/branch/day from the
+	// stored row); the new contribution is added to this line's key.
+	// They are normally identical, but subtracting from the stored key
+	// keeps the rollup correct even if attribution somehow shifted.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM events WHERE uuid = ?`, existing.uuid); err != nil {
+		return fmt.Errorf("delete superseded event: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, insertEventSQL,
 		e.UUID, e.SessionID, e.Timestamp.UTC(),
 		e.CWD, e.Project, e.GitBranch,
 		e.Model, e.ServiceTier,
 		e.InputTokens, e.OutputTokens,
 		e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
+		costUSD, e.MessageID, e.RequestID,
+	); err != nil {
+		return fmt.Errorf("replace event: %w", err)
+	}
+
+	// Remove the old row's contribution from its rollup (event_count
+	// unchanged overall, so subtract 0 here and add 0 below: a replace
+	// is the same response, not a new one).
+	if err := applyRollupDelta(ctx, tx, existing.project, existing.branch,
+		existing.ts, 0,
+		-existing.input, -existing.output,
+		-existing.cacheRead, -existing.cacheWrite5m, -existing.cacheWrite1h,
+		-existing.cost,
+	); err != nil {
+		return err
+	}
+	// Add the new line's contribution to its rollup.
+	if err := applyRollupDelta(ctx, tx, e.Project, e.GitBranch,
+		e.Timestamp, 0,
+		e.InputTokens, e.OutputTokens,
+		e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
 		costUSD,
+	); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// insertEventSQL inserts a fully specified event row. Used by both the
+// first-sighting and replace paths in Insert.
+const insertEventSQL = `
+	INSERT INTO events (
+		uuid, session_id, ts, cwd, project, git_branch,
+		model, service_tier,
+		input_tokens, output_tokens,
+		cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+		cost_usd, message_id, request_id
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+`
+
+// existingEvent holds the stored row that represents the same response
+// as the incoming line, with the columns Insert needs to reverse its
+// rollup contribution. found is false when this is the first sighting.
+type existingEvent struct {
+	found        bool
+	uuid         string
+	project      string
+	branch       string
+	ts           time.Time
+	input        int
+	output       int
+	cacheRead    int
+	cacheWrite5m int
+	cacheWrite1h int
+	cost         float64
+}
+
+// lookupExisting finds the row already representing e's response. When
+// e.MessageID is set it matches on (message_id, request_id); otherwise
+// it matches on uuid. Returns found=false (zero value) if no such row
+// exists yet.
+func lookupExisting(ctx context.Context, tx *sql.Tx, e *parser.Event) (existingEvent, error) {
+	var (
+		where string
+		args  []any
 	)
-	if err != nil {
-		return fmt.Errorf("insert event: %w", err)
+	if e.MessageID != "" {
+		where = "message_id = ? AND request_id = ?"
+		args = []any{e.MessageID, e.RequestID}
+	} else {
+		where = "uuid = ?"
+		args = []any{e.UUID}
 	}
 
-	affected, err := res.RowsAffected()
+	var ex existingEvent
+	row := tx.QueryRowContext(ctx, `
+		SELECT uuid, project, git_branch, ts,
+		       input_tokens, output_tokens,
+		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+		       cost_usd
+		FROM events WHERE `+where+` LIMIT 1`, args...)
+	err := row.Scan(
+		&ex.uuid, &ex.project, &ex.branch, &ex.ts,
+		&ex.input, &ex.output,
+		&ex.cacheRead, &ex.cacheWrite5m, &ex.cacheWrite1h,
+		&ex.cost,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return existingEvent{}, nil
+	}
 	if err != nil {
-		return fmt.Errorf("rows affected: %w", err)
+		return existingEvent{}, fmt.Errorf("lookup existing event: %w", err)
 	}
-	if affected == 0 {
-		// Duplicate UUID: event already stored, rollup already reflects it.
-		return tx.Commit()
-	}
+	ex.found = true
+	return ex, nil
+}
 
-	day := e.Timestamp.UTC().Format(dayFormat)
+// applyRollupDelta folds a signed token/cost contribution into the
+// rollup row for (project, branch, day-of ts). Positive values add,
+// negative values subtract. countDelta tracks event_count. The row is
+// created on first touch via upsert. Day is derived from ts in UTC.
+func applyRollupDelta(
+	ctx context.Context, tx *sql.Tx,
+	project, branch string, ts time.Time, countDelta int,
+	input, output, cacheRead, cacheWrite5m, cacheWrite1h int,
+	cost float64,
+) error {
+	day := ts.UTC().Format(dayFormat)
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO rollups (
 			project, git_branch, day,
@@ -279,16 +481,15 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 			cost_usd              = cost_usd              + excluded.cost_usd,
 			updated_at            = CURRENT_TIMESTAMP
 	`,
-		e.Project, e.GitBranch, day,
-		1,
-		e.InputTokens, e.OutputTokens,
-		e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
-		costUSD,
+		project, branch, day,
+		countDelta,
+		input, output,
+		cacheRead, cacheWrite5m, cacheWrite1h,
+		cost,
 	); err != nil {
 		return fmt.Errorf("upsert rollup: %w", err)
 	}
-
-	return tx.Commit()
+	return nil
 }
 
 // RollupForDay returns the rollup row for a specific (project,
