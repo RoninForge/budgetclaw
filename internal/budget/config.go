@@ -22,6 +22,10 @@
 //	topic  = "some-token"
 //	min_cost_usd = 0.50
 //
+//	[goei]                     # optional; re-exported for `budgetclaw sync`
+//	token    = "goei_dt_..."   # device token from Goei settings
+//	endpoint = "https://goei.roninforge.org/api/ingest"  # optional override
+//
 //	[[limit]]
 //	project = "*"              # "*" or glob (feature/*) or exact
 //	branch  = "*"
@@ -92,8 +96,8 @@ func (a Action) String() string {
 
 // Rule is one [[limit]] entry from the config file.
 type Rule struct {
-	Project string  // "*" or glob or exact project name
-	Branch  string  // "*" or glob or exact branch name
+	Project string // "*" or glob or exact project name
+	Branch  string // "*" or glob or exact branch name
 	Period  Period
 	CapUSD  float64
 	Action  Action
@@ -161,6 +165,12 @@ type Config struct {
 	NtfyServer     string
 	NtfyTopic      string
 	NtfyMinCostUSD float64
+
+	// Goei config is re-exported from the [goei] section for the
+	// `budgetclaw sync` command. The budget package itself doesn't
+	// use these fields.
+	GoeiToken    string
+	GoeiEndpoint string
 }
 
 // tomlConfig mirrors the TOML schema for deserialization. Keep it
@@ -176,6 +186,10 @@ type tomlConfig struct {
 			MinCostUSD float64 `toml:"min_cost_usd"`
 		} `toml:"ntfy"`
 	} `toml:"alerts"`
+	Goei struct {
+		Token    string `toml:"token"`
+		Endpoint string `toml:"endpoint"`
+	} `toml:"goei"`
 	Limit []tomlLimit `toml:"limit"`
 }
 
@@ -202,6 +216,8 @@ func Parse(data []byte) (*Config, error) {
 		NtfyServer:     t.Alerts.Ntfy.Server,
 		NtfyTopic:      t.Alerts.Ntfy.Topic,
 		NtfyMinCostUSD: t.Alerts.Ntfy.MinCostUSD,
+		GoeiToken:      t.Goei.Token,
+		GoeiEndpoint:   t.Goei.Endpoint,
 	}
 
 	if t.General.Timezone == "" {

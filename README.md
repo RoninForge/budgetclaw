@@ -126,6 +126,36 @@ budgetclaw alerts test
 
 You should see a "budgetclaw test" notification on your phone. From now on, warn and kill breaches will push automatically. Kill actions use max priority to bypass Do Not Disturb.
 
+## Sync to a Goei dashboard (optional)
+
+[Goei](https://goei.roninforge.org) is a web dashboard that unifies AI provider costs into one view. `budgetclaw sync` pushes your locally-computed Claude Code spend to your Goei dashboard so it sits alongside your other AI costs, with the per-project and per-branch attribution budgetclaw already tracks.
+
+This is the zero-key path: budgetclaw still only ever reads `~/.claude/projects/*.jsonl`. Sync transmits aggregated dollar amounts and token counts per project, branch, model, and day. No Anthropic key is involved, and no key leaves your machine. You never have to hand Goei an admin API key.
+
+```sh
+# 1. In Goei, go to Settings -> Device Tokens and create a token (starts with goei_dt_)
+
+# 2. Sync the last 30 days
+budgetclaw sync --token goei_dt_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Or keep the token out of your shell history:
+export GOEI_DEVICE_TOKEN=goei_dt_...
+budgetclaw sync --days 7
+
+# Preview what would be sent without sending it:
+budgetclaw sync --dry-run
+```
+
+Or store the token in your config file so a bare `budgetclaw sync` works:
+
+```toml
+[goei]
+token = "goei_dt_..."
+# endpoint = "https://goei.roninforge.org/api/ingest"  # optional override for self-hosting
+```
+
+Re-running sync is safe. Goei deduplicates by (day, model, project), so the same day re-sent overwrites rather than double-counting. Useful flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--no-branch` to aggregate at project level instead of per git branch, and `--dry-run`.
+
 ## Pricing freshness
 
 Anthropic ships new models often, and a missing model in the pricing table means events get silently skipped from the rollups (no cost recorded, no cap fired). budgetclaw guards against that with a daily GitHub Action ([`.github/workflows/pricing-audit.yml`](.github/workflows/pricing-audit.yml)) that:
@@ -146,7 +176,7 @@ budgetclaw only reads from `$HOME/.claude/projects/` and only SIGTERMs processes
 
 ## Roadmap
 
-- v0.1: local JSONL parser, per-project/branch rollups, budget caps, SIGTERM enforcer, ntfy alerts, Claude Code plugin manifest
+- v0.1: local JSONL parser, per-project/branch rollups, budget caps, SIGTERM enforcer, ntfy alerts, Claude Code plugin manifest, zero-key sync to Goei
 - v0.2: per-branch forecasting, multiple budget periods, shell completion
 - v0.3: launchd/systemd daemon integration, Homebrew tap
 - Later: optional hosted sync tier, Cursor per-branch attribution (on top of Cursor's native caps)
