@@ -1,0 +1,226 @@
+name: pricing-bump
+
+# Auto re-vendor the ai-price-index dataset when it publishes a new tag.
+#
+# BudgetClaw embeds Anthropic pricing at BUILD TIME from a vendored, pinned
+# release of the ai-price-index dataset (internal/pricing/PINNED_TAG plus the
+# committed internal/pricing/index/** and the generated table_gen.go). There
+# is no runtime network access, which is what keeps the zero-key, zero-latency,
+# offline pledge intact.
+#
+# This workflow keeps that pin current with no human action:
+#   1. resolve the target dataset tag (from the dispatch payload, or the latest
+#      published ai-price-index release tag on schedule/manual runs),
+#   2. if it differs from the current pin, write it into PINNED_TAG, re-vendor
+#      index/** + PROVENANCE.json and regenerate table_gen.go,
+#   3. run the pricing tests to prove the embedded table still matches the data,
+#   4. open a PR for the bump.
+#
+# The price was already human-verified upstream in the dataset repo (which is
+# the source of truth and now owns the daily pricing audit). This PR only
+# re-vendors that already-verified data; it does not introduce a new rate by
+# hand. CI's pricing-codegen + golden-vector gates prove the embedded table
+# matches the dataset before the bump can merge.
+#
+# IMPORTANT: the PR is opened with AUTOMATION_PAT, not the default GITHUB_TOKEN.
+# A PR (or commits) created with GITHUB_TOKEN does NOT trigger this repo's other
+# workflows, so CI would never run on it and the merge-bot would never see a
+# green status. Using a PAT makes CI run on the PR as if a human pushed it.
+
+on:
+  repository_dispatch:
+    types: [ai-price-index-release]
+  schedule:
+    # Daily fallback in case a dispatch from the dataset repo is missed.
+    # Runs after the dataset's own daily export/audit window.
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'ai-price-index tag to vendor (blank = latest published release)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pricing-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Re-vendor ai-price-index
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: true
+
+      - name: Resolve target dataset tag
+        id: target
+        env:
+          # client_payload.tag is only present on repository_dispatch.
+          DISPATCH_TAG: ${{ github.event.client_payload.tag }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -euo pipefail
+
+          tag="${DISPATCH_TAG:-}"
+          if [ -z "$tag" ]; then
+            tag="${INPUT_TAG:-}"
+          fi
+
+          if [ -z "$tag" ]; then
+            # schedule / manual without an explicit tag: resolve the latest
+            # published ai-price-index release tag. Tags are v<YYYY.MM.DD>-<sha>,
+            # which sort lexically in date order, so the highest line wins.
+            tag="$(git ls-remote --tags --refs https://github.com/RoninForge/ai-price-index 'v*' \
+              | awk -F/ '{print $NF}' \
+              | sort \
+              | tail -n 1)"
+          fi
+
+          if [ -z "$tag" ]; then
+            echo "::error::could not resolve an ai-price-index tag to vendor."
+            exit 1
+          fi
+
+          # Validate the tag against the strict ai-price-index format
+          # (v<YYYY.MM.DD>-<short sha>) BEFORE it is used anywhere. On a
+          # repository_dispatch, client_payload.tag is attacker-controllable,
+          # and this value later flows into a branch name, PR title, commit
+          # message, and the `go run ./gen -fetch` clone. Rejecting anything
+          # that is not this exact shape closes off injection.
+          if ! printf '%s' "$tag" | grep -Eq '^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9a-f]{7,40}$'; then
+            echo "::error::refusing tag '$tag': not a valid ai-price-index tag (expected v<YYYY.MM.DD>-<sha>)."
+            exit 1
+          fi
+
+          # Cross-check that the tag actually exists upstream, so a dispatch
+          # cannot point us at a tag that was never published.
+          if ! git ls-remote --tags --refs https://github.com/RoninForge/ai-price-index "$tag" \
+              | grep -q "refs/tags/$tag"; then
+            echo "::error::tag '$tag' does not exist on RoninForge/ai-price-index."
+            exit 1
+          fi
+
+          echo "Target dataset tag: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against current pin
+        id: compare
+        env:
+          TARGET_TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          set -euo pipefail
+          current="$(tr -d '[:space:]' < internal/pricing/PINNED_TAG)"
+          echo "Current pin: $current"
+          echo "Target:      $TARGET_TAG"
+
+          if [ "$TARGET_TAG" = "$current" ]; then
+            echo "Already pinned to $TARGET_TAG; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "branch=pricing/bump-$TARGET_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Check for an existing bump branch or PR
+        id: exists
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+          BRANCH: ${{ steps.compare.outputs.branch }}
+        run: |
+          set -euo pipefail
+          skip=false
+
+          # Idempotent: a remote branch for this exact bump already exists.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Branch $BRANCH already exists on origin."
+            skip=true
+          fi
+
+          # Idempotent: an open PR from that head branch already exists.
+          open_prs="$(gh pr list --state open --head "$BRANCH" --json number --jq 'length' || echo 0)"
+          if [ "${open_prs:-0}" -gt 0 ]; then
+            echo "An open PR from $BRANCH already exists."
+            skip=true
+          fi
+
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
+      - name: Re-vendor and regenerate
+        id: vendor
+        if: steps.compare.outputs.changed == 'true' && steps.exists.outputs.skip == 'false'
+        env:
+          TARGET_TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          # 1. Pin to the new tag.
+          printf '%s\n' "$TARGET_TAG" > internal/pricing/PINNED_TAG
+
+          # 2. Re-vendor index/** + PROVENANCE.json from the pinned tag and
+          #    regenerate table_gen.go. -fetch clones the tag itself.
+          ( cd internal/pricing && go run ./gen -fetch )
+
+          # 3. No-op safety: prove the offline codegen is stable against the
+          #    freshly vendored data (this is exactly what CI's pricing-codegen
+          #    gate runs).
+          go generate ./...
+
+          # 4. Prove the parity, golden-vector, and point-in-time tests still
+          #    pass against the new data. If they fail, the whole job fails and
+          #    no PR is opened.
+          go test ./internal/pricing/...
+
+      - name: Open pull request
+        if: steps.compare.outputs.changed == 'true' && steps.exists.outputs.skip == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          # PAT, not GITHUB_TOKEN, so CI actually runs on the PR.
+          token: ${{ secrets.AUTOMATION_PAT }}
+          branch: ${{ steps.compare.outputs.branch }}
+          base: main
+          commit-message: "chore(pricing): vendor ai-price-index ${{ steps.target.outputs.tag }}"
+          title: "chore(pricing): vendor ai-price-index ${{ steps.target.outputs.tag }}"
+          delete-branch: true
+          add-paths: |
+            internal/pricing/PINNED_TAG
+            internal/pricing/index/**
+            internal/pricing/table_gen.go
+          body: |
+            Automated pin bump: re-vendors the [ai-price-index](https://github.com/RoninForge/ai-price-index) dataset to `${{ steps.target.outputs.tag }}`.
+
+            ## What changed
+
+            - `internal/pricing/PINNED_TAG` -> `${{ steps.target.outputs.tag }}`
+            - `internal/pricing/index/**` + `PROVENANCE.json` re-vendored from that tag (sha256 provenance refreshed)
+            - `internal/pricing/table_gen.go` regenerated from the new vendored data
+
+            ## Why this is safe to auto-merge
+
+            The pricing was already human-verified upstream in the dataset repo, which is the source of truth and owns the daily pricing audit. This PR does not introduce a new rate by hand; it only re-vendors the already-verified data into the binary's embedded table.
+
+            CI proves the embedding is faithful before this can merge:
+
+            - `pricing-codegen` regenerates `table_gen.go` from the vendored artifacts (offline) and fails on any drift, so the embedded table provably matches the dataset.
+            - the golden-vector and point-in-time pricing tests in `internal/pricing` ran green in this job and run again in CI.
+
+            BudgetClaw stays zero-key, zero-latency, and fully offline: the price table is embedded at build time, there is no runtime network access.
+
+            ## No forced migration
+
+            Pricing is point-in-time. A new rate adds a new interval and does not change rows already priced at their then-effective rate, so this routine refresh does not require users to run `backfill --rebuild`. Only a correction to a past rate would.
+
+            Opened by `.github/workflows/pricing-bump.yml`.
