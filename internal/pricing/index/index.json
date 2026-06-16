@@ -96,6 +96,12 @@
       "latestRev": "1b09627d"
     },
     {
+      "id": "claude-sonnet-4-20250514",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-sonnet-4-20250514.v84e86b0d.json",
+      "latestRev": "84e86b0d"
+    },
+    {
       "id": "claude-sonnet-4-5-20250929",
       "provider": "anthropic",
       "file": "models/anthropic/claude-sonnet-4-5-20250929.v9aeb5571.json",
