@@ -1,0 +1,283 @@
+name: pricing-merge-and-release
+
+# Merge-bot + auto-release for the automated pricing pin bump.
+#
+# RoninForge repos are on the GitHub free plan, where branch protection AND
+# rulesets are paywalled, so native `gh pr merge --auto` is not reliable here.
+# The established org pattern is a workflow_run-triggered merge-bot that merges
+# a bot-authored PR once its CI is green. This workflow implements that for the
+# pricing-bump PR, then cuts a patch release.
+#
+# Flow:
+#   1. pricing-bump.yml opens PR from branch pricing/bump-<tag> (with a PAT, so
+#      CI runs on it).
+#   2. CI ("CI" workflow) runs on that PR and succeeds.
+#   3. This workflow fires on CI's workflow_run completion. If the run was a
+#      success on a pricing/bump-* head branch authored by the automation, it
+#      squash-merges the PR.
+#   4. It then computes the next patch version from the latest v* semver tag,
+#      adds a CHANGELOG.md entry, commits the bump to main, and pushes the new
+#      tag with the PAT so release.yml (goreleaser) fires.
+#
+# CRITICAL: the release tag is pushed with AUTOMATION_PAT, not GITHUB_TOKEN.
+# A tag pushed with GITHUB_TOKEN does NOT trigger release.yml, so goreleaser
+# would never run. With the PAT, release.yml fires and goreleaser builds the
+# binaries and updates the Homebrew tap.
+#
+# Point-in-time pricing means a NEW rate adds a new interval and does NOT change
+# already-priced historical rows, so a routine pricing patch does NOT require
+# users to run `backfill --rebuild`. Only a CORRECTION to a past rate would, and
+# that is a deliberate human-authored release, not this automated path. So the
+# release text here carries no forced-migration note.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pricing-merge-and-release
+  cancel-in-progress: false
+
+jobs:
+  merge-and-release:
+    name: Merge bump PR and cut patch release
+    runs-on: ubuntu-latest
+    # Only consider successful CI runs on a pin-bump head branch.
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'pricing/bump-')
+    steps:
+      - name: Find the open pin-bump PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+          # head_branch is repo-controlled here (we only reach this step when it
+          # starts with pricing/bump-), but pass it via env and quote it anyway.
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Find an open PR whose head branch is this pin-bump branch.
+          pr_json="$(gh pr list \
+            --repo "$REPO" \
+            --state open \
+            --head "$HEAD_BRANCH" \
+            --json number,headRefOid,author,title,isCrossRepository \
+            --jq '.[0] // empty')"
+
+          if [ -z "$pr_json" ]; then
+            echo "No open PR found for head branch $HEAD_BRANCH; nothing to do."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          number="$(printf '%s' "$pr_json" | jq -r '.number')"
+          head_oid="$(printf '%s' "$pr_json" | jq -r '.headRefOid')"
+          author="$(printf '%s' "$pr_json" | jq -r '.author.login')"
+          title="$(printf '%s' "$pr_json" | jq -r '.title')"
+          is_fork="$(printf '%s' "$pr_json" | jq -r '.isCrossRepository')"
+
+          # The CI run must be for the current head of the PR, not a stale
+          # intermediate commit.
+          if [ "$head_oid" != "$HEAD_SHA" ]; then
+            echo "CI run sha ($HEAD_SHA) is not the PR head ($head_oid); skipping."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Security boundary for a public repo: only auto-merge a PR whose head
+          # branch lives in THIS repo. A fork PR (isCrossRepository == true) that
+          # happens to match the pricing/bump-* branch name and the pin-bump title
+          # shape must never be auto-merged. This check is independent of which
+          # account owns AUTOMATION_PAT (personal or a bot), so it does not stall
+          # when the PAT is not a named bot.
+          if [ "$is_fork" = "true" ]; then
+            echo "PR #$number head branch is in a fork (isCrossRepository=true); refusing to auto-merge."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "PR #$number opened by '$author' (same-repo head branch)."
+
+          # The PR must be the pricing pin-bump PR by title shape.
+          case "$title" in
+            "chore(pricing): vendor ai-price-index "*)
+              ;;
+            *)
+              echo "PR #$number title is not a pricing pin bump; skipping."
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          # Extract the dataset tag from the title for the changelog line.
+          dataset_tag="${title#chore(pricing): vendor ai-price-index }"
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "dataset_tag=$dataset_tag" >> "$GITHUB_OUTPUT"
+          echo "Found pin-bump PR #$number for dataset tag $dataset_tag."
+
+      - name: Squash-merge the PR
+        if: steps.pr.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMATION_PAT }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --squash --delete-branch
+          echo "Merged PR #$PR_NUMBER."
+
+      - name: Checkout main after merge
+        if: steps.pr.outputs.found == 'true'
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          # Use the PAT so the CHANGELOG commit and the release tag are pushed
+          # by an identity whose pushes trigger downstream workflows.
+          token: ${{ secrets.AUTOMATION_PAT }}
+
+      - name: Compute next patch version and bump CHANGELOG
+        id: version
+        if: steps.pr.outputs.found == 'true'
+        env:
+          DATASET_TAG: ${{ steps.pr.outputs.dataset_tag }}
+        run: |
+          set -euo pipefail
+
+          # Latest existing v<major>.<minor>.<patch> tag. Strip any prerelease
+          # suffix (e.g. v1.0.1-rc1) so we only ever bump from a real release.
+          latest="$(git tag --list 'v*' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -t. -k1.2,1n -k2,2n -k3,3n \
+            | tail -n 1)"
+
+          if [ -z "$latest" ]; then
+            echo "::error::no existing vMAJOR.MINOR.PATCH tag found to bump from."
+            exit 1
+          fi
+
+          base="${latest#v}"
+          major="${base%%.*}"
+          rest="${base#*.}"
+          minor="${rest%%.*}"
+          patch="${rest#*.}"
+          next_patch=$((patch + 1))
+          next="v${major}.${minor}.${next_patch}"
+
+          today="$(date -u +%Y-%m-%d)"
+          echo "Latest tag: $latest  ->  next: $next  ($today)"
+
+          if git rev-parse -q --verify "refs/tags/$next" >/dev/null; then
+            echo "::error::tag $next already exists; aborting to stay idempotent."
+            exit 1
+          fi
+
+          # Insert a new release section directly under the "## [Unreleased]"
+          # heading in CHANGELOG.md. The dataset tag is passed via env, never
+          # interpolated, to avoid any shell metacharacter surprises.
+          export NEXT="$next" TODAY="$today"
+          python3 - <<'PY'
+          import os
+
+          next_ver = os.environ["NEXT"]
+          today = os.environ["TODAY"]
+          dataset_tag = os.environ["DATASET_TAG"]
+
+          path = "CHANGELOG.md"
+          with open(path, encoding="utf-8") as f:
+              lines = f.readlines()
+
+          entry = [
+              f"## [{next_ver}] - {today}\n",
+              "\n",
+              "### Changed\n",
+              "\n",
+              f"- pricing: refresh vendored ai-price-index to `{dataset_tag}`. "
+              "Point-in-time pricing means a new rate adds a new interval and "
+              "does not change rows already priced at their then-effective rate, "
+              "so no `backfill --rebuild` is needed.\n",
+              "\n",
+          ]
+
+          out = []
+          inserted = False
+          for line in lines:
+              out.append(line)
+              if not inserted and line.strip() == "## [Unreleased]":
+                  out.append("\n")
+                  out.extend(entry)
+                  inserted = True
+
+          if not inserted:
+              raise SystemExit("could not find '## [Unreleased]' heading in CHANGELOG.md")
+
+          # Add the version compare link near the other link refs at EOF.
+          prev = None
+          for line in lines:
+              s = line.strip()
+              if s.startswith("[v") and "compare/" in s:
+                  prev = s.split("]:", 1)[0].lstrip("[").rstrip("]")
+                  break
+          if prev:
+              link = (
+                  f"[{next_ver}]: https://github.com/RoninForge/budgetclaw/"
+                  f"compare/{prev}...{next_ver}\n"
+              )
+              # Insert the new link right after the [Unreleased] link line if
+              # present, else append.
+              link_out = []
+              placed = False
+              for line in out:
+                  if line.startswith("[Unreleased]:"):
+                      # Repoint Unreleased to the new version, then add the link.
+                      link_out.append(
+                          "[Unreleased]: https://github.com/RoninForge/budgetclaw/"
+                          f"compare/{next_ver}...HEAD\n"
+                      )
+                      link_out.append(link)
+                      placed = True
+                      continue
+                  link_out.append(line)
+              if not placed:
+                  if link_out and not link_out[-1].endswith("\n"):
+                      link_out.append("\n")
+                  link_out.append(link)
+              out = link_out
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.writelines(out)
+          print(f"CHANGELOG.md updated for {next_ver}")
+          PY
+
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Commit CHANGELOG, tag, and push
+        if: steps.pr.outputs.found == 'true'
+        env:
+          NEXT: ${{ steps.version.outputs.next }}
+          DATASET_TAG: ${{ steps.pr.outputs.dataset_tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "roninforge-bot"
+          git config user.email "bot@roninforge.org"
+
+          git add CHANGELOG.md
+          git commit -m "chore(release): $NEXT" \
+            -m "pricing: refresh vendored ai-price-index to $DATASET_TAG."
+          git push origin main
+
+          # Annotated tag. Pushed with the PAT-authenticated remote (set by the
+          # checkout step) so release.yml / goreleaser fires.
+          git tag -a "$NEXT" -m "budgetclaw $NEXT"
+          git push origin "$NEXT"
+          echo "Pushed $NEXT; release.yml will run goreleaser."
