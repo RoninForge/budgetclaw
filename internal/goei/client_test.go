@@ -139,6 +139,65 @@ func TestBuildPayloadsBasic(t *testing.T) {
 	}
 }
 
+// TestBuildPayloadsCarriesTokens verifies each spend record carries an
+// inline per-(day, project, branch, model) token rollup at the same
+// grain as its dollar amount, so a future Goei server can re-price.
+func TestBuildPayloadsCarriesTokens(t *testing.T) {
+	aggs := []Aggregate{
+		{
+			Project: "app", GitBranch: "main", Model: "claude-opus-4-8", Day: "2026-06-10",
+			CostUSD: 1.50, InputTokens: 1000, OutputTokens: 500,
+			CacheReadTokens: 200, CacheWrite5mTokens: 10, CacheWrite1hTokens: 5,
+		},
+	}
+	payloads := BuildPayloads(aggs, true)
+	if len(payloads) != 1 || len(payloads[0].Spend) != 1 {
+		t.Fatalf("unexpected payload shape: %+v", payloads)
+	}
+	tk := payloads[0].Spend[0].Tokens
+	if tk == nil {
+		t.Fatal("spend record missing inline tokens object")
+	}
+	if tk.Input != 1000 || tk.Output != 500 || tk.CacheRead != 200 ||
+		tk.CacheWrite5m != 10 || tk.CacheWrite1h != 5 {
+		t.Errorf("tokens = %+v, want input=1000 output=500 cache_read=200 cache_write_5m=10 cache_write_1h=5", tk)
+	}
+}
+
+// TestSpendRecordTokensJSONTags verifies the inline tokens object
+// marshals with the exact wire contract field names. The server keys
+// off these names, so a rename is a contract break.
+func TestSpendRecordTokensJSONTags(t *testing.T) {
+	s := SpendRecord{
+		PeriodStart: "2026-06-10T00:00:00Z",
+		PeriodEnd:   "2026-06-11T00:00:00Z",
+		AmountCents: 150,
+		Currency:    "USD",
+		Tokens: &TokenCounts{
+			Input: 1, Output: 2, CacheRead: 3, CacheWrite5m: 4, CacheWrite1h: 5,
+		},
+	}
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(b)
+	for _, want := range []string{
+		`"tokens":{`, `"input":1`, `"output":2`, `"cache_read":3`,
+		`"cache_write_5m":4`, `"cache_write_1h":5`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("marshaled spend record missing %q:\n%s", want, got)
+		}
+	}
+
+	// A nil Tokens omits the field entirely (backward compatible).
+	b2, _ := json.Marshal(SpendRecord{AmountCents: 1, Currency: "USD"})
+	if strings.Contains(string(b2), "tokens") {
+		t.Errorf("nil Tokens should be omitted, got: %s", b2)
+	}
+}
+
 func TestBuildPayloadsNoBranch(t *testing.T) {
 	aggs := []Aggregate{
 		{Project: "app", GitBranch: "main", Model: "m", Day: "2026-06-10", CostUSD: 1, InputTokens: 1},

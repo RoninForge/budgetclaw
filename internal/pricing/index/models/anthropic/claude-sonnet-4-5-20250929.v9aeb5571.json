@@ -1,0 +1,31 @@
+{
+  "aliases": [
+    "claude-sonnet-4-5"
+  ],
+  "model": "claude-sonnet-4-5-20250929",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2025-09-29",
+        "last_validated": "2026-06-12",
+        "price_usd": 3,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2025-09-29",
+        "last_validated": "2026-06-12",
+        "price_usd": 15,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

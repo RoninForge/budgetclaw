@@ -1,0 +1,27 @@
+{
+  "tag": "v2026.06.16-662bfa9",
+  "commit": "662bfa9f88e7f3b68de002f0077e2ca8aea58300",
+  "fetched_at": "2026-06-16T05:15:35Z",
+  "files": {
+    "LICENSE": "58bf8d4b416bb4b03d9cb92182427fca655b1c76339c85bce0c3d191db648cf9",
+    "current.json": "1dfcba2b1f0ca53c005647b6a981d58fb9626b2e8b3db05032fa84fec5eab187",
+    "index.json": "29579d10fc33c63b3ed4efa7f45a9df1e71aaff74147541ee947990fb951b0ca",
+    "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json": "301e13f9bddd2856bd039592ab91d4f2f4a9b0f4a9b9ed0306a206305f7422cf",
+    "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json": "d130c5c0afb3b1f3cda32b540fdbf7d2d63851a080e848c69a39902bc2e01aac",
+    "models/anthropic/claude-3-7-sonnet-20250219.va4cfdfe6.json": "e12db1a580a31bf0a3e72dce9fc226f2ed71507b0b339eae0212caa3c3ac1456",
+    "models/anthropic/claude-3-haiku-20240307.vaa48dbed.json": "1573a028ac7ae1d1cafba8f43aeb4f7e0a5009c2736ecff7b034f3d527debc64",
+    "models/anthropic/claude-3-opus-20240229.v9a00e43c.json": "1f662ea1e81562b44c5837e70f2458f68ca3f686c4ac71ddac3952f3899dffae",
+    "models/anthropic/claude-3-sonnet-20240229.v3a53987a.json": "15a09f9ac454b25010ea40307ac11d52f0a94b1a1c92884094d33a43a93b613e",
+    "models/anthropic/claude-fable-5.vc100e363.json": "3bd5dbde4a40e30574811f057033d5d16964088ecb61386a0384310decfd67a3",
+    "models/anthropic/claude-haiku-4-5-20251001.vb1dd84cd.json": "7d9e621d751667be32a2dd444ab6853291855e957a118e9fe1a7bede97a709c9",
+    "models/anthropic/claude-opus-4-1-20250805.v5117b274.json": "4caa78b5a37445037d825e4f4ffa8114f407a770ea7913ac1a31c229cebf6c20",
+    "models/anthropic/claude-opus-4-20250514.v860719f7.json": "bbffde3360221a8bcf4f3cbde944919e1ef530bc25d4748e30837f7de5d14626",
+    "models/anthropic/claude-opus-4-5-20251101.v084ac979.json": "8190c1cfc983c06a220bf8b6e8864b3622c87c3306a26d5a6eddc94c935b7241",
+    "models/anthropic/claude-opus-4-6.v9046843a.json": "9705c44d6669e5493c1afc75ce4fb92552edcb32a0de8c394ecbd5068d612ffa",
+    "models/anthropic/claude-opus-4-7.vde94a932.json": "d85e4fb4a24c4ac29f91761f807d707d7aae20724144a8dcd1986ff8a0b83057",
+    "models/anthropic/claude-opus-4-8.v1b09627d.json": "edb86baa01ace92f3e28fa1f482d9c4c9b9cccc432b5741cf6378e3f680ad9ee",
+    "models/anthropic/claude-sonnet-4-5-20250929.v9aeb5571.json": "e9cbaefb536a176ccee89a6b42d3adc4e85a361733fe5b4d33d1cf50328bf317",
+    "models/anthropic/claude-sonnet-4-6.v7b912906.json": "12ef8eaa7e1bd293bf736d159e45daa51b0aea7c892776dc0ddee84ca9c27b4f",
+    "pricing-vectors.json": "86b66a890df8336760a1c50330347cbf77ce0fa4d75cfa06e820d71f6b2bcc8c"
+  }
+}

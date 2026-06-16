@@ -1,0 +1,31 @@
+{
+  "aliases": [
+    "claude-haiku-4-5"
+  ],
+  "model": "claude-haiku-4-5-20251001",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2025-10-15",
+        "last_validated": "2026-06-16",
+        "price_usd": 1,
+        "src": "https://www.anthropic.com/news/claude-haiku-4-5",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2025-10-15",
+        "last_validated": "2026-06-16",
+        "price_usd": 5,
+        "src": "https://www.anthropic.com/news/claude-haiku-4-5",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

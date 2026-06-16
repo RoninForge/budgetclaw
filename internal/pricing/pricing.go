@@ -1,10 +1,25 @@
 // Package pricing maps Claude model IDs to per-million-token USD
 // rates and computes cost for a given token mix.
 //
-// Rates are based on Anthropic's published pricing page. The table
-// is deliberately small and easy to update: when Anthropic changes
-// prices, edit baseRates, update docs/decisions.md with the date and
-// reason, and adjust the arithmetic tests to match.
+// Rates are sourced from a VENDORED, pinned release of the public
+// ai-price-index dataset (github.com/RoninForge/ai-price-index). The
+// raw artifacts live under internal/pricing/index/** (committed for
+// audit), and internal/pricing/gen/main.go codegens table_gen.go from
+// them at build time via `go generate`. There is NO runtime network
+// access: the price table is embedded in the binary as generated Go.
+//
+// The dataset records POINT-IN-TIME pricing: each model carries an
+// input and an output series of half-open [from, to) intervals, so a
+// cost can be computed as of the instant an event occurred (RatesForAt
+// / CostForModelAt) rather than only at "now". The "now" wrappers
+// (RatesFor / CostForModel) preserve the original behavior and
+// signatures so existing callers compile unchanged.
+//
+// To update prices: re-pin internal/pricing/PINNED_TAG to a newer
+// dataset tag, run `go run ./internal/pricing/gen -fetch` to refresh
+// the vendored artifacts + PROVENANCE.json, then `go generate
+// ./internal/pricing/` to regenerate table_gen.go. The arithmetic and
+// parity tests guard against silent drift.
 //
 // Cache semantics follow Anthropic's published multipliers applied
 // to the model's input rate:
@@ -17,10 +32,14 @@
 // Anthropic change only needs a single edit.
 package pricing
 
+//go:generate go run ./gen/main.go
+
 import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
+	"time"
 )
 
 // Rates is the per-million-token cost in USD for one model.
@@ -42,10 +61,15 @@ type Usage struct {
 	CacheWrite1h int
 }
 
-// ErrUnknownModel is returned when RatesFor sees a model identifier
-// not in the pricing table. Callers should log and skip the event
-// rather than halting the watcher.
+// ErrUnknownModel is returned when a lookup sees a model identifier not
+// in the pricing table (and not resolvable via an alias). Callers should
+// log and skip the event rather than halting the watcher.
 var ErrUnknownModel = errors.New("unknown model")
+
+// ErrNoRateAtTime is returned when the model is known but no price
+// interval covers the requested instant (for example, a date before the
+// model's earliest recorded price).
+var ErrNoRateAtTime = errors.New("no rate effective at time")
 
 // Cache multipliers applied to the model's input rate to derive
 // cache rates. Centralized so we only get them wrong in one place.
@@ -55,80 +79,92 @@ const (
 	cacheWrite1hMultiplier = 2.00
 )
 
-// baseRates holds the raw input/output rates per million tokens, in
-// USD. Cache rates are derived from the input rate using the
-// multipliers above.
-//
-// Last updated: 2026-06-10 (added Claude Fable 5 at $10/$50, a new
-// flagship tier above Opus, after the 2026-06-09 Fable 5 / Mythos 5
-// launch. Before this, Fable 5 events were silently skipped as an
-// unknown model. Re-verified every existing entry against the live
-// Anthropic pricing page on the same day: no older model changed
-// price, and the cache multipliers are unchanged. Mythos 5 ships at
-// the same $10/$50 rate but is restricted-access (Project Glasswing
-// cybersecurity + biology researchers), has no published API model
-// ID, and never reaches Claude Code's JSONL, so it gets no entry.
-// The prior 2026-05-29 update added Opus 4.8 at $5/$25.
-// Source: platform.claude.com/docs/en/docs/about-claude/pricing.
-// The 2026-04-28 (v0.1.4) update corrected Opus 4.5/4.6/4.7 rates
-// after a LiteLLM cross-check + maintainer screenshot revealed
-// Anthropic had moved them to a new lower tier.
-//
-// When adding a model:
-//  1. Add an entry here.
-//  2. Add a line to TestRatesForKnownModels in pricing_test.go that
-//     asserts the expected input/output rates.
-//  3. Bump the "last updated" date above.
-var baseRates = map[string]struct {
-	Input  float64
-	Output float64
-}{
-	// Fable: new flagship tier above Opus, launched 2026-06-09 at
-	// $10/$50. Claude Code emits the undated form "claude-fable-5"
-	// in message.model (verified against live logs). The 1M context
-	// variant (display ID "...[1m]") is billed at standard rates and
-	// never reaches message.model, so it needs no separate entry.
-	"claude-fable-5": {Input: 10.00, Output: 50.00},
-
-	// Opus: highest-capability tier. Anthropic dropped Opus
-	// pricing for 4.5+ to a new lower tier ($5/$25); 4.1 and
-	// older remain at the original $15/$75. Both undated and
-	// dated variants are listed because Claude Code emits both
-	// forms in the wild. The 1M context variant (display ID
-	// "...[1m]") is billed at standard rates and never reaches
-	// message.model in the JSONL, so it needs no separate entry.
-	"claude-opus-4-8":          {Input: 5.00, Output: 25.00},
-	"claude-opus-4-7":          {Input: 5.00, Output: 25.00},
-	"claude-opus-4-6":          {Input: 5.00, Output: 25.00},
-	"claude-opus-4-5":          {Input: 5.00, Output: 25.00},
-	"claude-opus-4-5-20251101": {Input: 5.00, Output: 25.00},
-	"claude-opus-4-1-20250805": {Input: 15.00, Output: 75.00},
-
-	// Sonnet: mid tier. Both undated and dated variants included
-	// because Claude Code emits both forms in the wild.
-	"claude-sonnet-4-6":          {Input: 3.00, Output: 15.00},
-	"claude-sonnet-4-5":          {Input: 3.00, Output: 15.00},
-	"claude-sonnet-4-5-20250929": {Input: 3.00, Output: 15.00},
-
-	// Haiku: cheapest tier. Both undated and dated variants.
-	"claude-haiku-4-5":          {Input: 1.00, Output: 5.00},
-	"claude-haiku-4-5-20251001": {Input: 1.00, Output: 5.00},
+// priceInterval is one half-open [from, to) price window for a single
+// variation (input or output). to == nil means the interval is open
+// (still current). Generated into table_gen.go.
+type priceInterval struct {
+	from     time.Time  // inclusive lower bound, UTC midnight
+	to       *time.Time // exclusive upper bound, UTC midnight; nil = open
+	priceUSD float64
 }
 
-// RatesFor returns the pricing rates for a model, including derived
-// cache rates. Unknown models produce ErrUnknownModel.
-func RatesFor(model string) (Rates, error) {
-	br, ok := baseRates[model]
+// modelHist is the full point-in-time price history for one canonical
+// model: separate input and output interval series. Generated into
+// table_gen.go.
+type modelHist struct {
+	input  []priceInterval
+	output []priceInterval
+}
+
+// ptrTime is a tiny helper used by the generated table to take the
+// address of a time.Date literal for closed-interval upper bounds.
+func ptrTime(t time.Time) *time.Time { return &t }
+
+// canonicalModel resolves a raw model id to a canonical id in
+// modelSeries. It tolerates a trailing "[1m]" display suffix (the 1M
+// context variant is billed at standard rates) and then applies any
+// alias mapping. It returns the canonical id and whether it is known.
+func canonicalModel(model string) (string, bool) {
+	m := strings.TrimSuffix(model, "[1m]")
+	if _, ok := modelSeries[m]; ok {
+		return m, true
+	}
+	if canon, ok := modelAliases[m]; ok {
+		if _, ok := modelSeries[canon]; ok {
+			return canon, true
+		}
+	}
+	return "", false
+}
+
+// priceAt returns the price effective at instant t from a [from, to)
+// interval series. The comparison is half-open and lower-bound
+// inclusive: !t.Before(from) && (to == nil || t.Before(*to)).
+func priceAt(series []priceInterval, t time.Time) (float64, bool) {
+	for _, iv := range series {
+		if !t.Before(iv.from) && (iv.to == nil || t.Before(*iv.to)) {
+			return iv.priceUSD, true
+		}
+	}
+	return 0, false
+}
+
+// RatesForAt returns the pricing rates for a model as of instant at,
+// including derived cache rates. The model is resolved through the alias
+// map (and tolerates a trailing "[1m]" suffix). It returns
+// ErrUnknownModel if the model is not known at all, or ErrNoRateAtTime
+// if the model is known but no interval covers at.
+func RatesForAt(model string, at time.Time) (Rates, error) {
+	canon, ok := canonicalModel(model)
 	if !ok {
 		return Rates{}, fmt.Errorf("%w: %q", ErrUnknownModel, model)
 	}
+	hist := modelSeries[canon]
+	t := at.UTC()
+
+	in, ok := priceAt(hist.input, t)
+	if !ok {
+		return Rates{}, fmt.Errorf("%w: %q at %s", ErrNoRateAtTime, canon, t.Format("2006-01-02"))
+	}
+	out, ok := priceAt(hist.output, t)
+	if !ok {
+		return Rates{}, fmt.Errorf("%w: %q at %s", ErrNoRateAtTime, canon, t.Format("2006-01-02"))
+	}
+
 	return Rates{
-		InputPerMTok:        br.Input,
-		OutputPerMTok:       br.Output,
-		CacheReadPerMTok:    br.Input * cacheReadMultiplier,
-		CacheWrite5mPerMTok: br.Input * cacheWrite5mMultiplier,
-		CacheWrite1hPerMTok: br.Input * cacheWrite1hMultiplier,
+		InputPerMTok:        in,
+		OutputPerMTok:       out,
+		CacheReadPerMTok:    in * cacheReadMultiplier,
+		CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
+		CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
 	}, nil
+}
+
+// RatesFor returns the current pricing rates for a model (rates as of
+// now). Unknown models produce ErrUnknownModel. This is a thin "now"
+// wrapper over RatesForAt that preserves the original signature.
+func RatesFor(model string) (Rates, error) {
+	return RatesForAt(model, time.Now().UTC())
 }
 
 // Cost computes the total USD cost for a given (Rates, Usage) pair.
@@ -142,21 +178,160 @@ func Cost(r Rates, u Usage) float64 {
 		float64(u.CacheWrite1h)*r.CacheWrite1hPerMTok/perMillion
 }
 
-// CostForModel is the convenience one-shot: look up the model, then
-// price the usage. Returns ErrUnknownModel if the model is unknown.
-func CostForModel(model string, u Usage) (float64, error) {
-	r, err := RatesFor(model)
+// CostForModelAt is the point-in-time one-shot: resolve the model's
+// rates as of at, then price the usage. Returns ErrUnknownModel for an
+// unknown model or ErrNoRateAtTime if no interval covers at.
+func CostForModelAt(model string, at time.Time, u Usage) (float64, error) {
+	r, err := RatesForAt(model, at)
 	if err != nil {
 		return 0, err
 	}
 	return Cost(r, u), nil
 }
 
-// KnownModels returns a sorted list of model IDs in the pricing
-// table. Useful for `budgetclaw pricing list` and for fuzzing tests.
+// CostForModel is the convenience one-shot at current rates: look up the
+// model, then price the usage. Returns ErrUnknownModel if the model is
+// unknown. Thin "now" wrapper over CostForModelAt; signature preserved.
+func CostForModel(model string, u Usage) (float64, error) {
+	return CostForModelAt(model, time.Now().UTC(), u)
+}
+
+// Interval is one exported half-open [From, To) price window for a
+// single model, derived input+output rates included. To is nil when
+// the interval is still current (open). Returned by History for
+// rendering the full point-in-time table to humans.
+type Interval struct {
+	From  time.Time  // inclusive lower bound, UTC midnight
+	To    *time.Time // exclusive upper bound, UTC midnight; nil = open
+	Rates Rates      // input/output/cache rates effective in [From, To)
+}
+
+// History returns the full point-in-time interval series for a model,
+// each interval carrying the rates effective in its window. The model
+// is resolved through the alias map (and tolerates a trailing "[1m]"
+// suffix). Returns ErrUnknownModel if the model is not known.
+//
+// The series is built from the union of the input and output series
+// boundary dates so a price change on either variation produces a new
+// interval. The rates for each interval are resolved at its From
+// instant, which is exactly how cost would be computed for an event at
+// that time.
+func History(model string) ([]Interval, error) {
+	canon, ok := canonicalModel(model)
+	if !ok {
+		return nil, fmt.Errorf("%w: %q", ErrUnknownModel, model)
+	}
+	hist := modelSeries[canon]
+
+	// Collect every distinct interval boundary across both series.
+	bounds := make(map[time.Time]struct{})
+	for _, iv := range hist.input {
+		bounds[iv.from] = struct{}{}
+		if iv.to != nil {
+			bounds[*iv.to] = struct{}{}
+		}
+	}
+	for _, iv := range hist.output {
+		bounds[iv.from] = struct{}{}
+		if iv.to != nil {
+			bounds[*iv.to] = struct{}{}
+		}
+	}
+	starts := make([]time.Time, 0, len(bounds))
+	for t := range bounds {
+		starts = append(starts, t)
+	}
+	sort.Slice(starts, func(i, j int) bool { return starts[i].Before(starts[j]) })
+
+	out := make([]Interval, 0, len(starts))
+	for _, from := range starts {
+		in, okIn := priceAt(hist.input, from)
+		o, okOut := priceAt(hist.output, from)
+		if !okIn || !okOut {
+			// A boundary that is only an upper bound (the close of the
+			// last interval, with no successor) has no rate; skip it.
+			continue
+		}
+		iv := Interval{
+			From: from,
+			Rates: Rates{
+				InputPerMTok:        in,
+				OutputPerMTok:       o,
+				CacheReadPerMTok:    in * cacheReadMultiplier,
+				CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
+				CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
+			},
+		}
+		out = append(out, iv)
+	}
+	// Fill each interval's To from the next interval's From; the last
+	// interval is open (To == nil) only if the underlying series is
+	// open at that point, otherwise it closes at the series upper bound.
+	for i := range out {
+		if i+1 < len(out) {
+			next := out[i+1].From
+			out[i].To = &next
+			continue
+		}
+		// Last interval: open iff a covering series is still open at
+		// From, otherwise closed at the earliest series upper bound.
+		out[i].To = lastUpperBound(hist, out[i].From)
+	}
+	return out, nil
+}
+
+// lastUpperBound returns the exclusive upper bound for the final
+// interval starting at from: nil if any covering series is still open
+// there, otherwise the earliest series close among the covering
+// intervals.
+func lastUpperBound(h modelHist, from time.Time) *time.Time {
+	var bound *time.Time
+	// covering returns the interval that covers from, if any.
+	covering := func(series []priceInterval) (priceInterval, bool) {
+		for _, iv := range series {
+			if !from.Before(iv.from) && (iv.to == nil || from.Before(*iv.to)) {
+				return iv, true
+			}
+		}
+		return priceInterval{}, false
+	}
+	for _, series := range [][]priceInterval{h.input, h.output} {
+		iv, ok := covering(series)
+		if !ok {
+			continue
+		}
+		if iv.to == nil {
+			return nil // an open series keeps the interval open
+		}
+		if bound == nil || iv.to.Before(*bound) {
+			t := *iv.to
+			bound = &t
+		}
+	}
+	return bound
+}
+
+// Provenance returns the pinned dataset tag and the ai-price-index repo
+// commit the embedded pricing table was generated from. Surfaced by
+// `budgetclaw pricing provenance` so an auditor can trace every rate to
+// an exact upstream commit.
+func Provenance() (tag, commit string) {
+	return generatedTag, generatedIndexCommit
+}
+
+// KnownModels returns a sorted list of model IDs that price successfully:
+// the union of canonical series ids and alias ids. Useful for
+// `budgetclaw pricing list` and for fuzzing tests.
 func KnownModels() []string {
-	keys := make([]string, 0, len(baseRates))
-	for k := range baseRates {
+	seen := make(map[string]bool, len(modelSeries)+len(modelAliases))
+	for k := range modelSeries {
+		seen[k] = true
+	}
+	for k := range modelAliases {
+		seen[k] = true
+	}
+	keys := make([]string, 0, len(seen))
+	for k := range seen {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)

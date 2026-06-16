@@ -101,7 +101,11 @@ func (p *Pipeline) Handle(ctx context.Context, e *parser.Event, _ string) error 
 	log, now := p.normalized()
 
 	// --- 1. price -------------------------------------------------
-	cost, err := pricing.CostForModel(e.Model, pricing.Usage{
+	// Price the event at the rate effective on its own timestamp, not
+	// at "now". An event recorded while a model was on an older tier
+	// is priced at that older tier, so historical cost is frozen as
+	// fact (see decision 15e). e.Timestamp is always set by the parser.
+	cost, err := pricing.CostForModelAt(e.Model, e.Timestamp, pricing.Usage{
 		Input:        e.InputTokens,
 		Output:       e.OutputTokens,
 		CacheRead:    e.CacheReadTokens,
@@ -109,7 +113,13 @@ func (p *Pipeline) Handle(ctx context.Context, e *parser.Event, _ string) error 
 		CacheWrite1h: e.CacheCreation1hTokens,
 	})
 	if err != nil {
-		if errors.Is(err, pricing.ErrUnknownModel) {
+		if errors.Is(err, pricing.ErrUnknownModel) || errors.Is(err, pricing.ErrNoRateAtTime) {
+			// ErrUnknownModel: model not in the table at all.
+			// ErrNoRateAtTime: known model, but no price interval covers
+			// the event's timestamp (a retired model, or an event older
+			// than the model's earliest recorded price). Both are skipped
+			// non-fatally with the same dedupe-WARN so a long session of
+			// unpriceable events does not flood stderr.
 			p.logUnknownModel(log, e.Model, e.UUID)
 			return nil
 		}

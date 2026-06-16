@@ -1,0 +1,30 @@
+{
+  "model": "claude-3-sonnet-20240229",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "archived",
+        "from": "2024-03-04",
+        "last_validated": "2024-03-04",
+        "price_usd": 3,
+        "snapshot": "20240304143754",
+        "src": "https://web.archive.org/web/20240304143754/https://www.anthropic.com/api",
+        "to": "2025-07-21",
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "archived",
+        "from": "2024-03-04",
+        "last_validated": "2024-03-04",
+        "price_usd": 15,
+        "snapshot": "20240304143754",
+        "src": "https://web.archive.org/web/20240304143754/https://www.anthropic.com/api",
+        "to": "2025-07-21",
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

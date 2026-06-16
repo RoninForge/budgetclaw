@@ -14,6 +14,13 @@
 //   - spend dedup key:  (period_start, model, project, branch)
 //   - usage dedup key:  (period_start, metric_type, model, breakdown_key, breakdown_value)
 //
+// Each spend record also carries an optional inline "tokens" object
+// (input, output, cache_read, cache_write_5m, cache_write_1h) at the
+// same per-(day, project, branch, model) grain as its dollar amount.
+// The current server ignores it and keys off amountCents; a future
+// server prefers tokens so it can re-price at its own point-in-time
+// rate. Both are always sent, so the change is backward compatible.
+//
 // Per-branch attribution (a budgetclaw differentiator) rides on the
 // spend record's own optional branch field, so the project field always
 // carries the bare project name. With --no-branch the branch is omitted
@@ -49,17 +56,36 @@ const (
 	maxUsagePerRequest = 4500
 )
 
+// TokenCounts is the per-(day, project, branch, model) token rollup
+// carried inline on a spend record. It is the same grain as the spend
+// dollar amount, so a future Goei server can re-price the tokens at its
+// own point-in-time rate instead of trusting amountCents. The current
+// server ignores this field; sending it is forward-compatible.
+type TokenCounts struct {
+	Input        int `json:"input"`
+	Output       int `json:"output"`
+	CacheRead    int `json:"cache_read"`
+	CacheWrite5m int `json:"cache_write_5m"`
+	CacheWrite1h int `json:"cache_write_1h"`
+}
+
 // SpendRecord is one daily per-(model, project, branch) dollar amount.
 // Branch is optional: when empty (the --no-branch case) the server
 // collapses every branch of a project into a single project-level row.
+//
+// Tokens is an optional per-(day, project, branch, model) token rollup
+// at the same grain as AmountCents. The current Goei server ignores it
+// and keys off AmountCents; a future server prefers Tokens so it can
+// re-price at its own point-in-time rate. Both are always sent.
 type SpendRecord struct {
-	PeriodStart string `json:"periodStart"`
-	PeriodEnd   string `json:"periodEnd"`
-	AmountCents int    `json:"amountCents"`
-	Currency    string `json:"currency"`
-	Model       string `json:"model,omitempty"`
-	Project     string `json:"project,omitempty"`
-	Branch      string `json:"branch,omitempty"`
+	PeriodStart string       `json:"periodStart"`
+	PeriodEnd   string       `json:"periodEnd"`
+	AmountCents int          `json:"amountCents"`
+	Currency    string       `json:"currency"`
+	Model       string       `json:"model,omitempty"`
+	Project     string       `json:"project,omitempty"`
+	Branch      string       `json:"branch,omitempty"`
+	Tokens      *TokenCounts `json:"tokens,omitempty"`
 }
 
 // UsageRecord is one daily per-(model, project) token count for a
@@ -181,6 +207,13 @@ func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []Usage
 			Model:       a.Model,
 			Project:     a.Project,
 			Branch:      branchFor(a.GitBranch, includeBranch),
+			Tokens: &TokenCounts{
+				Input:        a.InputTokens,
+				Output:       a.OutputTokens,
+				CacheRead:    a.CacheReadTokens,
+				CacheWrite5m: a.CacheWrite5mTokens,
+				CacheWrite1h: a.CacheWrite1hTokens,
+			},
 		})
 
 		metrics := []struct {

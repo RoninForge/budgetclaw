@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -27,15 +28,21 @@ func newPricingCmd() *cobra.Command {
 		Use:   "pricing",
 		Short: "Inspect the model pricing table and diagnose drift",
 	}
-	cmd.AddCommand(newPricingListCmd(), newPricingRatesCmd(), newPricingDiagnoseCmd())
+	cmd.AddCommand(
+		newPricingListCmd(),
+		newPricingRatesCmd(),
+		newPricingDiagnoseCmd(),
+		newPricingHistoryCmd(),
+		newPricingProvenanceCmd(),
+	)
 	return cmd
 }
 
 // pricingRateRow is the per-model record emitted by `pricing rates`.
 // JSON tags are stable so the cross-check workflow can rely on them.
 type pricingRateRow struct {
-	Model        string  `json:"model"`
-	InputPerMTok float64 `json:"input_per_mtok"`
+	Model         string  `json:"model"`
+	InputPerMTok  float64 `json:"input_per_mtok"`
 	OutputPerMTok float64 `json:"output_per_mtok"`
 }
 
@@ -43,22 +50,31 @@ func newPricingRatesCmd() *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
 		Use:   "rates",
-		Short: "Print every model in the pricing table along with its input/output rates",
+		Short: "Print every currently-priced model along with its input/output rates",
 		Long: `Print model -> input/output rate per million tokens for every
-entry in the embedded pricing table. Use --json for the
-machine-readable form consumed by the pricing-cross-check
-GitHub Action.`,
+model with a CURRENT rate in the embedded pricing table. Models the
+upstream dataset has retired (their newest price interval closed in the
+past) carry no current rate and are omitted here; use ` + "`pricing history <model>`" + `
+to see a retired model's past rates. Use --json for the machine-readable
+form consumed by the pricing-cross-check GitHub Action.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			rows := make([]pricingRateRow, 0, len(pricing.KnownModels()))
 			for _, m := range pricing.KnownModels() {
 				r, err := pricing.RatesFor(m)
 				if err != nil {
+					// KnownModels now includes retired models with no
+					// current rate. Skip those here so the current-rates
+					// table/JSON stays limited to currently-priced models
+					// (the external audit workflow depends on this).
+					if errors.Is(err, pricing.ErrNoRateAtTime) {
+						continue
+					}
 					return fmt.Errorf("rates for %s: %w", m, err)
 				}
 				rows = append(rows, pricingRateRow{
-					Model:        m,
-					InputPerMTok: r.InputPerMTok,
+					Model:         m,
+					InputPerMTok:  r.InputPerMTok,
 					OutputPerMTok: r.OutputPerMTok,
 				})
 			}
@@ -99,6 +115,100 @@ emit a machine-readable array (used by the pricing-audit workflow).`,
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit JSON array instead of one model per line")
+	return cmd
+}
+
+// pricingHistoryRow is one interval emitted by `pricing history`. The
+// JSON field names are stable for scripting; "to" is omitted when the
+// interval is still current (open).
+type pricingHistoryRow struct {
+	From          string  `json:"from"`
+	To            string  `json:"to,omitempty"`
+	InputPerMTok  float64 `json:"input_per_mtok"`
+	OutputPerMTok float64 `json:"output_per_mtok"`
+}
+
+func newPricingHistoryCmd() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "history <model>",
+		Short: "Print the full point-in-time price history for one model",
+		Long: `history prints every price interval the embedded dataset records
+for a single model: the effective-from date, the through date (open when
+the interval is still current), and the input/output rate per million
+tokens in that window. This is the point-in-time view that budgetclaw
+uses to price each event at the rate in effect when it happened.
+
+The model id may be a canonical id (claude-opus-4-1-20250805) or an
+alias (claude-opus-4-1). Use --json for the machine-readable form.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			model := args[0]
+			intervals, err := pricing.History(model)
+			if err != nil {
+				return fmt.Errorf("history for %s: %w", model, err)
+			}
+			rows := make([]pricingHistoryRow, 0, len(intervals))
+			for _, iv := range intervals {
+				row := pricingHistoryRow{
+					From:          iv.From.UTC().Format("2006-01-02"),
+					InputPerMTok:  iv.Rates.InputPerMTok,
+					OutputPerMTok: iv.Rates.OutputPerMTok,
+				}
+				if iv.To != nil {
+					row.To = iv.To.UTC().Format("2006-01-02")
+				}
+				rows = append(rows, row)
+			}
+
+			out := cmd.OutOrStdout()
+			if asJSON {
+				return json.NewEncoder(out).Encode(rows)
+			}
+			tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
+			fmt.Fprintln(tw, "FROM\tTO\tINPUT/MTOK\tOUTPUT/MTOK")
+			for _, r := range rows {
+				to := r.To
+				if to == "" {
+					to = "current"
+				}
+				fmt.Fprintf(tw, "%s\t%s\t$%.2f\t$%.2f\n", r.From, to, r.InputPerMTok, r.OutputPerMTok)
+			}
+			return tw.Flush()
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "emit JSON output for scripting")
+	return cmd
+}
+
+// pricingProvenanceRow is the JSON shape for `pricing provenance`.
+type pricingProvenanceRow struct {
+	Tag    string `json:"tag"`
+	Commit string `json:"commit"`
+}
+
+func newPricingProvenanceCmd() *cobra.Command {
+	var asJSON bool
+	cmd := &cobra.Command{
+		Use:   "provenance",
+		Short: "Print the pinned ai-price-index dataset tag and commit",
+		Long: `provenance prints the exact upstream release the embedded pricing
+table was generated from: the pinned ai-price-index dataset tag and the
+repo commit it resolves to. Every rate in the binary traces back to this
+commit, so an auditor can reproduce the table from source.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			tag, commit := pricing.Provenance()
+			out := cmd.OutOrStdout()
+			if asJSON {
+				return json.NewEncoder(out).Encode(pricingProvenanceRow{Tag: tag, Commit: commit})
+			}
+			fmt.Fprintf(out, "dataset tag:   %s\n", tag)
+			fmt.Fprintf(out, "index commit:  %s\n", commit)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&asJSON, "json", false, "emit JSON output for scripting")
 	return cmd
 }
 

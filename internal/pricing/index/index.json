@@ -1,0 +1,115 @@
+{
+  "dataModified": "2026-06-16",
+  "license": "CC-BY-4.0",
+  "models": [
+    {
+      "id": "claude-3-5-haiku-20241022",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json",
+      "latestRev": "dcd25c2f"
+    },
+    {
+      "id": "claude-3-5-sonnet-20240620",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json",
+      "latestRev": "0269d672"
+    },
+    {
+      "id": "claude-3-7-sonnet-20250219",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-7-sonnet-20250219.va4cfdfe6.json",
+      "latestRev": "a4cfdfe6"
+    },
+    {
+      "id": "claude-3-haiku-20240307",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-haiku-20240307.vaa48dbed.json",
+      "latestRev": "aa48dbed"
+    },
+    {
+      "id": "claude-3-opus-20240229",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-opus-20240229.v9a00e43c.json",
+      "latestRev": "9a00e43c"
+    },
+    {
+      "id": "claude-3-sonnet-20240229",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-3-sonnet-20240229.v3a53987a.json",
+      "latestRev": "3a53987a"
+    },
+    {
+      "id": "claude-fable-5",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-fable-5.vc100e363.json",
+      "latestRev": "c100e363"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-haiku-4-5-20251001.vb1dd84cd.json",
+      "latestRev": "b1dd84cd",
+      "aliases": [
+        "claude-haiku-4-5"
+      ]
+    },
+    {
+      "id": "claude-opus-4-1-20250805",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-1-20250805.v5117b274.json",
+      "latestRev": "5117b274",
+      "aliases": [
+        "claude-opus-4-1"
+      ]
+    },
+    {
+      "id": "claude-opus-4-20250514",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-20250514.v860719f7.json",
+      "latestRev": "860719f7"
+    },
+    {
+      "id": "claude-opus-4-5-20251101",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-5-20251101.v084ac979.json",
+      "latestRev": "084ac979",
+      "aliases": [
+        "claude-opus-4-5"
+      ]
+    },
+    {
+      "id": "claude-opus-4-6",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-6.v9046843a.json",
+      "latestRev": "9046843a"
+    },
+    {
+      "id": "claude-opus-4-7",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-7.vde94a932.json",
+      "latestRev": "de94a932"
+    },
+    {
+      "id": "claude-opus-4-8",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-4-8.v1b09627d.json",
+      "latestRev": "1b09627d"
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-sonnet-4-5-20250929.v9aeb5571.json",
+      "latestRev": "9aeb5571",
+      "aliases": [
+        "claude-sonnet-4-5"
+      ]
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-sonnet-4-6.v7b912906.json",
+      "latestRev": "7b912906"
+    }
+  ],
+  "schemaVersion": "1.0.0"
+}

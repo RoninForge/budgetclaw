@@ -1,0 +1,31 @@
+{
+  "aliases": [
+    "claude-opus-4-1"
+  ],
+  "model": "claude-opus-4-1-20250805",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2025-08-05",
+        "last_validated": "2026-06-16",
+        "price_usd": 15,
+        "src": "https://www.anthropic.com/news/claude-opus-4-1",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2025-08-05",
+        "last_validated": "2026-06-16",
+        "price_usd": 75,
+        "src": "https://www.anthropic.com/news/claude-opus-4-1",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

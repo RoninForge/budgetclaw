@@ -65,10 +65,20 @@ func TestRatesForUnknownModel(t *testing.T) {
 // multipliers. Tests all three cache kinds for every tier so a
 // refactor of the multiplier constants can't accidentally break
 // one tier while leaving others passing.
+//
+// KnownModels now includes historical models the vendored dataset
+// retired (their newest interval is closed before "now"). Those are
+// not priceable at the current instant, so we skip them here with
+// ErrNoRateAtTime; the multiplier invariant is still exercised on every
+// currently-priced model. Point-in-time coverage of the historical
+// models lives in dataset_test.go.
 func TestCacheMultipliersDerived(t *testing.T) {
 	for _, model := range KnownModels() {
 		t.Run(model, func(t *testing.T) {
 			r, err := RatesFor(model)
+			if errors.Is(err, ErrNoRateAtTime) {
+				t.Skipf("model %q has no current rate (retired); covered point-in-time elsewhere", model)
+			}
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -221,14 +231,20 @@ func TestKnownModelsSorted(t *testing.T) {
 }
 
 // TestAllKnownModelsPriceable is a cross-package sanity check: every
-// model in the pricing table must be priceable with zero-usage and
-// non-zero usage without error. Guards against table entries that
-// were added without being wired through RatesFor correctly.
+// currently-priced model in the pricing table must be priceable with
+// zero-usage and non-zero usage without error. Guards against table
+// entries that were added without being wired through RatesFor
+// correctly. Historical (retired) models in the vendored dataset have
+// no rate at "now" (ErrNoRateAtTime) and are skipped; they are covered
+// point-in-time in dataset_test.go.
 func TestAllKnownModelsPriceable(t *testing.T) {
 	for _, model := range KnownModels() {
 		t.Run(model, func(t *testing.T) {
 			// Zero usage should be $0 with no error.
 			c, err := CostForModel(model, Usage{})
+			if errors.Is(err, ErrNoRateAtTime) {
+				t.Skipf("model %q has no current rate (retired); covered point-in-time elsewhere", model)
+			}
 			if err != nil {
 				t.Fatalf("zero usage: %v", err)
 			}

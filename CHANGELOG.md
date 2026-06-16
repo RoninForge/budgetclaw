@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.0.0] - 2026-06-16
+
+> **Migration: after upgrading, run `budgetclaw backfill --rebuild` once.** v1.0.0 re-prices every event at its then-effective rate. Existing rollups were priced at whatever the table said when the event was first seen; the rebuild wipes and replays so every historical event reflects the rate that was in effect on its own timestamp.
+
+### Changed
+
+- **Pricing is now sourced from the vendored, pinned [ai-price-index](https://github.com/RoninForge/ai-price-index) dataset** (tag `v2026.06.16-662bfa9`) instead of a hand-maintained rate table. The dataset's anthropic artifacts are committed under `internal/pricing/index/**` (with sha256 provenance) and code-generated into `internal/pricing/table_gen.go` at build time. Still zero-key, zero-latency, and fully offline: the price table is embedded in the binary, there is no runtime network access. Cache-write/read multipliers stay engine constants.
+- **Point-in-time pricing.** Each event is now priced at the rate that was in effect on its own timestamp, not at today's rate. An event recorded while a model was on an older tier is priced at that older tier, so historical cost stays frozen as fact. The `watch` pipeline and `backfill` both re-price this way. Events for a known model with no rate covering their timestamp (a retired model, or an event older than the model's earliest recorded price) are skipped non-fatally, like unknown models.
+
+### Added
+
+- `budgetclaw pricing history <model> [--json]` prints the full point-in-time price table for one model: each interval's effective-from date, through date (open when current), and input/output rate per MTok. Accepts canonical ids and aliases.
+- `budgetclaw pricing provenance [--json]` prints the pinned ai-price-index dataset tag and the exact repo commit the embedded rates were generated from, so every rate traces back to an upstream commit.
+- `budgetclaw sync` now sends a per-(day, project, branch, model) token rollup inline on each spend record (`tokens: {input, output, cache_read, cache_write_5m, cache_write_1h}`), at the same grain as the dollar amount, so a future Goei server can re-price tokens at its own point-in-time rate. `amountCents` is still sent; the change is backward compatible (the current server ignores the new field). `--dry-run` now also reports the total token count.
+- CI freshness gate: a `pricing-codegen` job runs `go generate ./...` against the vendored dataset and fails if the committed `internal/pricing/table_gen.go` drifted from what the data produces, keeping the embedded rates hermetic.
+
+### Fixed
+
+- `budgetclaw pricing rates` no longer errors when the dataset includes retired models. `KnownModels()` now spans retired models that have no current rate; `pricing rates`/`pricing rates --json` skip those so the current-rates output (consumed by the pricing-audit workflow) stays limited to currently-priced models with an unchanged JSON shape.
+
 ## [v0.1.9] - 2026-06-10
 
 ### Fixed
@@ -115,4 +135,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/HEAD...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.0.0...HEAD
+[v1.0.0]: https://github.com/RoninForge/budgetclaw/compare/v0.1.9...v1.0.0

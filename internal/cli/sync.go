@@ -140,19 +140,23 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 	}
 	payloads := goei.BuildPayloads(gAggs, !opts.noBranch)
 
-	var spendCount, usageCount int
+	var spendCount, usageCount, totalTokens int
 	var totalUSD float64
 	for _, p := range payloads {
 		spendCount += len(p.Spend)
 		usageCount += len(p.Usage)
 		for _, s := range p.Spend {
 			totalUSD += float64(s.AmountCents) / 100
+			if s.Tokens != nil {
+				totalTokens += s.Tokens.Input + s.Tokens.Output +
+					s.Tokens.CacheRead + s.Tokens.CacheWrite5m + s.Tokens.CacheWrite1h
+			}
 		}
 	}
 
 	if opts.dryRun {
-		fmt.Fprintf(out, "Dry run: would send %d spend + %d usage records (%s total) in %d request(s) to %s\n",
-			spendCount, usageCount, fmtUSD(totalUSD), len(payloads), endpointOrDefault(endpoint))
+		fmt.Fprintf(out, "Dry run: would send %d spend + %d usage records (%s total, %d tokens) in %d request(s) to %s\n",
+			spendCount, usageCount, fmtUSD(totalUSD), totalTokens, len(payloads), endpointOrDefault(endpoint))
 		return nil
 	}
 

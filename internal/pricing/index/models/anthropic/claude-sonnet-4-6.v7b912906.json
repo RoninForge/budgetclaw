@@ -1,0 +1,28 @@
+{
+  "model": "claude-sonnet-4-6",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2026-02-17",
+        "last_validated": "2026-06-16",
+        "price_usd": 3,
+        "src": "https://www.anthropic.com/news/claude-sonnet-4-6",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2026-02-17",
+        "last_validated": "2026-06-16",
+        "price_usd": 15,
+        "src": "https://www.anthropic.com/news/claude-sonnet-4-6",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

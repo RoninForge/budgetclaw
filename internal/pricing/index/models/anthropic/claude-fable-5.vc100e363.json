@@ -1,0 +1,28 @@
+{
+  "model": "claude-fable-5",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2026-06-09",
+        "last_validated": "2026-06-12",
+        "price_usd": 10,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2026-06-09",
+        "last_validated": "2026-06-12",
+        "price_usd": 50,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

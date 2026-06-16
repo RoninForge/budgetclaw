@@ -20,10 +20,10 @@ import (
 // not exported. Records every call so tests can assert that the
 // pipeline asks for the right process set.
 type fakeKiller struct {
-	byCwd      map[string][]int
-	killed     [][]int
-	findCalls  int32
-	killCalls  int32
+	byCwd     map[string][]int
+	killed    [][]int
+	findCalls int32
+	killCalls int32
 }
 
 func (f *fakeKiller) FindByCWD(_ context.Context, cwd string) ([]int, error) {
@@ -182,6 +182,67 @@ func TestHandleUnknownModelDedupesPerRun(t *testing.T) {
 	}
 	if len(got) != 2 {
 		t.Errorf("expected 2 distinct unknown models, got %d: %v", len(got), got)
+	}
+}
+
+// TestHandlePricesAtEventTimestamp verifies the pipeline prices an
+// event at the rate that was in effect on its OWN timestamp, not at
+// "now". claude-3-5-haiku stepped from $1/$5 to $0.80/$4 input/output
+// on 2024-12-03 (lower-bound inclusive). An event dated 2024-11-20
+// (1M input tokens) must cost $1.00 at the pre-step rate, even though
+// the model's later rate is $0.80.
+func TestHandlePricesAtEventTimestamp(t *testing.T) {
+	p := buildPipeline(t, nil, nil, nil)
+
+	e := sampleEvent("pit", "app", "main")
+	e.Model = "claude-3-5-haiku-20241022"
+	e.Timestamp = time.Date(2024, 11, 20, 12, 0, 0, 0, time.UTC)
+	e.InputTokens = 1_000_000 // 1M input @ $1/MTok at the pre-step rate
+	e.OutputTokens = 0
+
+	if err := p.Handle(context.Background(), e, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	rows, _ := p.DB.StatusByProject(context.Background(),
+		time.Date(2024, 11, 20, 0, 0, 0, 0, time.UTC),
+		time.Date(2024, 11, 20, 23, 59, 59, 0, time.UTC))
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(rows))
+	}
+	// 1M input * $1/MTok = $1.00 at the 2024-11-20 rate (NOT $0.80,
+	// which is the post-2024-12-03 rate).
+	if rows[0].CostUSD != 1.00 {
+		t.Errorf("CostUSD = %v, want 1.00 (priced at the event-timestamp rate, not the later $0.80)", rows[0].CostUSD)
+	}
+}
+
+// TestHandleNoRateAtTimeSkippedNonFatally verifies that a known model
+// queried before its earliest recorded price (ErrNoRateAtTime) is
+// skipped like an unknown model: no db insert, no crash, and it is
+// tracked in the unknown-models dedupe map.
+func TestHandleNoRateAtTimeSkippedNonFatally(t *testing.T) {
+	p := buildPipeline(t, nil, nil, nil)
+
+	e := sampleEvent("norate", "app", "main")
+	e.Model = "claude-3-5-haiku-20241022" // earliest interval starts 2024-11-04
+	e.Timestamp = time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	if err := p.Handle(context.Background(), e, ""); err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+
+	// Nothing inserted.
+	rows, _ := p.DB.StatusByProject(context.Background(),
+		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2024, 1, 1, 23, 59, 59, 0, time.UTC))
+	if len(rows) != 0 {
+		t.Errorf("expected 0 rows for an unpriceable-at-time event, got %d", len(rows))
+	}
+	// Tracked in the dedupe map so a long retired-model session does
+	// not flood stderr.
+	if got := p.UnknownModels()["claude-3-5-haiku-20241022"]; got != 1 {
+		t.Errorf("expected the model tracked once in UnknownModels, got %d", got)
 	}
 }
 

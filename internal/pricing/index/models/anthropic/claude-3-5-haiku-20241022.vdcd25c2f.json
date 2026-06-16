@@ -1,0 +1,50 @@
+{
+  "model": "claude-3-5-haiku-20241022",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "archived",
+        "from": "2024-11-04",
+        "last_validated": "2024-11-05",
+        "price_usd": 1,
+        "snapshot": "20241105102333",
+        "src": "https://web.archive.org/web/20241105102333/https://www.anthropic.com/news/3-5-models-and-computer-use",
+        "to": "2024-12-03",
+        "unit": "usd_per_mtok"
+      },
+      {
+        "confidence": "archived",
+        "from": "2024-12-03",
+        "last_validated": "2024-12-03",
+        "price_usd": 0.8,
+        "snapshot": "20241203010242",
+        "src": "https://web.archive.org/web/20241203010242/https://www.anthropic.com/pricing",
+        "to": "2026-02-19",
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "archived",
+        "from": "2024-11-04",
+        "last_validated": "2024-11-05",
+        "price_usd": 5,
+        "snapshot": "20241105102333",
+        "src": "https://web.archive.org/web/20241105102333/https://www.anthropic.com/news/3-5-models-and-computer-use",
+        "to": "2024-12-03",
+        "unit": "usd_per_mtok"
+      },
+      {
+        "confidence": "archived",
+        "from": "2024-12-03",
+        "last_validated": "2024-12-03",
+        "price_usd": 4,
+        "snapshot": "20241203010242",
+        "src": "https://web.archive.org/web/20241203010242/https://www.anthropic.com/pricing",
+        "to": "2026-02-19",
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

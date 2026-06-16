@@ -119,6 +119,112 @@ func TestPricingDiagnoseFlagsMissingModel(t *testing.T) {
 	}
 }
 
+// TestPricingRatesSkipsRetiredModels verifies the current-rates JSON
+// only contains currently-priced models. KnownModels now includes
+// models the dataset retired (no current rate), and `pricing rates`
+// must skip those rather than error so the external audit workflow
+// keeps parsing a clean array of priced models.
+func TestPricingRatesSkipsRetiredModels(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "rates", "--json")
+	if err != nil {
+		t.Fatalf("pricing rates --json: %v", err)
+	}
+	var rows []pricingRateRow
+	if err := json.Unmarshal([]byte(stdout), &rows); err != nil {
+		t.Fatalf("output not valid JSON: %v\nraw: %q", err, stdout)
+	}
+	if len(rows) == 0 {
+		t.Fatal("expected at least one currently-priced model")
+	}
+	for _, r := range rows {
+		// A retired model (e.g. claude-3-opus-20240229) carries no
+		// current rate and must not appear here.
+		if r.Model == "claude-3-opus-20240229" {
+			t.Errorf("retired model %q leaked into current rates output", r.Model)
+		}
+		if r.InputPerMTok <= 0 || r.OutputPerMTok <= 0 {
+			t.Errorf("model %q has non-positive rate %v/%v", r.Model, r.InputPerMTok, r.OutputPerMTok)
+		}
+	}
+}
+
+// TestPricingHistoryTable verifies the human-readable history table for
+// a model with a price change includes both rate tiers and the FROM/TO
+// columns.
+func TestPricingHistoryTable(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "history", "claude-3-5-haiku-20241022")
+	if err != nil {
+		t.Fatalf("pricing history: %v", err)
+	}
+	for _, want := range []string{"FROM", "TO", "INPUT/MTOK", "2024-11-04", "2024-12-03", "$1.00", "$0.80"} {
+		if !strings.Contains(stdout, want) {
+			t.Errorf("history table missing %q:\n%s", want, stdout)
+		}
+	}
+}
+
+// TestPricingHistoryJSON verifies --json emits a stable array of
+// {from, to?, input_per_mtok, output_per_mtok} objects, with the open
+// (current) interval omitting "to".
+func TestPricingHistoryJSON(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "history", "claude-opus-4-1-20250805", "--json")
+	if err != nil {
+		t.Fatalf("pricing history --json: %v", err)
+	}
+	var rows []pricingHistoryRow
+	if err := json.Unmarshal([]byte(stdout), &rows); err != nil {
+		t.Fatalf("invalid JSON: %v\nraw: %q", err, stdout)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 interval for opus-4-1, got %d", len(rows))
+	}
+	if rows[0].To != "" {
+		t.Errorf("open interval should omit 'to', got %q", rows[0].To)
+	}
+	if rows[0].InputPerMTok != 15.00 || rows[0].OutputPerMTok != 75.00 {
+		t.Errorf("rates = %v/%v, want 15.00/75.00", rows[0].InputPerMTok, rows[0].OutputPerMTok)
+	}
+}
+
+// TestPricingHistoryUnknownModel verifies an unknown model id returns
+// an error.
+func TestPricingHistoryUnknownModel(t *testing.T) {
+	_, _, err := execCmd(t, "pricing", "history", "not-a-real-model")
+	if err == nil {
+		t.Error("expected error for unknown model")
+	}
+}
+
+// TestPricingProvenance verifies the provenance command prints the
+// pinned dataset tag and index commit.
+func TestPricingProvenance(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "provenance")
+	if err != nil {
+		t.Fatalf("pricing provenance: %v", err)
+	}
+	if !strings.Contains(stdout, "dataset tag:") || !strings.Contains(stdout, "index commit:") {
+		t.Errorf("provenance output missing labels: %q", stdout)
+	}
+	if !strings.Contains(stdout, "v2026") {
+		t.Errorf("provenance output should include the pinned tag: %q", stdout)
+	}
+}
+
+// TestPricingProvenanceJSON verifies --json emits {tag, commit}.
+func TestPricingProvenanceJSON(t *testing.T) {
+	stdout, _, err := execCmd(t, "pricing", "provenance", "--json")
+	if err != nil {
+		t.Fatalf("pricing provenance --json: %v", err)
+	}
+	var row pricingProvenanceRow
+	if err := json.Unmarshal([]byte(stdout), &row); err != nil {
+		t.Fatalf("invalid JSON: %v\nraw: %q", err, stdout)
+	}
+	if row.Tag == "" || row.Commit == "" {
+		t.Errorf("provenance JSON has empty fields: %+v", row)
+	}
+}
+
 // TestPricingDiagnoseJSONShape verifies --json emits a stable array
 // of {model, events, priced} objects.
 func TestPricingDiagnoseJSONShape(t *testing.T) {

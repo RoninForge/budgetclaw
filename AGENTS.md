@@ -41,9 +41,25 @@ The whole product hinges on three claims. **Never write code, copy, or comments 
 
 CI (`.github/workflows/ci.yml`) runs `make check` on every push/PR. Don't merge red.
 
+## Pricing data: vendored ai-price-index, point-in-time (v1.0.0+)
+
+Prices are NOT hand-maintained in Go anymore. They come from a VENDORED, pinned release of the public [ai-price-index](https://github.com/RoninForge/ai-price-index) dataset. The anthropic artifacts live under `internal/pricing/index/**` (committed, with a `PROVENANCE.json` sha256 manifest), and `internal/pricing/gen/main.go` code-generates `internal/pricing/table_gen.go` from them. The dataset carries point-in-time rates, so each event is priced at the rate effective on its own timestamp. See decision 16 in `docs/decisions.md`.
+
+**Do NOT edit `internal/pricing/table_gen.go` by hand** (it is `// Code generated ... DO NOT EDIT.`), and do NOT add a `baseRates` map - that pattern is gone. **To change or add a rate, refresh the dataset:**
+
+    # 1. point at the new dataset release
+    vim internal/pricing/PINNED_TAG          # bump to the new tag
+    # 2. refresh vendored artifacts + PROVENANCE.json, regenerate the table
+    cd internal/pricing && go run ./gen/main.go -fetch
+    # 3. commit internal/pricing/{PINNED_TAG,index/**,table_gen.go}
+
+A CI job (`pricing-codegen` in `.github/workflows/ci.yml`) runs `go generate ./...` and fails if the committed `table_gen.go` drifted from the vendored data, so a stale or hand-edited table is caught on PR.
+
+`budgetclaw pricing provenance` prints the pinned tag + commit; `budgetclaw pricing history <model>` prints a model's full point-in-time interval table.
+
 ## Daily pricing audit
 
-`.github/workflows/pricing-audit.yml` runs daily, hits Anthropic's `/v1/models`, cross-checks against LiteLLM's public price table, and opens a GitHub issue when a new model appears or a price drifts. **If you add or rename a model in `internal/pricing/pricing.go`, also touch the comment line `// Last updated: <date> (vX.Y.Z — <reason>)` so the audit-loop story stays honest.**
+`.github/workflows/pricing-audit.yml` runs daily, hits Anthropic's `/v1/models`, cross-checks against LiteLLM's public price table, and opens a GitHub issue when a new model appears or a price drifts. When it fires, the fix is to refresh the vendored dataset (see above) and re-pin `PINNED_TAG`, not to edit Go rates directly.
 
 ## Verify against real data before shipping
 

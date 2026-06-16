@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0.0",
+  "description": "Cross-engine golden vectors. Every pricing engine must reproduce expected_usd exactly. Cache rates derived from input rate: read 0.10, write_5m 1.25, write_1h 2.00.",
+  "cache_multipliers": { "read": 0.10, "write_5m": 1.25, "write_1h": 2.00 },
+  "vectors": [
+    {
+      "name": "opus-4-8 current plain",
+      "model": "claude-opus-4-8",
+      "at": "2026-06-16",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 30.0
+    },
+    {
+      "name": "sonnet-4-6 all-cache (matches landing 28.05 test)",
+      "model": "claude-sonnet-4-6",
+      "at": "2026-06-16",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 1000000, "cache_write_5m": 1000000, "cache_write_1h": 1000000 },
+      "expected_usd": 28.05
+    },
+    {
+      "name": "haiku-4-5 short alias resolves to dated series ($1/$5)",
+      "model": "claude-haiku-4-5",
+      "at": "2026-06-16",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 6.0,
+      "resolves_to": "claude-haiku-4-5-20251001"
+    },
+    {
+      "name": "[1m] display suffix tolerated",
+      "model": "claude-opus-4-8[1m]",
+      "at": "2026-06-16",
+      "usage": { "input": 1000000, "output": 0, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 5.0,
+      "resolves_to": "claude-opus-4-8"
+    },
+    {
+      "name": "historical opus-4-1 at $15/$75",
+      "model": "claude-opus-4-1-20250805",
+      "at": "2025-09-01",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 90.0
+    },
+    {
+      "name": "opus-4-5 short alias",
+      "model": "claude-opus-4-5",
+      "at": "2026-06-16",
+      "usage": { "input": 0, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 25.0,
+      "resolves_to": "claude-opus-4-5-20251101"
+    },
+    {
+      "name": "3.5-haiku before the 2024-12-03 cut ($1/$5 launch tier)",
+      "model": "claude-3-5-haiku-20241022",
+      "at": "2024-11-20",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 6.0
+    },
+    {
+      "name": "3.5-haiku on/after the 2024-12-03 cut ($0.80/$4 tier)",
+      "model": "claude-3-5-haiku-20241022",
+      "at": "2024-12-15",
+      "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 4.8
+    },
+    {
+      "name": "unknown model is an error, not silent zero",
+      "model": "claude-fantastic-9",
+      "at": "2026-06-16",
+      "usage": { "input": 1000000, "output": 0, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected": "unknown_model"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "model": "claude-3-haiku-20240307",
+  "provider": "anthropic",
+  "variations": {
+    "input": [
+      {
+        "confidence": "archived",
+        "from": "2024-03-04",
+        "last_validated": "2024-03-04",
+        "price_usd": 0.25,
+        "snapshot": "20240304143754",
+        "src": "https://web.archive.org/web/20240304143754/https://www.anthropic.com/api",
+        "to": "2026-04-20",
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "archived",
+        "from": "2024-03-04",
+        "last_validated": "2024-03-04",
+        "price_usd": 1.25,
+        "snapshot": "20240304143754",
+        "src": "https://web.archive.org/web/20240304143754/https://www.anthropic.com/api",
+        "to": "2026-04-20",
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}

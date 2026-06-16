@@ -51,6 +51,10 @@ Use after upgrading to a release that adds new model pricing -
 historical events the prior watcher saw but skipped (because the
 model was unknown) become attributable on the next run.
 
+Re-pricing is point-in-time: each event is priced at the rate that
+was in effect on its own timestamp, not at today's rate, so a rebuilt
+rollup reflects what the model actually cost when the event happened.
+
 --rebuild truncates the events and rollups tables before scanning,
 then replays from the logs. Use it after a pricing correction, or
 after upgrading from a binary that double-counted streamed responses:
@@ -182,7 +186,10 @@ func scanFileIntoDB(ctx context.Context, root *os.Root, path string, store *db.D
 		}
 		stats.scanned++
 
-		cost, perr := pricing.CostForModel(ev.Model, pricing.Usage{
+		// Re-price at the rate effective on the event's own timestamp,
+		// not at "now", so a rebuilt rollup reflects the price the user
+		// actually paid when the event happened.
+		cost, perr := pricing.CostForModelAt(ev.Model, ev.Timestamp, pricing.Usage{
 			Input:        ev.InputTokens,
 			Output:       ev.OutputTokens,
 			CacheRead:    ev.CacheReadTokens,
@@ -190,7 +197,10 @@ func scanFileIntoDB(ctx context.Context, root *os.Root, path string, store *db.D
 			CacheWrite1h: ev.CacheCreation1hTokens,
 		})
 		if perr != nil {
-			if errors.Is(perr, pricing.ErrUnknownModel) {
+			// ErrUnknownModel (not in the table) and ErrNoRateAtTime
+			// (known model, no interval covers the event's timestamp)
+			// are both unpriceable: record the model and skip.
+			if errors.Is(perr, pricing.ErrUnknownModel) || errors.Is(perr, pricing.ErrNoRateAtTime) {
 				stats.skipped++
 				stats.unknown[ev.Model]++
 				continue
