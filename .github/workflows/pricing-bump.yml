@@ -171,8 +171,10 @@ jobs:
           printf '%s\n' "$TARGET_TAG" > internal/pricing/PINNED_TAG
 
           # 2. Re-vendor index/** + PROVENANCE.json from the pinned tag and
-          #    regenerate table_gen.go. -fetch clones the tag itself.
-          ( cd internal/pricing && go run ./gen -fetch )
+          #    regenerate table_gen.go. -fetch clones the tag itself. The file form
+          #    `gen/main.go` is required: gen/ is //go:build ignore, so the package
+          #    form `./gen` fails with "build constraints exclude all Go files".
+          ( cd internal/pricing && go run ./gen/main.go -fetch )
 
           # 3. No-op safety: prove the offline codegen is stable against the
           #    freshly vendored data (this is exactly what CI's pricing-codegen
