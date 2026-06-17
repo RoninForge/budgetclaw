@@ -1,10 +1,10 @@
 {
-  "tag": "v2026.06.17-2a11475",
-  "commit": "2a1147507f95d0eb3fa1c4715f447f5ff6d41999",
-  "fetched_at": "2026-06-17T07:26:30Z",
+  "tag": "v2026.06.17-4ab5db2",
+  "commit": "4ab5db24ec7a802268ed9016486242e8f7d0b3b7",
+  "fetched_at": "2026-06-17T08:43:57Z",
   "files": {
     "LICENSE": "58bf8d4b416bb4b03d9cb92182427fca655b1c76339c85bce0c3d191db648cf9",
-    "current.json": "e804bdb9c9038bd070a2ec52a0e107580751f8e436dc12aa30f57f8deab3ef15",
+    "current.json": "37564ded897b87d23eb7826232aa9d81e0f677fe479022701939cd0dace36e36",
     "index.json": "aea24888f4d97b02f593a7c49be32074b42fdf7d5c213203aec68a7e0b4b07d5",
     "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json": "301e13f9bddd2856bd039592ab91d4f2f4a9b0f4a9b9ed0306a206305f7422cf",
     "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json": "d130c5c0afb3b1f3cda32b540fdbf7d2d63851a080e848c69a39902bc2e01aac",
