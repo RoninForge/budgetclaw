@@ -1,8 +1,308 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-06-16",
+  "dataModified": "2026-06-17",
   "license": "CC-BY-4.0",
   "prices": [
+    {
+      "provider": "ai21",
+      "model": "jamba-large",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.ai21.com/pricing/"
+    },
+    {
+      "provider": "ai21",
+      "model": "jamba-large",
+      "variation": "output",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.ai21.com/pricing/"
+    },
+    {
+      "provider": "ai21",
+      "model": "jamba-mini",
+      "variation": "input",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://www.ai21.com/pricing/"
+    },
+    {
+      "provider": "ai21",
+      "model": "jamba-mini",
+      "variation": "output",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://www.ai21.com/pricing/"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-flash",
+      "variation": "input",
+      "price_usd": 0.05,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-flash",
+      "variation": "output",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-max",
+      "variation": "input",
+      "price_usd": 1.6,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-max",
+      "variation": "output",
+      "price_usd": 6.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-plus",
+      "variation": "input",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-plus",
+      "variation": "output",
+      "price_usd": 1.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-turbo",
+      "variation": "input",
+      "price_usd": 0.05,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen-turbo",
+      "variation": "output",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-plus",
+      "variation": "input",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-plus",
+      "variation": "output",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-max",
+      "variation": "input",
+      "price_usd": 1.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-max",
+      "variation": "output",
+      "price_usd": 6,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.5-flash",
+      "variation": "input",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.5-flash",
+      "variation": "output",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.5-plus",
+      "variation": "input",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.5-plus",
+      "variation": "output",
+      "price_usd": 2.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-2-lite",
+      "variation": "input",
+      "price_usd": 0.3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-2-lite",
+      "variation": "output",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-lite",
+      "variation": "input",
+      "price_usd": 0.06,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-lite",
+      "variation": "output",
+      "price_usd": 0.24,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-micro",
+      "variation": "input",
+      "price_usd": 0.035,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-micro",
+      "variation": "output",
+      "price_usd": 0.14,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-premier",
+      "variation": "input",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-premier",
+      "variation": "output",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-pro",
+      "variation": "input",
+      "price_usd": 0.8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-pro",
+      "variation": "output",
+      "price_usd": 3.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://aws.amazon.com/nova/pricing/"
+    },
     {
       "provider": "anthropic",
       "model": "claude-fable-5",
@@ -222,6 +522,86 @@
       "last_validated": "2026-06-16",
       "confidence": "verified",
       "src": "https://www.anthropic.com/news/claude-sonnet-4-6"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-a-plus",
+      "variation": "input",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://docs.cohere.com/docs/command-a"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-a-plus",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://docs.cohere.com/docs/command-a"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r",
+      "variation": "input",
+      "price_usd": 0.15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://cohere.com/pricing"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r",
+      "variation": "output",
+      "price_usd": 0.6,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://cohere.com/pricing"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r-plus",
+      "variation": "input",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://docs.cohere.com/docs/command-r-plus"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r-plus",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://docs.cohere.com/docs/command-r-plus"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r7b",
+      "variation": "input",
+      "price_usd": 0.0375,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://cohere.com/pricing"
+    },
+    {
+      "provider": "cohere",
+      "model": "command-r7b",
+      "variation": "output",
+      "price_usd": 0.15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://cohere.com/pricing"
     },
     {
       "provider": "deepseek",
@@ -785,6 +1165,66 @@
     },
     {
       "provider": "openai",
+      "model": "gpt-5.1",
+      "variation": "input",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.1",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "variation": "input",
+      "price_usd": 1.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "variation": "output",
+      "price_usd": 14,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.2-pro",
+      "variation": "input",
+      "price_usd": 21,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.2-pro",
+      "variation": "output",
+      "price_usd": 168,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
       "model": "gpt-5.4",
       "variation": "input",
       "price_usd": 2.5,
@@ -900,6 +1340,186 @@
       "price_usd": 180,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-15",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1",
+      "variation": "input",
+      "price_usd": 15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1",
+      "variation": "output",
+      "price_usd": 60,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1-mini",
+      "variation": "input",
+      "price_usd": 1.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1-mini",
+      "variation": "output",
+      "price_usd": 4.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1-pro",
+      "variation": "input",
+      "price_usd": 150,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o1-pro",
+      "variation": "output",
+      "price_usd": 600,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3",
+      "variation": "output",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-deep-research",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-deep-research",
+      "variation": "output",
+      "price_usd": 40,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-mini",
+      "variation": "input",
+      "price_usd": 1.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-mini",
+      "variation": "output",
+      "price_usd": 4.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-pro",
+      "variation": "input",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o3-pro",
+      "variation": "output",
+      "price_usd": 80,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o4-mini",
+      "variation": "input",
+      "price_usd": 1.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o4-mini",
+      "variation": "output",
+      "price_usd": 4.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o4-mini-deep-research",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "o4-mini-deep-research",
+      "variation": "output",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
