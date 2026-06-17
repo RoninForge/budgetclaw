@@ -1529,8 +1529,8 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
       "src": "https://docs.x.ai/docs/models/grok-4.20-0309-reasoning"
     },
     {
@@ -1539,8 +1539,8 @@
       "variation": "output",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
+      "last_validated": "2026-06-17",
+      "confidence": "verified",
       "src": "https://docs.x.ai/docs/models/grok-4.20-0309-reasoning"
     },
     {
@@ -1549,7 +1549,7 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://docs.x.ai/docs/models/grok-4.3"
     },
@@ -1559,7 +1559,7 @@
       "variation": "output",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://docs.x.ai/docs/models/grok-4.3"
     },
@@ -1569,7 +1569,7 @@
       "variation": "input",
       "price_usd": 1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-17",
       "confidence": "inferred",
       "src": "https://docs.x.ai/docs/models/grok-build-0.1"
     },
@@ -1579,7 +1579,7 @@
       "variation": "output",
       "price_usd": 2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-17",
       "confidence": "inferred",
       "src": "https://docs.x.ai/docs/models/grok-build-0.1"
     }
