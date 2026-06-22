@@ -530,7 +530,7 @@
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
-      "confidence": "verified",
+      "confidence": "archived",
       "src": "https://docs.cohere.com/docs/command-a"
     },
     {
@@ -540,7 +540,7 @@
       "price_usd": 10,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
-      "confidence": "verified",
+      "confidence": "archived",
       "src": "https://docs.cohere.com/docs/command-a"
     },
     {
@@ -570,7 +570,7 @@
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
-      "confidence": "verified",
+      "confidence": "archived",
       "src": "https://docs.cohere.com/docs/command-r-plus"
     },
     {
@@ -580,7 +580,7 @@
       "price_usd": 10,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
-      "confidence": "verified",
+      "confidence": "archived",
       "src": "https://docs.cohere.com/docs/command-r-plus"
     },
     {
