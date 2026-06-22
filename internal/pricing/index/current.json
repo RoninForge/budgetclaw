@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-06-17",
+  "dataModified": "2026-06-22",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -225,6 +225,26 @@
     },
     {
       "provider": "amazon",
+      "model": "nova-2-pro",
+      "variation": "input",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://aws.amazon.com/bedrock/pricing/"
+    },
+    {
+      "provider": "amazon",
+      "model": "nova-2-pro",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://aws.amazon.com/bedrock/pricing/"
+    },
+    {
+      "provider": "amazon",
       "model": "nova-lite",
       "variation": "input",
       "price_usd": 0.06,
@@ -342,6 +362,56 @@
       "last_validated": "2026-06-16",
       "confidence": "verified",
       "src": "https://www.anthropic.com/news/claude-haiku-4-5"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5",
+      "variation": "cache_read",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5",
+      "variation": "cache_write_1h",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5",
+      "variation": "cache_write_5m",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5",
+      "variation": "output",
+      "price_usd": 50,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {
       "provider": "anthropic",
@@ -626,6 +696,16 @@
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
+      "variation": "cache_read",
+      "price_usd": 0.003625,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+    },
+    {
+      "provider": "deepseek",
+      "model": "deepseek-v4-pro",
       "variation": "input",
       "price_usd": 0.435,
       "unit": "usd_per_mtok",
@@ -822,6 +902,106 @@
       "last_validated": "2026-06-15",
       "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.1-405b",
+      "variation": "input",
+      "price_usd": 3.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/pricing"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.1-405b",
+      "variation": "output",
+      "price_usd": 3.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/pricing"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.1-8b",
+      "variation": "input",
+      "price_usd": 0.18,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-3-1-8b-instruct-turbo"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.1-8b",
+      "variation": "output",
+      "price_usd": 0.18,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-3-1-8b-instruct-turbo"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.3-70b",
+      "variation": "input",
+      "price_usd": 1.04,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-3-3-70b"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-3.3-70b",
+      "variation": "output",
+      "price_usd": 1.04,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-3-3-70b"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-4-maverick",
+      "variation": "input",
+      "price_usd": 0.27,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-4-maverick"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-4-maverick",
+      "variation": "output",
+      "price_usd": 0.85,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-4-maverick"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-4-scout",
+      "variation": "input",
+      "price_usd": 0.18,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-4-scout"
+    },
+    {
+      "provider": "meta-llama",
+      "model": "llama-4-scout",
+      "variation": "output",
+      "price_usd": 0.59,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://www.together.ai/models/llama-4-scout"
     },
     {
       "provider": "mistral",
@@ -1146,6 +1326,16 @@
     {
       "provider": "openai",
       "model": "gpt-5",
+      "variation": "cache_read",
+      "price_usd": 0.125,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5",
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
@@ -1166,6 +1356,16 @@
     {
       "provider": "openai",
       "model": "gpt-5.1",
+      "variation": "cache_read",
+      "price_usd": 0.125,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.1",
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
@@ -1181,6 +1381,16 @@
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
       "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.2",
+      "variation": "cache_read",
+      "price_usd": 0.175,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -1525,6 +1735,36 @@
     },
     {
       "provider": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
+      "variation": "cache_read",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
+      "variation": "input",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
+      "variation": "output",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "inferred",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
       "model": "grok-4.20-0309-reasoning",
       "variation": "input",
       "price_usd": 1.25,
@@ -1545,6 +1785,36 @@
     },
     {
       "provider": "xai",
+      "model": "grok-4.20-multi-agent-0309",
+      "variation": "cache_read",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-multi-agent-0309",
+      "variation": "input",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-multi-agent-0309",
+      "variation": "output",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/docs/models"
+    },
+    {
+      "provider": "xai",
       "model": "grok-4.3",
       "variation": "input",
       "price_usd": 1.25,
@@ -1562,6 +1832,16 @@
       "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://docs.x.ai/docs/models/grok-4.3"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-build-0.1",
+      "variation": "cache_read",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/docs/models"
     },
     {
       "provider": "xai",

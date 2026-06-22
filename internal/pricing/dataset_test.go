@@ -11,9 +11,49 @@ import (
 )
 
 // asOf is the reference "current" instant used by the dataset parity
-// tests. It matches the dataModified date of the vendored current.json
-// at the pinned tag, so every open ([from, nil)) interval covers it.
-var asOf = time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC)
+// tests. It is derived from the embedded table rather than hardcoded: it
+// is the latest `from` across every OPEN (to == nil) interval in
+// modelSeries, i.e. the newest currently-effective price start date.
+//
+// Why this is correct and self-contained:
+//   - current.json lists exactly the models with an open interval, so
+//     each one is effective on [from, +inf). The max open `from` is on or
+//     after every open interval's `from` and strictly before every open
+//     interval's `to` (there is none), so RatesForAt(currentModel, asOf)
+//     resolves for ALL of them.
+//   - It is deterministic (no time.Now()): it depends only on the vendored
+//     data baked into table_gen.go, so a re-vendor that adds a genuinely
+//     new model (e.g. claude-mythos-5, effective after the previous max)
+//     advances asOf automatically and parity never goes stale.
+//   - It needs no codegen change: the test reads modelSeries directly
+//     (this is an in-package test).
+var asOf = latestOpenIntervalDate()
+
+// latestOpenIntervalDate returns the maximum `from` among all open
+// (still-current) intervals across every model's input and output series.
+// It panics if no open interval exists, which would mean the embedded
+// table has no currently-priced model and parity has nothing to assert.
+func latestOpenIntervalDate() time.Time {
+	var max time.Time
+	found := false
+	for _, hist := range modelSeries {
+		for _, series := range [][]priceInterval{hist.input, hist.output} {
+			for _, iv := range series {
+				if iv.to != nil {
+					continue // closed (retired) interval, not "current"
+				}
+				if !found || iv.from.After(max) {
+					max = iv.from
+					found = true
+				}
+			}
+		}
+	}
+	if !found {
+		panic("pricing: no open price interval in embedded table; cannot derive parity asOf")
+	}
+	return max.UTC()
+}
 
 func mustParseDate(t *testing.T, s string) time.Time {
 	t.Helper()
@@ -66,6 +106,15 @@ func TestParityWithCurrentJSON(t *testing.T) {
 			got = r.InputPerMTok
 		case "output":
 			got = r.OutputPerMTok
+		case "cache_read":
+			// Some models publish explicit cache rows. BudgetClaw derives
+			// cache rates from the input rate via fixed multipliers; assert
+			// the derivation reproduces the dataset's published value.
+			got = r.CacheReadPerMTok
+		case "cache_write_5m":
+			got = r.CacheWrite5mPerMTok
+		case "cache_write_1h":
+			got = r.CacheWrite1hPerMTok
 		default:
 			t.Errorf("%s: unexpected variation %q", p.Model, p.Variation)
 			continue
