@@ -81,12 +81,17 @@ jobs:
 
           if [ -z "$tag" ]; then
             # schedule / manual without an explicit tag: resolve the latest
-            # published ai-price-index release tag. Tags are v<YYYY.MM.DD>-<sha>,
-            # which sort lexically in date order, so the highest line wins.
-            tag="$(git ls-remote --tags --refs https://github.com/RoninForge/ai-price-index 'v*' \
-              | awk -F/ '{print $NF}' \
-              | sort \
-              | tail -n 1)"
+            # published ai-price-index release tag. Tags are v<YYYY.MM.DD>-<sha>;
+            # a lexical/version sort is WRONG when several releases land on the
+            # same day, because the trailing <sha> then decides the order
+            # alphabetically rather than by recency (e.g. it would pick
+            # ...becbe72 over the newer ...ace4133). Resolve by the tagged
+            # commit's date instead so the genuinely newest release wins.
+            TMP="$(mktemp -d)"
+            git clone --quiet --bare --filter=blob:none https://github.com/RoninForge/ai-price-index "$TMP/repo"
+            tag="$(git -C "$TMP/repo" for-each-ref --sort=-creatordate \
+              --format='%(refname:short)' 'refs/tags/v*' | head -n 1)"
+            rm -rf "$TMP"
           fi
 
           if [ -z "$tag" ]; then
