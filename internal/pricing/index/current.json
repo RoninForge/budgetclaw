@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-06-22",
+  "dataModified": "2026-06-24",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1207,9 +1207,9 @@
       "provider": "mistral",
       "model": "mistral-small-4",
       "variation": "input",
-      "price_usd": 0.1,
+      "price_usd": 0.15,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-24",
       "confidence": "verified",
       "src": "https://mistral.ai/pricing"
     },
@@ -1217,9 +1217,9 @@
       "provider": "mistral",
       "model": "mistral-small-4",
       "variation": "output",
-      "price_usd": 0.3,
+      "price_usd": 0.6,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-06-24",
       "confidence": "verified",
       "src": "https://mistral.ai/pricing"
     },
