@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-06-24",
+  "dataModified": "2026-06-29",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -56,8 +56,8 @@
     {
       "id": "claude-mythos-5",
       "provider": "anthropic",
-      "file": "models/anthropic/claude-mythos-5.v72ab0cf7.json",
-      "latestRev": "72ab0cf7"
+      "file": "models/anthropic/claude-mythos-5.v3795339f.json",
+      "latestRev": "3795339f"
     },
     {
       "id": "claude-opus-4-1-20250805",
