@@ -1,11 +1,11 @@
 {
-  "tag": "v2026.06.29-f7199e3",
-  "commit": "f7199e35ae49e062b0a9800f38a0d7741b2fd363",
-  "fetched_at": "2026-06-29T03:20:18Z",
+  "tag": "v2026.07.01-c31b7c3",
+  "commit": "c31b7c384a78ebe746d1ac39959b10b4d8844e51",
+  "fetched_at": "2026-07-01T03:47:03Z",
   "files": {
     "LICENSE": "58bf8d4b416bb4b03d9cb92182427fca655b1c76339c85bce0c3d191db648cf9",
-    "current.json": "5f73a316711807beae0c9a49e566d8429deb4094715488aab7cf2207ba408f8c",
-    "index.json": "a6631051ced334e6f67213ab56266582a6c4bf65ff3b0d42e394b791e4952cbc",
+    "current.json": "c78e6bb4b198a28f5ac635915d3862d5a331c602ef940369d075dcc7715e0b0d",
+    "index.json": "c3d3221450f3395ede4f66fec6c9880fb17ae9a26d7bcfacba45a9d019ea60f6",
     "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json": "301e13f9bddd2856bd039592ab91d4f2f4a9b0f4a9b9ed0306a206305f7422cf",
     "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json": "d130c5c0afb3b1f3cda32b540fdbf7d2d63851a080e848c69a39902bc2e01aac",
     "models/anthropic/claude-3-7-sonnet-20250219.va4cfdfe6.json": "e12db1a580a31bf0a3e72dce9fc226f2ed71507b0b339eae0212caa3c3ac1456",
@@ -24,6 +24,7 @@
     "models/anthropic/claude-sonnet-4-20250514.v84e86b0d.json": "602e8ff1acfdebc6c0541d1794f571aedbbd205e4a0900b7edc1793c9e1d0c64",
     "models/anthropic/claude-sonnet-4-5-20250929.v9aeb5571.json": "e9cbaefb536a176ccee89a6b42d3adc4e85a361733fe5b4d33d1cf50328bf317",
     "models/anthropic/claude-sonnet-4-6.v7b912906.json": "12ef8eaa7e1bd293bf736d159e45daa51b0aea7c892776dc0ddee84ca9c27b4f",
+    "models/anthropic/claude-sonnet-5.vf72dcc34.json": "945c98007ef9a87b9c7ce667f92f56bf1c0dee1999ab7c5b1a6bcb77f3779f48",
     "pricing-vectors.json": "86b66a890df8336760a1c50330347cbf77ce0fa4d75cfa06e820d71f6b2bcc8c"
   }
 }
