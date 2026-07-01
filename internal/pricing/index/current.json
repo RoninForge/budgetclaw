@@ -449,8 +449,8 @@
       "variation": "cache_read",
       "price_usd": 1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {
@@ -459,8 +459,8 @@
       "variation": "cache_write_1h",
       "price_usd": 20,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {
@@ -469,8 +469,8 @@
       "variation": "cache_write_5m",
       "price_usd": 12.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {
@@ -479,8 +479,8 @@
       "variation": "input",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {
@@ -489,8 +489,8 @@
       "variation": "output",
       "price_usd": 50,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
     {

@@ -56,8 +56,8 @@
     {
       "id": "claude-mythos-5",
       "provider": "anthropic",
-      "file": "models/anthropic/claude-mythos-5.v3795339f.json",
-      "latestRev": "3795339f"
+      "file": "models/anthropic/claude-mythos-5.vfd6a94c9.json",
+      "latestRev": "fd6a94c9"
     },
     {
       "id": "claude-opus-4-1-20250805",
