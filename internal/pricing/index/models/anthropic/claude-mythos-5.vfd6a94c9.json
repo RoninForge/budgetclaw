@@ -9,7 +9,7 @@
         "last_validated": "2026-06-22",
         "price_usd": 1,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
-        "to": null,
+        "to": "2026-06-29",
         "unit": "usd_per_mtok"
       },
       {
@@ -29,7 +29,7 @@
         "last_validated": "2026-06-22",
         "price_usd": 20,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
-        "to": null,
+        "to": "2026-06-29",
         "unit": "usd_per_mtok"
       },
       {
@@ -49,7 +49,7 @@
         "last_validated": "2026-06-22",
         "price_usd": 12.5,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
-        "to": null,
+        "to": "2026-06-29",
         "unit": "usd_per_mtok"
       },
       {
@@ -69,7 +69,7 @@
         "last_validated": "2026-06-22",
         "price_usd": 10,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
-        "to": null,
+        "to": "2026-06-29",
         "unit": "usd_per_mtok"
       },
       {
@@ -89,7 +89,7 @@
         "last_validated": "2026-06-22",
         "price_usd": 50,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
-        "to": null,
+        "to": "2026-06-29",
         "unit": "usd_per_mtok"
       },
       {
