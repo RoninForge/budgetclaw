@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-06-29",
+  "dataModified": "2026-07-01",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -121,6 +121,12 @@
       "provider": "anthropic",
       "file": "models/anthropic/claude-sonnet-4-6.v7b912906.json",
       "latestRev": "7b912906"
+    },
+    {
+      "id": "claude-sonnet-5",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-sonnet-5.vf72dcc34.json",
+      "latestRev": "f72dcc34"
     }
   ],
   "schemaVersion": "1.0.0"
