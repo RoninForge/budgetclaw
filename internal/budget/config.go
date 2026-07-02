@@ -25,6 +25,9 @@
 //	[goei]                     # optional; re-exported for `budgetclaw sync`
 //	token    = "goei_dt_..."   # device token from Goei settings
 //	endpoint = "https://goei.roninforge.org/api/ingest"  # optional override
+//	machine  = "my-laptop"     # optional; identity stamped on synced spend
+//	                           # so multiple machines don't collide.
+//	                           # Defaults to the OS hostname.
 //
 //	[[limit]]
 //	project = "*"              # "*" or glob (feature/*) or exact
@@ -168,9 +171,11 @@ type Config struct {
 
 	// Goei config is re-exported from the [goei] section for the
 	// `budgetclaw sync` command. The budget package itself doesn't
-	// use these fields.
+	// use these fields. GoeiMachine is the identity stamped on synced
+	// spend records; empty means fall back to the OS hostname.
 	GoeiToken    string
 	GoeiEndpoint string
+	GoeiMachine  string
 }
 
 // tomlConfig mirrors the TOML schema for deserialization. Keep it
@@ -189,6 +194,7 @@ type tomlConfig struct {
 	Goei struct {
 		Token    string `toml:"token"`
 		Endpoint string `toml:"endpoint"`
+		Machine  string `toml:"machine"`
 	} `toml:"goei"`
 	Limit []tomlLimit `toml:"limit"`
 }
@@ -218,6 +224,7 @@ func Parse(data []byte) (*Config, error) {
 		NtfyMinCostUSD: t.Alerts.Ntfy.MinCostUSD,
 		GoeiToken:      t.Goei.Token,
 		GoeiEndpoint:   t.Goei.Endpoint,
+		GoeiMachine:    t.Goei.Machine,
 	}
 
 	if t.General.Timezone == "" {

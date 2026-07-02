@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -48,6 +49,40 @@ func TestResolveSinceBadDate(t *testing.T) {
 	if _, err := resolveSince("not-a-date", 30, time.UTC, time.Now()); err == nil {
 		t.Error("expected error for malformed --since")
 	}
+}
+
+// TestResolveMachine asserts the override precedence for the per-machine
+// identity: flag > GOEI_MACHINE env > [goei].machine config > OS
+// hostname. This mirrors how the token resolves (flag > env > config).
+func TestResolveMachine(t *testing.T) {
+	t.Run("flag wins over env and config", func(t *testing.T) {
+		t.Setenv(envMachine, "env-host")
+		if got := resolveMachine("flag-host", "cfg-host"); got != "flag-host" {
+			t.Errorf("resolveMachine = %q, want flag-host", got)
+		}
+	})
+	t.Run("env wins over config", func(t *testing.T) {
+		t.Setenv(envMachine, "env-host")
+		if got := resolveMachine("", "cfg-host"); got != "env-host" {
+			t.Errorf("resolveMachine = %q, want env-host", got)
+		}
+	})
+	t.Run("config wins over hostname default", func(t *testing.T) {
+		t.Setenv(envMachine, "")
+		if got := resolveMachine("", "cfg-host"); got != "cfg-host" {
+			t.Errorf("resolveMachine = %q, want cfg-host", got)
+		}
+	})
+	t.Run("falls back to OS hostname", func(t *testing.T) {
+		t.Setenv(envMachine, "")
+		want, err := os.Hostname()
+		if err != nil {
+			t.Skip("hostname unavailable on this platform")
+		}
+		if got := resolveMachine("", ""); got != want {
+			t.Errorf("resolveMachine = %q, want hostname %q", got, want)
+		}
+	})
 }
 
 func TestEndpointOrDefault(t *testing.T) {

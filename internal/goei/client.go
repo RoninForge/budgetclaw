@@ -73,6 +73,13 @@ type TokenCounts struct {
 // Branch is optional: when empty (the --no-branch case) the server
 // collapses every branch of a project into a single project-level row.
 //
+// Machine is an optional per-machine identity (typically the OS
+// hostname). The Goei server uses it to keep two machines' rollups from
+// colliding: the same (day, project, branch, model) synced from a
+// laptop and a desktop stay separate instead of overwriting each other.
+// When empty the server treats it as legacy/unknown, so the field is
+// additive and backward compatible.
+//
 // Tokens is an optional per-(day, project, branch, model) token rollup
 // at the same grain as AmountCents. The current Goei server ignores it
 // and keys off AmountCents; a future server prefers Tokens so it can
@@ -85,6 +92,7 @@ type SpendRecord struct {
 	Model       string       `json:"model,omitempty"`
 	Project     string       `json:"project,omitempty"`
 	Branch      string       `json:"branch,omitempty"`
+	Machine     string       `json:"machine,omitempty"`
 	Tokens      *TokenCounts `json:"tokens,omitempty"`
 }
 
@@ -151,7 +159,11 @@ func branchFor(branch string, includeBranch bool) string {
 // round to zero cents) so that a day with only sub-cent usage still
 // has the spend row its usage rows ride along with. Usage records are
 // emitted only for non-zero token metrics.
-func BuildPayloads(aggregates []Aggregate, includeBranch bool) []Payload {
+//
+// machine is stamped on every spend record so the server can attribute
+// rollups to the machine they came from. An empty machine is fine: the
+// omitempty field is dropped and the server treats it as legacy.
+func BuildPayloads(aggregates []Aggregate, includeBranch bool, machine string) []Payload {
 	// Preserve input order within a day; group days in first-seen order.
 	dayOrder := make([]string, 0)
 	byDay := make(map[string][]Aggregate)
@@ -176,7 +188,7 @@ func BuildPayloads(aggregates []Aggregate, includeBranch bool) []Payload {
 	}
 
 	for _, day := range dayOrder {
-		daySpend, dayUsage := recordsForDay(byDay[day], includeBranch)
+		daySpend, dayUsage := recordsForDay(byDay[day], includeBranch, machine)
 		// Flush before adding this day if it would overflow a cap.
 		if len(curSpend) > 0 &&
 			(len(curSpend)+len(daySpend) > maxSpendPerRequest ||
@@ -192,7 +204,7 @@ func BuildPayloads(aggregates []Aggregate, includeBranch bool) []Payload {
 
 // recordsForDay builds the spend and usage records for a single day's
 // aggregates.
-func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []UsageRecord) {
+func recordsForDay(aggs []Aggregate, includeBranch bool, machine string) ([]SpendRecord, []UsageRecord) {
 	spend := make([]SpendRecord, 0, len(aggs))
 	usage := make([]UsageRecord, 0, len(aggs)*4)
 
@@ -207,6 +219,7 @@ func recordsForDay(aggs []Aggregate, includeBranch bool) ([]SpendRecord, []Usage
 			Model:       a.Model,
 			Project:     a.Project,
 			Branch:      branchFor(a.GitBranch, includeBranch),
+			Machine:     machine,
 			Tokens: &TokenCounts{
 				Input:        a.InputTokens,
 				Output:       a.OutputTokens,
