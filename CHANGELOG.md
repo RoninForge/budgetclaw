@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.1.0] - 2026-07-02
+
 > **Migration: existing Goei-synced users will see a one-time double-count over the first re-synced window (default 30 days) after upgrading.** Because `sync` now stamps every record with a machine identity (defaulting to your hostname) and the Goei server keeps per-machine rows separate, it no longer deletes the pre-machine untagged rows it stored before (that would discard data once you sync from more than one machine). So for the re-synced window, the old untagged rows and the new machine-tagged rows briefly coexist and add up. New installs are unaffected. The double-count is a one-time step, not an ongoing error: it does not grow with each sync, it self-limits as older days age out of the sync window, and it clears fully once every machine on the account has upgraded and re-synced, after which the stale untagged rows can be removed on the Goei side. During the transition window it may trip a single spurious budget alert.
 
 ### Added
