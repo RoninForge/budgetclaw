@@ -88,7 +88,7 @@ func TestBuildPayloadsBasic(t *testing.T) {
 			CostUSD: 0.25, InputTokens: 300, OutputTokens: 0,
 		},
 	}
-	payloads := BuildPayloads(aggs, true)
+	payloads := BuildPayloads(aggs, true, "")
 	if len(payloads) != 1 {
 		t.Fatalf("got %d payloads, want 1", len(payloads))
 	}
@@ -150,7 +150,7 @@ func TestBuildPayloadsCarriesTokens(t *testing.T) {
 			CacheReadTokens: 200, CacheWrite5mTokens: 10, CacheWrite1hTokens: 5,
 		},
 	}
-	payloads := BuildPayloads(aggs, true)
+	payloads := BuildPayloads(aggs, true, "")
 	if len(payloads) != 1 || len(payloads[0].Spend) != 1 {
 		t.Fatalf("unexpected payload shape: %+v", payloads)
 	}
@@ -198,11 +198,53 @@ func TestSpendRecordTokensJSONTags(t *testing.T) {
 	}
 }
 
+// TestBuildPayloadsStampsMachine verifies the machine identity is
+// stamped on every spend record so the server can keep two machines'
+// rollups from colliding.
+func TestBuildPayloadsStampsMachine(t *testing.T) {
+	aggs := []Aggregate{
+		{Project: "app", GitBranch: "main", Model: "m", Day: "2026-06-10", CostUSD: 1, InputTokens: 1},
+		{Project: "app", GitBranch: "feature-x", Model: "m", Day: "2026-06-11", CostUSD: 2, InputTokens: 2},
+	}
+	payloads := BuildPayloads(aggs, true, "my-laptop")
+	var records int
+	for _, p := range payloads {
+		for _, s := range p.Spend {
+			records++
+			if s.Machine != "my-laptop" {
+				t.Errorf("spend record Machine = %q, want 'my-laptop'", s.Machine)
+			}
+		}
+	}
+	if records != 2 {
+		t.Fatalf("got %d spend records, want 2", records)
+	}
+}
+
+// TestSpendRecordMachineJSONTag verifies the machine field marshals
+// under the exact wire-contract key the server reads, and that an empty
+// machine is omitted so old servers and legacy records stay compatible.
+func TestSpendRecordMachineJSONTag(t *testing.T) {
+	b, err := json.Marshal(SpendRecord{AmountCents: 1, Currency: "USD", Machine: "my-laptop"})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"machine":"my-laptop"`) {
+		t.Errorf("marshaled spend record missing machine field:\n%s", b)
+	}
+
+	// An empty Machine omits the field entirely (backward compatible).
+	b2, _ := json.Marshal(SpendRecord{AmountCents: 1, Currency: "USD"})
+	if strings.Contains(string(b2), "machine") {
+		t.Errorf("empty Machine should be omitted, got: %s", b2)
+	}
+}
+
 func TestBuildPayloadsNoBranch(t *testing.T) {
 	aggs := []Aggregate{
 		{Project: "app", GitBranch: "main", Model: "m", Day: "2026-06-10", CostUSD: 1, InputTokens: 1},
 	}
-	p := BuildPayloads(aggs, false)
+	p := BuildPayloads(aggs, false, "")
 	if p[0].Spend[0].Project != "app" {
 		t.Errorf("project = %q, want 'app'", p[0].Spend[0].Project)
 	}
@@ -212,7 +254,7 @@ func TestBuildPayloadsNoBranch(t *testing.T) {
 }
 
 func TestBuildPayloadsEmpty(t *testing.T) {
-	if got := BuildPayloads(nil, true); len(got) != 0 {
+	if got := BuildPayloads(nil, true, ""); len(got) != 0 {
 		t.Errorf("expected no payloads for empty input, got %d", len(got))
 	}
 }
@@ -237,7 +279,7 @@ func TestBuildPayloadsChunking(t *testing.T) {
 	for i := range aggs {
 		aggs[i].Day = "2026-06-" + pad(10+(i%18))
 	}
-	payloads := BuildPayloads(aggs, true)
+	payloads := BuildPayloads(aggs, true, "")
 	if len(payloads) < 2 {
 		t.Fatalf("expected chunking into >=2 payloads, got %d", len(payloads))
 	}

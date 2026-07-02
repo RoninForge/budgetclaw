@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> **Migration: existing Goei-synced users will see a one-time double-count over the first re-synced window (default 30 days) after upgrading.** Because `sync` now stamps every record with a machine identity (defaulting to your hostname) and the Goei server keeps per-machine rows separate, it no longer deletes the pre-machine untagged rows it stored before (that would discard data once you sync from more than one machine). So for the re-synced window, the old untagged rows and the new machine-tagged rows briefly coexist and add up. New installs are unaffected. The double-count is a one-time step, not an ongoing error: it does not grow with each sync, it self-limits as older days age out of the sync window, and it clears fully once every machine on the account has upgraded and re-synced, after which the stale untagged rows can be removed on the Goei side. During the transition window it may trip a single spurious budget alert.
+
+### Added
+
+- `budgetclaw sync` now stamps a per-machine identity on every spend record it sends to Goei (new `machine` field, `omitempty`), so the Goei server keeps two machines' rollups from colliding instead of merging the same (day, project, branch, model) from a laptop and a desktop into one row. The value resolves as `--machine` flag, then the `GOEI_MACHINE` env var, then `[goei].machine` in config, and finally falls back to the OS hostname. The hostname is not a secret, so sync stays zero-key and zero-prompt; the overrides exist for anyone who would rather send a custom label. Backward compatible: the field is additive and omitted when empty, so an older Goei server simply ignores it. `--dry-run` now also reports the machine identity being sent.
+
 ## [v1.0.8] - 2026-07-01
 
 ### Changed
@@ -61,7 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - pricing: refresh vendored ai-price-index to `v2026.06.16-5063362`. Point-in-time pricing means a new rate adds a new interval and does not change rows already priced at their then-effective rate, so no `backfill --rebuild` is needed.
-
 
 ## [v1.0.0] - 2026-06-16
 

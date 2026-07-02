@@ -152,9 +152,14 @@ Or store the token in your config file so a bare `budgetclaw sync` works:
 [goei]
 token = "goei_dt_..."
 # endpoint = "https://goei.roninforge.org/api/ingest"  # optional override for self-hosting
+# machine = "my-laptop"  # optional; defaults to the OS hostname
 ```
 
 Each spend record carries the branch as its own field, so Goei keeps the per-branch breakdown without mangling the project name. Re-running sync is safe. Goei deduplicates by (day, model, project, branch), so the same day re-sent overwrites rather than double-counting. Useful flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--no-branch` to omit the branch field so Goei collapses every branch of a project into one project-level row, and `--dry-run`.
+
+Sync also stamps each record with a machine identity so spend from two machines stays separate on the dashboard instead of merging. By default this is your OS hostname (not a secret, so sync stays zero-key and zero-prompt). Override it with `--machine`, the `GOEI_MACHINE` env var, or `[goei].machine` in config if you would rather send a custom label.
+
+**Upgrading from a pre-machine version:** if you synced with an older budgetclaw, your first sync after upgrading will show a one-time double-count over the re-synced window (default 30 days). The machine identity is new, so the Goei server now keeps per-machine rows separate and no longer deletes the untagged rows it stored before (that would lose data once you sync from more than one machine). The old untagged rows and the new machine-tagged rows briefly coexist and add up. This is a one-time step, not an ongoing error: it does not grow with each sync, it self-limits as older days age out of the window, and it clears once every machine on your account has upgraded and re-synced, after which the stale untagged rows can be removed on the Goei side. It may trip a single spurious budget alert during the transition. New installs are unaffected.
 
 ## Pricing freshness
 

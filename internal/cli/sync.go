@@ -18,6 +18,11 @@ import (
 // config file and out of shell history.
 const envToken = "GOEI_DEVICE_TOKEN" // #nosec G101 -- env var name, not a credential
 
+// envMachine is the environment variable checked for the per-machine
+// identity stamped on synced spend records when --machine is not
+// passed. Lets a machine set its identity without editing the config.
+const envMachine = "GOEI_MACHINE"
+
 // newSyncCmd creates the `budgetclaw sync` command. It reads the local
 // rollups and pushes per-(project, branch, model, day) aggregates to a
 // Goei dashboard's device-token ingest endpoint. No API key is
@@ -27,6 +32,7 @@ func newSyncCmd() *cobra.Command {
 	var (
 		token    string
 		endpoint string
+		machine  string
 		days     int
 		since    string
 		noBranch bool
@@ -52,6 +58,12 @@ config file:
     [goei]
     token = "goei_dt_..."
 
+Each record is stamped with a machine identity so spend from two
+machines is kept separate on the dashboard instead of merged. By
+default this is your OS hostname (not a secret, so sync stays zero-key
+and zero-prompt). Override it with --machine, ` + envMachine + `, or
+[goei].machine in config if you would rather send a custom label.
+
 Re-running sync is safe: Goei deduplicates by day, so the same day
 re-sent overwrites rather than double-counting.`,
 		Args: cobra.NoArgs,
@@ -59,6 +71,7 @@ re-sent overwrites rather than double-counting.`,
 			return runSync(cmd.Context(), cmd.OutOrStdout(), syncOptions{
 				token:    token,
 				endpoint: endpoint,
+				machine:  machine,
 				days:     days,
 				since:    since,
 				noBranch: noBranch,
@@ -69,6 +82,7 @@ re-sent overwrites rather than double-counting.`,
 
 	cmd.Flags().StringVar(&token, "token", "", "Goei device token (falls back to "+envToken+" env, then config [goei].token)")
 	cmd.Flags().StringVar(&endpoint, "endpoint", "", "Goei ingest endpoint (default "+goei.DefaultEndpoint+")")
+	cmd.Flags().StringVar(&machine, "machine", "", "machine identity stamped on each record (falls back to "+envMachine+" env, then config [goei].machine, then the OS hostname)")
 	cmd.Flags().IntVar(&days, "days", 30, "sync spend from the last N days")
 	cmd.Flags().StringVar(&since, "since", "", "explicit start date (YYYY-MM-DD); overrides --days")
 	cmd.Flags().BoolVar(&noBranch, "no-branch", false, "aggregate at project level instead of per git branch")
@@ -80,6 +94,7 @@ re-sent overwrites rather than double-counting.`,
 type syncOptions struct {
 	token    string
 	endpoint string
+	machine  string
 	days     int
 	since    string
 	noBranch bool
@@ -113,6 +128,9 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 		endpoint = cfg.GoeiEndpoint
 	}
 
+	// Resolve the per-machine identity stamped on every record.
+	machine := resolveMachine(opts.machine, cfg.GoeiMachine)
+
 	// Resolve the start of the sync window.
 	start, err := resolveSince(opts.since, opts.days, cfg.Timezone, time.Now())
 	if err != nil {
@@ -138,7 +156,7 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 	for i, a := range aggs {
 		gAggs[i] = goei.Aggregate(a)
 	}
-	payloads := goei.BuildPayloads(gAggs, !opts.noBranch)
+	payloads := goei.BuildPayloads(gAggs, !opts.noBranch, machine)
 
 	var spendCount, usageCount, totalTokens int
 	var totalUSD float64
@@ -155,8 +173,8 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 	}
 
 	if opts.dryRun {
-		fmt.Fprintf(out, "Dry run: would send %d spend + %d usage records (%s total, %d tokens) in %d request(s) to %s\n",
-			spendCount, usageCount, fmtUSD(totalUSD), totalTokens, len(payloads), endpointOrDefault(endpoint))
+		fmt.Fprintf(out, "Dry run: would send %d spend + %d usage records (%s total, %d tokens)%s in %d request(s) to %s\n",
+			spendCount, usageCount, fmtUSD(totalUSD), totalTokens, machineNote(machine), len(payloads), endpointOrDefault(endpoint))
 		return nil
 	}
 
@@ -201,6 +219,39 @@ func endpointOrDefault(endpoint string) string {
 		return goei.DefaultEndpoint
 	}
 	return endpoint
+}
+
+// resolveMachine picks the per-machine identity stamped on every synced
+// spend record so the Goei server keeps two machines' rollups from
+// colliding. Precedence mirrors token resolution: the --machine flag,
+// then the GOEI_MACHINE env var, then [goei].machine in config, then
+// the OS hostname as a stable default. The hostname is not a secret, so
+// this keeps sync zero-key and zero-prompt; the overrides exist for
+// anyone who considers their hostname sensitive. An empty result is
+// fine: the server treats "" as legacy/unknown.
+func resolveMachine(flag, config string) string {
+	if flag != "" {
+		return flag
+	}
+	if env := os.Getenv(envMachine); env != "" {
+		return env
+	}
+	if config != "" {
+		return config
+	}
+	if host, err := os.Hostname(); err == nil {
+		return host
+	}
+	return ""
+}
+
+// machineNote renders the machine identity for sync output, or an empty
+// string when no machine is set (the server treats that as legacy).
+func machineNote(machine string) string {
+	if machine == "" {
+		return ""
+	}
+	return fmt.Sprintf(" as machine %q", machine)
 }
 
 func fmtUSD(v float64) string { return fmt.Sprintf("$%.2f", v) }
