@@ -1,6 +1,6 @@
 ---
 name: spend
-description: Show current Claude Code spend by project and branch via BudgetClaw
+description: Claude Code cost tracking via BudgetClaw. Show current Claude Code spend and usage per project and per branch, with budget caps and breach locks. Triggers on claude code cost, claude code usage, spend per project, cost per branch, cost tracking.
 user-invocable: true
 allowed-tools: Bash(budgetclaw *)
 ---

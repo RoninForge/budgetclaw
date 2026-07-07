@@ -1,8 +1,8 @@
 # budgetclaw
 
-**Local spend monitor for Claude Code.** Watches the JSONL session logs Claude Code writes under `~/.claude/projects`, attributes each tool-call's token cost to a project and git branch, and enforces budget caps by sending SIGTERM to the client process on breach. Pushes phone alerts via ntfy.
+**Track Claude Code token usage and costs, per project and per branch.** budgetclaw is a local spend monitor for Claude Code. It watches the JSONL session logs Claude Code writes under `~/.claude/projects`, attributes each tool-call's token cost to a project and git branch, and enforces budget caps by sending SIGTERM to the client process on breach. Pushes phone alerts via ntfy.
 
-**Zero key. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It parses what Claude Code already writes to disk locally.
+**Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads your local `~/.claude` session logs, the ones Claude Code already writes to disk, and can sync to a hosted team dashboard, [Goei](https://goei.roninforge.org).
 
 ```sh
 curl -fsSL https://roninforge.org/get | sh
@@ -10,12 +10,16 @@ curl -fsSL https://roninforge.org/get | sh
 
 ## What it does
 
-- Per-project and per-git-branch cost tracking from Claude Code session logs
+- **Cost per project, per branch, per model** from Claude Code session logs
 - Hard budget caps with SIGTERM enforcement on breach
 - Phone push alerts via self-hosted or public [ntfy.sh](https://ntfy.sh)
 - **Daily audit against Anthropic's models API** -- new models are detected within 24 hours and surfaced via a GitHub issue, so the pricing table cannot silently lag a release
-- Works offline, no account, no telemetry leaves your machine
+- **Zero API keys, reads your local `~/.claude` session logs.** Works offline, no account, no telemetry leaves your machine
 - Single static Go binary, no runtime, no Python, no Node
+
+## ccusage-style tracking, plus a hosted team rollup via Goei
+
+budgetclaw covers the same ground as ccusage: it reads the local session logs Claude Code writes and turns them into Claude Code cost and token-usage numbers, with zero API keys and nothing sitting between your editor and the API. It goes further in two directions. First, enforcement: hard budget caps with SIGTERM on breach, not just a report after the fact. Second, an optional one-command `budgetclaw sync` to [Goei](https://goei.roninforge.org), the hosted dashboard that rolls your spend up across machines and teammates. Use budgetclaw as a ccusage alternative on a single machine, or as a complement that keeps a shared team dashboard current.
 
 ## Why it exists
 
@@ -126,9 +130,9 @@ budgetclaw alerts test
 
 You should see a "budgetclaw test" notification on your phone. From now on, warn and kill breaches will push automatically. Kill actions use max priority to bypass Do Not Disturb.
 
-## Sync to a Goei dashboard (optional)
+## Syncs to Goei: team spend across every machine and teammate
 
-[Goei](https://goei.roninforge.org) is a web dashboard that unifies AI provider costs into one view. `budgetclaw sync` pushes your locally-computed Claude Code spend to your Goei dashboard so it sits alongside your other AI costs, with the per-project and per-branch attribution budgetclaw already tracks.
+[Goei](https://goei.roninforge.org) is the hosted web dashboard that unifies AI provider costs into one view. `budgetclaw sync` pushes your locally-computed Claude Code spend to Goei so it sits alongside your other AI costs, with the per-project, per-branch, and per-model attribution budgetclaw already tracks. Goei is where the local numbers become a team view: it rolls up Claude Code spend across every machine and teammate into one deduplicated view and keeps a re-priced 12-month history, each past month priced at the rates that were live then, so old months stay correct after a price change.
 
 This is the zero-key path: budgetclaw still only ever reads `~/.claude/projects/*.jsonl`. Sync transmits aggregated dollar amounts and token counts per project, branch, model, and day. No Anthropic key is involved, and no key leaves your machine. You never have to hand Goei an admin API key.
 

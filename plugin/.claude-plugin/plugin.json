@@ -1,7 +1,7 @@
 {
   "name": "budgetclaw",
   "version": "0.1.0",
-  "description": "Local spend monitor for Claude Code. Per-project, per-branch budget caps with SIGTERM enforcement.",
+  "description": "Zero-key Claude Code cost tracking, per project and per branch. Budget caps with SIGTERM enforcement, reads your local ~/.claude session logs, and syncs to a hosted team dashboard (Goei).",
   "author": {
     "name": "RoninForge",
     "url": "https://github.com/RoninForge"
@@ -9,7 +9,28 @@
   "homepage": "https://roninforge.org",
   "repository": "https://github.com/RoninForge/budgetclaw",
   "license": "MIT",
-  "keywords": ["spend-monitor", "budget", "cost", "claude-code", "telemetry"],
+  "keywords": [
+    "spend-monitor",
+    "budget",
+    "cost",
+    "claude-code",
+    "telemetry",
+    "claude-ai",
+    "ccusage",
+    "cost-tracking",
+    "usage-tracking",
+    "token-usage",
+    "claude-code-analytics",
+    "claude-tracker",
+    "claude-max",
+    "claude-subscription",
+    "cost-dashboard",
+    "ai-spend",
+    "llm-cost",
+    "multi-machine",
+    "team",
+    "burn-rate"
+  ],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json"
 }
