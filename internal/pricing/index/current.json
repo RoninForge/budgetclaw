@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-07-01",
+  "dataModified": "2026-07-08",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -229,8 +229,8 @@
       "variation": "input",
       "price_usd": 0.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-29",
-      "confidence": "inferred",
+      "last_validated": "2026-07-08",
+      "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
     {
@@ -239,8 +239,8 @@
       "variation": "output",
       "price_usd": 3,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-29",
-      "confidence": "inferred",
+      "last_validated": "2026-07-08",
+      "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
     {
@@ -249,8 +249,8 @@
       "variation": "input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-29",
-      "confidence": "inferred",
+      "last_validated": "2026-07-08",
+      "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
     {
@@ -259,8 +259,8 @@
       "variation": "output",
       "price_usd": 7.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-29",
-      "confidence": "inferred",
+      "last_validated": "2026-07-08",
+      "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
     {
