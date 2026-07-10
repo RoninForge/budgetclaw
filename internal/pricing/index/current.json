@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-07-09",
+  "dataModified": "2026-07-10",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1561,6 +1561,26 @@
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
       "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.3-codex",
+      "variation": "input",
+      "price_usd": 1.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-07-10",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.3-codex",
+      "variation": "output",
+      "price_usd": 14,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-07-10",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {

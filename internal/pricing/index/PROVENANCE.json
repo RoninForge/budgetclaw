@@ -1,11 +1,11 @@
 {
-  "tag": "v2026.07.09-43f905c",
-  "commit": "43f905ccd4088334329ecc62ca7acfd2017ac98e",
-  "fetched_at": "2026-07-09T05:36:12Z",
+  "tag": "v2026.07.10-cc35e0b",
+  "commit": "cc35e0bf2308ecb601d738852bf732381cbdadea",
+  "fetched_at": "2026-07-10T08:22:14Z",
   "files": {
     "LICENSE": "58bf8d4b416bb4b03d9cb92182427fca655b1c76339c85bce0c3d191db648cf9",
-    "current.json": "fbbc323c5e121d3bbc1a4d0cdc4ef58469ee3bf4c12c80919b5e4c6405e4a92a",
-    "index.json": "af2d92f198238f3734449c0bf1c85793488b257b33c2d14adeefb59d51c2cc00",
+    "current.json": "8e28b3d7342f3e30dffbafbcc725c8b0137408b1bf27c9fa6876661e6aafd268",
+    "index.json": "efb4888ceda6e3ad3bf049fbb76b48bbfb850f0c52669f3aa9184be4be552b22",
     "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json": "301e13f9bddd2856bd039592ab91d4f2f4a9b0f4a9b9ed0306a206305f7422cf",
     "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json": "d130c5c0afb3b1f3cda32b540fdbf7d2d63851a080e848c69a39902bc2e01aac",
     "models/anthropic/claude-3-7-sonnet-20250219.va4cfdfe6.json": "e12db1a580a31bf0a3e72dce9fc226f2ed71507b0b339eae0212caa3c3ac1456",
