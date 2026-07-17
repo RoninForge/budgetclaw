@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.2.0] - 2026-07-18
+
+### Added
+
+- `budgetclaw sync --show-payload` prints the exact JSON request body that `sync` would POST to Goei and sends nothing. It needs no device token, so you can audit every byte that would leave your machine (daily cost and token rollups, model, project, branch, and machine label; never prompts or code) against Goei's published ingest contract before ever connecting an account.
+- `budgetclaw sync --save` persists the resolved device token (and any explicit `--endpoint`/`--machine`) to the config file so later syncs run with no flags. Empty arguments are preserved, so saving just a token keeps an existing endpoint or machine.
+
 ## [v1.1.4] - 2026-07-10
 
 ### Changed
