@@ -279,6 +279,86 @@ func TestSetNtfyConfigPreservesLimits(t *testing.T) {
 	}
 }
 
+func TestSetGoeiConfigFirstTime(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+
+	if err := SetGoeiConfig(path, "goei_dt_0123456789abcdef0123456789abcdef", "https://goei.example/api/ingest", "mbp-work"); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GoeiToken != "goei_dt_0123456789abcdef0123456789abcdef" {
+		t.Errorf("token = %q", cfg.GoeiToken)
+	}
+	if cfg.GoeiEndpoint != "https://goei.example/api/ingest" {
+		t.Errorf("endpoint = %q", cfg.GoeiEndpoint)
+	}
+	if cfg.GoeiMachine != "mbp-work" {
+		t.Errorf("machine = %q", cfg.GoeiMachine)
+	}
+}
+
+// TestSetGoeiConfigEmptyArgsPreserve ensures saving just a token does not
+// wipe an endpoint or machine set on an earlier save.
+func TestSetGoeiConfigEmptyArgsPreserve(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+
+	if err := SetGoeiConfig(path, "goei_dt_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "https://goei.example/api/ingest", "mbp-work"); err != nil {
+		t.Fatal(err)
+	}
+	// A later save of only a new token must keep the endpoint and machine.
+	if err := SetGoeiConfig(path, "goei_dt_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GoeiToken != "goei_dt_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" {
+		t.Errorf("token not updated: %q", cfg.GoeiToken)
+	}
+	if cfg.GoeiEndpoint != "https://goei.example/api/ingest" {
+		t.Errorf("endpoint not preserved: %q", cfg.GoeiEndpoint)
+	}
+	if cfg.GoeiMachine != "mbp-work" {
+		t.Errorf("machine not preserved: %q", cfg.GoeiMachine)
+	}
+}
+
+// TestSetGoeiConfigPreservesLimits ensures writing the [goei] section does
+// not drop existing [[limit]] rules.
+func TestSetGoeiConfigPreservesLimits(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+
+	if err := AddLimit(path, Rule{
+		Project: "myapp", Branch: "main",
+		Period: PeriodDaily, CapUSD: 5, Action: ActionKill,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetGoeiConfig(path, "goei_dt_0123456789abcdef0123456789abcdef", "", ""); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Rules) != 1 {
+		t.Errorf("limits lost: got %d rules", len(cfg.Rules))
+	}
+	if cfg.GoeiToken != "goei_dt_0123456789abcdef0123456789abcdef" {
+		t.Errorf("token = %q", cfg.GoeiToken)
+	}
+}
+
 // TestAddLimitInvalidPath surfaces a useful filesystem error.
 func TestAddLimitInvalidPath(t *testing.T) {
 	// A path containing a NUL byte is rejected by os.OpenFile

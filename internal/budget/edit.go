@@ -152,6 +152,32 @@ func SetNtfyConfig(path, server, topic string, minCostUSD float64) error {
 	return writeTOML(path, t)
 }
 
+// SetGoeiConfig persists the [goei] section so `budgetclaw sync` can run
+// without --token or an env var on later invocations. Only non-empty
+// arguments are written, so saving just a token preserves an existing
+// endpoint or machine. Like the other edit helpers, writing back drops
+// hand-written comments; users who maintain the file by hand should edit
+// it directly.
+func SetGoeiConfig(path, token, endpoint, machine string) error {
+	t, err := loadTOML(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if t == nil {
+		t = &tomlConfig{}
+	}
+	if token != "" {
+		t.Goei.Token = token
+	}
+	if endpoint != "" {
+		t.Goei.Endpoint = endpoint
+	}
+	if machine != "" {
+		t.Goei.Machine = machine
+	}
+	return writeTOML(path, t)
+}
+
 // loadTOML reads and decodes the config file into a tomlConfig.
 // Returns (empty tomlConfig, nil) for a missing file so callers
 // can treat "no config" and "empty config" identically.

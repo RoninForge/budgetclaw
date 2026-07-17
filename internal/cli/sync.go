@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/RoninForge/budgetclaw/internal/budget"
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/goei"
 )
@@ -30,13 +32,15 @@ const envMachine = "GOEI_MACHINE"
 // summary is transmitted.
 func newSyncCmd() *cobra.Command {
 	var (
-		token    string
-		endpoint string
-		machine  string
-		days     int
-		since    string
-		noBranch bool
-		dryRun   bool
+		token       string
+		endpoint    string
+		machine     string
+		days        int
+		since       string
+		noBranch    bool
+		dryRun      bool
+		save        bool
+		showPayload bool
 	)
 
 	cmd := &cobra.Command{
@@ -69,13 +73,15 @@ re-sent overwrites rather than double-counting.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runSync(cmd.Context(), cmd.OutOrStdout(), syncOptions{
-				token:    token,
-				endpoint: endpoint,
-				machine:  machine,
-				days:     days,
-				since:    since,
-				noBranch: noBranch,
-				dryRun:   dryRun,
+				token:       token,
+				endpoint:    endpoint,
+				machine:     machine,
+				days:        days,
+				since:       since,
+				noBranch:    noBranch,
+				dryRun:      dryRun,
+				save:        save,
+				showPayload: showPayload,
 			})
 		},
 	}
@@ -86,19 +92,23 @@ re-sent overwrites rather than double-counting.`,
 	cmd.Flags().IntVar(&days, "days", 30, "sync spend from the last N days")
 	cmd.Flags().StringVar(&since, "since", "", "explicit start date (YYYY-MM-DD); overrides --days")
 	cmd.Flags().BoolVar(&noBranch, "no-branch", false, "aggregate at project level instead of per git branch")
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print what would be sent without sending it")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print a summary of what would be sent without sending it")
+	cmd.Flags().BoolVar(&showPayload, "show-payload", false, "print the exact JSON request body that would be sent, then exit (sends nothing, needs no token)")
+	cmd.Flags().BoolVar(&save, "save", false, "persist the resolved token to the config file so later syncs need no --token")
 
 	return cmd
 }
 
 type syncOptions struct {
-	token    string
-	endpoint string
-	machine  string
-	days     int
-	since    string
-	noBranch bool
-	dryRun   bool
+	token       string
+	endpoint    string
+	machine     string
+	days        int
+	since       string
+	noBranch    bool
+	dryRun      bool
+	save        bool
+	showPayload bool
 }
 
 func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
@@ -115,11 +125,30 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 	if token == "" {
 		token = cfg.GoeiToken
 	}
-	if token == "" {
+	// --show-payload sends nothing, so it needs no token: a skeptical user can
+	// inspect exactly what would be transmitted before ever creating one.
+	if token == "" && !opts.showPayload {
 		return fmt.Errorf("no Goei device token: pass --token, set %s, or add [goei].token to %s\ncreate one in Goei under Settings -> Device Tokens", envToken, mustConfigPath())
 	}
-	if !goei.ValidToken(token) {
+	if token != "" && !goei.ValidToken(token) {
 		return fmt.Errorf("device token has the wrong format (expected goei_dt_ followed by 32 characters)")
+	}
+
+	// --save persists the resolved token (and any explicit endpoint/machine) so
+	// later syncs run with no flags. Runs before the send so the token is stored
+	// even if the network push later fails.
+	if opts.save {
+		if token == "" {
+			return fmt.Errorf("--save needs a token: pass --token or set %s", envToken)
+		}
+		p, err := configPath()
+		if err != nil {
+			return err
+		}
+		if err := budget.SetGoeiConfig(p, token, opts.endpoint, opts.machine); err != nil {
+			return fmt.Errorf("save token to config: %w", err)
+		}
+		fmt.Fprintf(out, "Saved Goei token to %s\n", p)
 	}
 
 	// Resolve endpoint: flag > config > default.
@@ -157,6 +186,21 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 		gAggs[i] = goei.Aggregate(a)
 	}
 	payloads := goei.BuildPayloads(gAggs, !opts.noBranch, machine)
+
+	// --show-payload prints the exact request body (sends nothing), so a user can
+	// audit every byte that would leave the machine against the ingest contract.
+	if opts.showPayload {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		enc.SetEscapeHTML(false)
+		for i, p := range payloads {
+			fmt.Fprintf(out, "# request %d of %d -> POST %s\n", i+1, len(payloads), endpointOrDefault(endpoint))
+			if err := enc.Encode(p); err != nil {
+				return fmt.Errorf("encode payload: %w", err)
+			}
+		}
+		return nil
+	}
 
 	var spendCount, usageCount, totalTokens int
 	var totalUSD float64
