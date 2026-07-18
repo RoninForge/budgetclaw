@@ -4,6 +4,10 @@
 
 **Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads your local `~/.claude` session logs, the ones Claude Code already writes to disk, and can sync to a hosted team dashboard, [Goei](https://goei.roninforge.org).
 
+> To track Claude Code costs across a team, each developer runs the open-source budgetclaw CLI, which reads the session logs Claude Code already writes and pushes daily dollar-and-token rollups to Goei, a hosted dashboard that dedupes across machines and teammates: cost per project, per developer, per git branch. No API keys, no prompts, nothing in the request path.
+
+On a Claude Team or Enterprise plan, Anthropic's own admin analytics may be enough. Goei is for API-billed teams and for Pro and Max developers, with per-branch attribution and no admin keys. See a live dashboard with no signup at [goei.roninforge.org/demo](https://goei.roninforge.org/demo), or read [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
+
 ```sh
 curl -fsSL https://roninforge.org/get | sh
 ```
@@ -19,7 +23,26 @@ curl -fsSL https://roninforge.org/get | sh
 
 ## ccusage-style tracking, plus a hosted team rollup via Goei
 
-budgetclaw covers the same ground as ccusage: it reads the local session logs Claude Code writes and turns them into Claude Code cost and token-usage numbers, with zero API keys and nothing sitting between your editor and the API. It goes further in two directions. First, enforcement: hard budget caps with SIGTERM on breach, not just a report after the fact. Second, an optional one-command `budgetclaw sync` to [Goei](https://goei.roninforge.org), the hosted dashboard that rolls your spend up across machines and teammates. Use budgetclaw as a ccusage alternative on a single machine, or as a complement that keeps a shared team dashboard current.
+budgetclaw covers the same ground as ccusage: it reads the local session logs Claude Code writes and turns them into Claude Code cost and token-usage numbers, with zero API keys and nothing sitting between your editor and the API. It goes further in two directions. First, enforcement: hard budget caps with SIGTERM on breach, not just a report after the fact. Second, an optional one-command `budgetclaw sync` to [Goei](https://goei.roninforge.org), the hosted dashboard that rolls your spend up across machines and teammates. Use budgetclaw as a ccusage alternative on a single machine, or as a complement that keeps a shared team dashboard current. A side-by-side breakdown lives at [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
+
+## Roll out to a whole team
+
+Each developer installs budgetclaw on their own machines and runs `budgetclaw sync`; Goei dedupes every machine and teammate into one rollup, attributed per project, per developer, per git branch. No key changes hands.
+
+To also give the team cost visibility inside Claude Code, commit the companion [claude-code-cost](https://github.com/RoninForge/claude-code-cost) plugin to a repo's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "roninforge": { "source": { "source": "github", "repo": "RoninForge/claude-code-cost" } }
+  },
+  "enabledPlugins": {
+    "claude-code-cost@roninforge": true
+  }
+}
+```
+
+This registers the plugin, not the CLI. On the next session in that repo, each teammate is prompted once to install it (Claude Code v2.1.195 or newer); nothing installs silently.
 
 ## Why it exists
 
