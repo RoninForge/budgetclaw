@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-07-10",
+  "dataModified": "2026-07-20",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1987,9 +1987,9 @@
       "provider": "xai",
       "model": "grok-4.5",
       "variation": "cache_read",
-      "price_usd": 0.5,
+      "price_usd": 0.3,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-09",
+      "last_validated": "2026-07-20",
       "confidence": "verified",
       "src": "https://docs.x.ai/docs/models"
     },
