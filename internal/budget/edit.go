@@ -178,6 +178,22 @@ func SetGoeiConfig(path, token, endpoint, machine string) error {
 	return writeTOML(path, t)
 }
 
+// SetAcceptRemotePolicies persists the [goei].accept_remote_policies opt-in,
+// the interactive consent that turns Guard Mode on for this machine. Like the
+// other edit helpers it preserves the rest of the [goei] section and drops
+// hand-written comments on write.
+func SetAcceptRemotePolicies(path string, accept bool) error {
+	t, err := loadTOML(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if t == nil {
+		t = &tomlConfig{}
+	}
+	t.Goei.AcceptRemotePolicies = accept
+	return writeTOML(path, t)
+}
+
 // loadTOML reads and decodes the config file into a tomlConfig.
 // Returns (empty tomlConfig, nil) for a missing file so callers
 // can treat "no config" and "empty config" identically.

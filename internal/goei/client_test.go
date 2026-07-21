@@ -335,7 +335,7 @@ func TestPushSendsAuthAndBody(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL, token)
-	n, err := c.Push(context.Background(), Payload{
+	n, _, err := c.Push(context.Background(), Payload{
 		Provider: "anthropic",
 		Spend:    []SpendRecord{{PeriodStart: "2026-06-10T00:00:00Z", PeriodEnd: "2026-06-11T00:00:00Z", AmountCents: 100, Currency: "USD"}},
 	})
@@ -358,7 +358,7 @@ func TestPushSendsAuthAndBody(t *testing.T) {
 
 func TestPushRejectsBadToken(t *testing.T) {
 	c := New("http://example.invalid", "not-a-token")
-	if _, err := c.Push(context.Background(), Payload{}); err == nil {
+	if _, _, err := c.Push(context.Background(), Payload{}); err == nil {
 		t.Error("expected error for invalid token, got nil")
 	}
 }
@@ -372,7 +372,7 @@ func TestPushSurfacesServerError(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL, token)
-	_, err := c.Push(context.Background(), Payload{Provider: "anthropic", Spend: []SpendRecord{{}}})
+	_, _, err := c.Push(context.Background(), Payload{Provider: "anthropic", Spend: []SpendRecord{{}}})
 	if err == nil {
 		t.Fatal("expected error on 401, got nil")
 	}

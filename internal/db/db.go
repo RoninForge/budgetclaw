@@ -104,6 +104,19 @@ CREATE TABLE IF NOT EXISTS rollups (
 );
 
 CREATE INDEX IF NOT EXISTS idx_rollups_day ON rollups(day);
+
+-- Guard Mode audit queue: enforcement events (a remote policy warned or
+-- killed a runaway) wait here until the next sync ships them to Goei, then
+-- are deleted. dedup_key makes queueing idempotent so re-firing the same
+-- breach in the same period does not pile up duplicate rows.
+CREATE TABLE IF NOT EXISTS guard_pending (
+	id          INTEGER PRIMARY KEY AUTOINCREMENT,
+	dedup_key   TEXT    NOT NULL DEFAULT '',
+	event_json  TEXT    NOT NULL,
+	created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_guard_pending_dedup
+	ON guard_pending(dedup_key) WHERE dedup_key != '';
 `
 
 // dayFormat is the string format used for the rollups.day column.
@@ -560,6 +573,104 @@ func (d *DB) RollupSum(ctx context.Context, project, branch string, start, end t
 		return nil, fmt.Errorf("scan rollup sum: %w", err)
 	}
 	return &r, nil
+}
+
+// TotalSum returns the summed cost across every project and branch in the
+// inclusive date range. Guard Mode uses it for a per-developer (whole-machine)
+// cap, where the runaway can be in any project.
+func (d *DB) TotalSum(ctx context.Context, start, end time.Time) (float64, error) {
+	startStr := start.UTC().Format(dayFormat)
+	endStr := end.UTC().Format(dayFormat)
+	row := d.sql.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(cost_usd), 0)
+		FROM rollups WHERE day >= ? AND day <= ?
+	`, startStr, endStr)
+	var v float64
+	if err := row.Scan(&v); err != nil {
+		return 0, fmt.Errorf("scan total sum: %w", err)
+	}
+	return v, nil
+}
+
+// ProjectSum returns the summed cost for one project across all its branches
+// in the inclusive date range. Guard Mode uses it for a per-project cap.
+func (d *DB) ProjectSum(ctx context.Context, project string, start, end time.Time) (float64, error) {
+	startStr := start.UTC().Format(dayFormat)
+	endStr := end.UTC().Format(dayFormat)
+	row := d.sql.QueryRowContext(ctx, `
+		SELECT COALESCE(SUM(cost_usd), 0)
+		FROM rollups WHERE project = ? AND day >= ? AND day <= ?
+	`, project, startStr, endStr)
+	var v float64
+	if err := row.Scan(&v); err != nil {
+		return 0, fmt.Errorf("scan project sum: %w", err)
+	}
+	return v, nil
+}
+
+// PendingGuardEvent is one queued audit record awaiting sync.
+type PendingGuardEvent struct {
+	ID   int64
+	JSON string
+}
+
+// QueueGuardEvent stores an enforcement audit event (already JSON-encoded)
+// for the next sync to ship. Returns whether a new row was inserted; a
+// duplicate dedup_key is ignored and returns false, which callers use to
+// fire a notification only on the first occurrence of a breach.
+func (d *DB) QueueGuardEvent(ctx context.Context, dedupKey, eventJSON string) (bool, error) {
+	res, err := d.sql.ExecContext(ctx,
+		`INSERT OR IGNORE INTO guard_pending (dedup_key, event_json) VALUES (?, ?)`,
+		dedupKey, eventJSON)
+	if err != nil {
+		return false, fmt.Errorf("queue guard event: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, nil
+	}
+	return n > 0, nil
+}
+
+// PendingGuardEvents returns up to limit queued audit events, oldest first.
+func (d *DB) PendingGuardEvents(ctx context.Context, limit int) ([]PendingGuardEvent, error) {
+	rows, err := d.sql.QueryContext(ctx,
+		`SELECT id, event_json FROM guard_pending ORDER BY id ASC LIMIT ?`, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query guard pending: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []PendingGuardEvent
+	for rows.Next() {
+		var e PendingGuardEvent
+		if err := rows.Scan(&e.ID, &e.JSON); err != nil {
+			return nil, fmt.Errorf("scan guard pending: %w", err)
+		}
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("guard pending rows: %w", err)
+	}
+	return out, nil
+}
+
+// DeleteGuardEvents removes queued audit events by id after a successful
+// sync. A nil/empty slice is a no-op.
+func (d *DB) DeleteGuardEvents(ctx context.Context, ids []int64) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+	q := "DELETE FROM guard_pending WHERE id IN (" + strings.Join(placeholders, ",") + ")"
+	if _, err := d.sql.ExecContext(ctx, q, args...); err != nil {
+		return fmt.Errorf("delete guard events: %w", err)
+	}
+	return nil
 }
 
 // StatusByProject returns rollup totals grouped by (project, branch)

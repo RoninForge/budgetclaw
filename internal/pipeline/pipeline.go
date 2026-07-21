@@ -24,6 +24,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -33,8 +34,10 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/budget"
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/enforcer"
+	"github.com/RoninForge/budgetclaw/internal/goei"
 	"github.com/RoninForge/budgetclaw/internal/ntfy"
 	"github.com/RoninForge/budgetclaw/internal/parser"
+	"github.com/RoninForge/budgetclaw/internal/policy"
 	"github.com/RoninForge/budgetclaw/internal/pricing"
 )
 
@@ -57,6 +60,24 @@ type Pipeline struct {
 	// Logger receives structured debug and error messages. Quiet
 	// by default so daemon mode does not spam stderr.
 	Logger *slog.Logger
+
+	// Machine is the identity stamped on Guard Mode audit events, so the
+	// team owner can see which machine a runaway was stopped on. Empty is
+	// fine (the server treats it as unknown).
+	Machine string
+
+	// guardMu guards guardPolicies, the locally-enforceable remote caps.
+	// The watch loop's policy ticker swaps the set atomically via
+	// SetGuardPolicies while Handle reads a snapshot per event.
+	guardMu       sync.Mutex
+	guardPolicies []policy.Policy
+
+	// firedGuardMu guards firedGuard, which dedups a remote breach's
+	// notification + audit event to once per (policy, period, action) in
+	// this run. The kill mechanics still run every time so each offending
+	// session is stopped; only the notify/audit is deduped.
+	firedGuardMu sync.Mutex
+	firedGuard   map[string]bool
 
 	// unknownModelsMu guards unknownModels. The watcher dispatches
 	// Handle from a single goroutine today, but the lock keeps the
@@ -176,7 +197,159 @@ func (p *Pipeline) Handle(ctx context.Context, e *parser.Event, _ string) error 
 		p.dispatch(ctx, e, v, log)
 	}
 
+	// --- 6. Guard Mode: enforce remote team policies --------------
+	// Reached only when the scope was not already locked (step 3 returns
+	// early otherwise), so this never double-fires on a locked session.
+	p.evaluateGuard(ctx, e, now(), log)
+
 	return nil
+}
+
+// SetGuardPolicies atomically replaces the locally-enforceable remote policy
+// set. Called by the watch loop's policy ticker after each refresh; only
+// local_exact policies belong here (server-aggregate caps warn elsewhere).
+func (p *Pipeline) SetGuardPolicies(policies []policy.Policy) {
+	p.guardMu.Lock()
+	p.guardPolicies = policies
+	p.guardMu.Unlock()
+}
+
+func (p *Pipeline) guardSnapshot() []policy.Policy {
+	p.guardMu.Lock()
+	defer p.guardMu.Unlock()
+	return p.guardPolicies
+}
+
+// markFiredGuard records that (policy, period, action) has notified this run
+// and reports whether this call is the first to do so.
+func (p *Pipeline) markFiredGuard(key string) bool {
+	p.firedGuardMu.Lock()
+	defer p.firedGuardMu.Unlock()
+	if p.firedGuard == nil {
+		p.firedGuard = make(map[string]bool)
+	}
+	if p.firedGuard[key] {
+		return false
+	}
+	p.firedGuard[key] = true
+	return true
+}
+
+// evaluateGuard checks this event against every locally-enforceable remote
+// policy and enforces breaches. A per-developer/team cap sums the whole
+// machine's spend; a per-project cap sums that project and only acts on a
+// session in it, so an unrelated project is never killed for another's cap.
+func (p *Pipeline) evaluateGuard(ctx context.Context, e *parser.Event, now time.Time, log *slog.Logger) {
+	policies := p.guardSnapshot()
+	if len(policies) == 0 {
+		return
+	}
+
+	for _, pol := range policies {
+		// Remote caps use UTC, not the user's local [general].timezone: a shared
+		// team cap must resolve to one window for everyone, and the server defines
+		// that window (and its "spent so far") in UTC. Local TOML rules keep the
+		// user's own timezone; only these server-owned policies are pinned to UTC.
+		start, end := budget.PeriodBounds(policy.MapPeriod(pol.Period), now, time.UTC)
+
+		var spent float64
+		var err error
+		if pol.ScopeType == "project" {
+			// Only the capped project's own sessions are eligible; a runaway
+			// in a different project is not this cap's business.
+			if pol.ScopeValue == "" || e.Project != pol.ScopeValue {
+				continue
+			}
+			spent, err = p.DB.ProjectSum(ctx, pol.ScopeValue, start, end)
+		} else {
+			// team / dev -> the whole machine is this developer's own spend.
+			spent, err = p.DB.TotalSum(ctx, start, end)
+		}
+		if err != nil {
+			log.Warn("guard: spend query failed", "policy", pol.ID, "err", err)
+			continue
+		}
+		if spent <= pol.CapUSD() {
+			continue
+		}
+		p.fireGuard(ctx, e, pol, spent, end, now, log)
+	}
+}
+
+// fireGuard enforces one breached remote policy: kill (SIGTERM + lock) or
+// warn, plus a once-per-period notification and queued audit event.
+func (p *Pipeline) fireGuard(ctx context.Context, e *parser.Event, pol policy.Policy, spent float64, periodEnd, now time.Time, log *slog.Logger) {
+	first := p.markFiredGuard(pol.ID + "|" + periodEnd.Format(time.RFC3339) + "|" + pol.Action)
+	title := "budgetclaw: guard stopped a runaway"
+	reason := fmt.Sprintf("%s cap $%.2f breached at $%.2f (%s)",
+		pol.Period, pol.CapUSD(), spent, setByLabel(pol.SetBy))
+
+	if pol.Action == "kill" {
+		lock := enforcer.Lock{
+			Project:    e.Project,
+			Branch:     e.GitBranch,
+			Period:     policy.MapPeriod(pol.Period).String(),
+			Reason:     reason,
+			CapUSD:     pol.CapUSD(),
+			CurrentUSD: spent,
+			LockedAt:   time.Now().UTC(),
+			ExpiresAt:  periodEnd,
+			PolicyID:   pol.ID,
+		}
+		killed, err := p.Enforcer.HandleBreach(ctx, lock, e.CWD)
+		if err != nil {
+			log.Error("guard: handle-breach failed", "policy", pol.ID, "project", e.Project, "err", err)
+		}
+		log.Info("guard kill breach",
+			"policy", pol.ID, "project", e.Project, "branch", e.GitBranch,
+			"cap", pol.CapUSD(), "current", spent, "pids", killed)
+		if first {
+			if err := p.Notifier.SendKill(ctx, title, reason); err != nil {
+				log.Warn("ntfy: guard send-kill failed", "policy", pol.ID, "err", err)
+			}
+			p.queueGuardEvent(ctx, e, pol, spent, periodEnd, now, log)
+		}
+		return
+	}
+
+	// warn
+	if first {
+		if err := p.Notifier.SendWarn(ctx, title, reason); err != nil {
+			log.Warn("ntfy: guard send-warn failed", "policy", pol.ID, "err", err)
+		}
+		p.queueGuardEvent(ctx, e, pol, spent, periodEnd, now, log)
+	}
+}
+
+// queueGuardEvent persists a content-free audit event for the next sync.
+func (p *Pipeline) queueGuardEvent(ctx context.Context, e *parser.Event, pol policy.Policy, spent float64, periodEnd, now time.Time, log *slog.Logger) {
+	ev := goei.GuardEvent{
+		PolicyID:    pol.ID,
+		Action:      pol.Action,
+		ScopeType:   pol.ScopeType,
+		ScopeValue:  e.Project, // where the runaway actually was
+		Machine:     p.Machine,
+		AmountCents: int(spent*100 + 0.5),
+		CapCents:    pol.CapCents,
+		At:          now.UTC().Format(time.RFC3339),
+		DedupKey:    pol.ID + ":" + periodEnd.Format(time.RFC3339) + ":" + pol.Action,
+	}
+	raw, err := json.Marshal(ev)
+	if err != nil {
+		log.Warn("guard: marshal audit event failed", "policy", pol.ID, "err", err)
+		return
+	}
+	if _, err := p.DB.QueueGuardEvent(ctx, ev.DedupKey, string(raw)); err != nil {
+		log.Warn("guard: queue audit event failed", "policy", pol.ID, "err", err)
+	}
+}
+
+// setByLabel renders who set a policy for a legible breach message.
+func setByLabel(setBy string) string {
+	if setBy == "" {
+		return "set by your team"
+	}
+	return "set by " + setBy
 }
 
 // dispatch handles a single breached verdict: formats the message,

@@ -13,6 +13,7 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/budget"
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/goei"
+	"github.com/RoninForge/budgetclaw/internal/policy"
 )
 
 // envToken is the environment variable checked for a Goei device token
@@ -223,13 +224,61 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 	}
 
 	client := goei.New(endpoint, token)
+
+	// Flush any queued Guard Mode audit events with the first request. The
+	// ingest endpoint requires a non-empty spend array, so events ride along
+	// with real spend rather than in a request of their own.
+	var flushedIDs []int64
+	if len(payloads) > 0 {
+		pending, perr := store.PendingGuardEvents(ctx, 200)
+		if perr != nil {
+			fmt.Fprintf(out, "warning: could not read queued guard events: %v\n", perr)
+		} else if len(pending) > 0 {
+			evs := make([]goei.GuardEvent, 0, len(pending))
+			for _, pe := range pending {
+				var ev goei.GuardEvent
+				if json.Unmarshal([]byte(pe.JSON), &ev) != nil {
+					continue
+				}
+				evs = append(evs, ev)
+				flushedIDs = append(flushedIDs, pe.ID)
+			}
+			payloads[0].GuardEvents = evs
+		}
+	}
+
 	var stored int
+	var lastPolicy *goei.PolicyResponse
 	for i, p := range payloads {
-		n, err := client.Push(ctx, p)
+		n, pr, err := client.Push(ctx, p)
 		if err != nil {
 			return fmt.Errorf("sync request %d/%d failed: %w", i+1, len(payloads), err)
 		}
 		stored += n
+		if pr != nil {
+			lastPolicy = pr
+		}
+		// The first request carried the queued audit events; once it is
+		// accepted they are recorded server-side (dedup-safe), so clear them.
+		if i == 0 && len(flushedIDs) > 0 {
+			if derr := store.DeleteGuardEvents(ctx, flushedIDs); derr != nil {
+				fmt.Fprintf(out, "warning: could not clear queued guard events: %v\n", derr)
+			}
+		}
+	}
+
+	// Cache the piggybacked policy set (opt-in only) so `limit list` and the
+	// next `watch` reflect it. Preserve the existing ETag: it belongs to the
+	// GET poll, and the piggyback response carries none.
+	if cfg.AcceptRemotePolicies && lastPolicy != nil {
+		etag := ""
+		if existing, err := policy.Load(); err == nil && existing != nil {
+			etag = existing.ETag
+		}
+		bundle := policy.BundleFromResponse(lastPolicy, etag, time.Now().UTC().Format(time.RFC3339))
+		if err := policy.Save(bundle); err != nil {
+			fmt.Fprintf(out, "warning: could not cache policies: %v\n", err)
+		}
 	}
 
 	fmt.Fprintf(out, "Synced %d spend + %d usage records (%s) to %s\n",

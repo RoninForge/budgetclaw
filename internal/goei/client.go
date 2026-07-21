@@ -113,6 +113,55 @@ type Payload struct {
 	Provider string        `json:"provider"`
 	Spend    []SpendRecord `json:"spend"`
 	Usage    []UsageRecord `json:"usage,omitempty"`
+	// GuardEvents carries content-free enforcement audit records back up
+	// with the sync (Guard Mode's audit channel). Omitted when there are
+	// none, so a plain sync is byte-for-byte unchanged.
+	GuardEvents []GuardEvent `json:"guardEvents,omitempty"`
+}
+
+// GuardEvent is one enforcement audit record: a remote policy warned or
+// killed a runaway on this machine. Content-free by construction (ids,
+// amounts, scope labels, machine, timestamps only), so it upholds the
+// zero-prompt pledge exactly like the spend records do.
+type GuardEvent struct {
+	PolicyID    string `json:"policyId"`
+	Action      string `json:"action"` // notify | warn | kill | override
+	ScopeType   string `json:"scopeType,omitempty"`
+	ScopeValue  string `json:"scopeValue,omitempty"`
+	Machine     string `json:"machine,omitempty"`
+	AmountCents int    `json:"amountCents"`
+	CapCents    int    `json:"capCents"`
+	At          string `json:"at,omitempty"`
+	// DedupKey makes reporting idempotent: the server INSERT OR IGNOREs on
+	// it, so a re-sent event (same period, same action) is recorded once.
+	DedupKey string `json:"dedupKey,omitempty"`
+}
+
+// WirePolicy is one budget policy as Goei serializes it for this device
+// on the Guard Mode down-channel. enforcement is "local_exact" (enforce
+// against this machine's own rollup, kill-eligible) or "server_aggregate"
+// (a team-wide figure this device can only warn against, with staleness).
+type WirePolicy struct {
+	ID    string `json:"id"`
+	Scope struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	} `json:"scope"`
+	Period           string `json:"period"`
+	CapCents         int    `json:"capCents"`
+	Enforcement      string `json:"enforcement"`
+	Action           string `json:"action"`
+	ServerSpentCents int    `json:"serverSpentCents"`
+	AsOf             string `json:"asOf"`
+	SetBy            string `json:"setBy"`
+	Source           string `json:"source"`
+}
+
+// PolicyResponse is the Guard Mode policy bundle, returned both by
+// GET /api/policy and piggybacked on the POST /api/ingest response.
+type PolicyResponse struct {
+	PolicyVersion int          `json:"policyVersion"`
+	Policies      []WirePolicy `json:"policies"`
 }
 
 // Aggregate is the neutral input to BuildPayloads, decoupled from the
@@ -302,21 +351,22 @@ func New(endpoint, token string) *Client {
 }
 
 // Push sends a single payload and returns the number of records Goei
-// reports it stored. Errors include the HTTP status and a snippet of
-// the response body for diagnosis.
-func (c *Client) Push(ctx context.Context, p Payload) (int, error) {
+// reports it stored, plus any Guard Mode policy bundle piggybacked on the
+// response (nil when the server sends none). Errors include the HTTP
+// status and a snippet of the response body for diagnosis.
+func (c *Client) Push(ctx context.Context, p Payload) (int, *PolicyResponse, error) {
 	if !ValidToken(c.Token) {
-		return 0, fmt.Errorf("invalid device token format (expected goei_dt_ + 32 chars)")
+		return 0, nil, fmt.Errorf("invalid device token format (expected goei_dt_ + 32 chars)")
 	}
 
 	body, err := json.Marshal(p)
 	if err != nil {
-		return 0, fmt.Errorf("marshal payload: %w", err)
+		return 0, nil, fmt.Errorf("marshal payload: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.Endpoint, bytes.NewReader(body))
 	if err != nil {
-		return 0, fmt.Errorf("build request: %w", err)
+		return 0, nil, fmt.Errorf("build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.Token)
@@ -327,22 +377,87 @@ func (c *Client) Push(ctx context.Context, p Payload) (int, error) {
 	}
 	resp, err := hc.Do(req)
 	if err != nil {
-		return 0, fmt.Errorf("post to %s: %w", c.Endpoint, err)
+		return 0, nil, fmt.Errorf("post to %s: %w", c.Endpoint, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+	// The response now carries an optional policy bundle, so allow more than
+	// the old 4 KB.
+	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if resp.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("ingest rejected (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
+		return 0, nil, fmt.Errorf("ingest rejected (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(respBody)))
 	}
 
 	var parsed struct {
-		OK      bool `json:"ok"`
-		Records int  `json:"records"`
+		OK            bool         `json:"ok"`
+		Records       int          `json:"records"`
+		PolicyVersion int          `json:"policyVersion"`
+		Policies      []WirePolicy `json:"policies"`
 	}
 	if err := json.Unmarshal(respBody, &parsed); err != nil {
 		// 200 with an unexpected body still counts as delivered.
-		return 0, nil
+		return 0, nil, nil
 	}
-	return parsed.Records, nil
+	return parsed.Records, &PolicyResponse{PolicyVersion: parsed.PolicyVersion, Policies: parsed.Policies}, nil
+}
+
+// PullPolicies fetches this device's Guard Mode policy set from
+// GET /api/policy. A conditional request with the last ETag returns
+// notModified=true and no body when nothing changed, so `budgetclaw watch`
+// can poll cheaply. The returned etag should be passed to the next call.
+func (c *Client) PullPolicies(ctx context.Context, etag string) (resp *PolicyResponse, newETag string, notModified bool, err error) {
+	if !ValidToken(c.Token) {
+		return nil, "", false, fmt.Errorf("invalid device token format (expected goei_dt_ + 32 chars)")
+	}
+
+	url := policyURLFor(c.Endpoint)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	if etag != "" {
+		req.Header.Set("If-None-Match", etag)
+	}
+
+	hc := c.HTTP
+	if hc == nil {
+		hc = &http.Client{Timeout: 30 * time.Second}
+	}
+	httpResp, err := hc.Do(req)
+	if err != nil {
+		return nil, "", false, fmt.Errorf("get %s: %w", url, err)
+	}
+	defer func() { _ = httpResp.Body.Close() }()
+
+	if httpResp.StatusCode == http.StatusNotModified {
+		return nil, etag, true, nil
+	}
+
+	respBody, _ := io.ReadAll(io.LimitReader(httpResp.Body, 1<<20))
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, "", false, fmt.Errorf("policy fetch rejected (HTTP %d): %s", httpResp.StatusCode, strings.TrimSpace(string(respBody)))
+	}
+
+	var pr PolicyResponse
+	if err := json.Unmarshal(respBody, &pr); err != nil {
+		return nil, "", false, fmt.Errorf("decode policy response: %w", err)
+	}
+	return &pr, httpResp.Header.Get("ETag"), false, nil
+}
+
+// policyURLFor derives the policy endpoint from the ingest endpoint by
+// swapping the trailing path segment, so a custom --endpoint keeps host and
+// scheme. The default ".../api/ingest" becomes ".../api/policy".
+func policyURLFor(endpoint string) string {
+	if endpoint == "" {
+		endpoint = DefaultEndpoint
+	}
+	if strings.HasSuffix(endpoint, "/api/ingest") {
+		return strings.TrimSuffix(endpoint, "/api/ingest") + "/api/policy"
+	}
+	if strings.HasSuffix(endpoint, "/ingest") {
+		return strings.TrimSuffix(endpoint, "/ingest") + "/policy"
+	}
+	return strings.TrimRight(endpoint, "/") + "/api/policy"
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/RoninForge/budgetclaw/internal/budget"
+	"github.com/RoninForge/budgetclaw/internal/policy"
 )
 
 // newLimitCmd creates the `budgetclaw limit` parent command with
@@ -106,18 +107,50 @@ func runLimitList(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if len(cfg.Rules) == 0 {
+	// Best-effort: cached remote Guard Mode policies are shown alongside local
+	// rules with a SOURCE column so it is obvious which caps the team set.
+	cached, _ := policy.Load()
+	remote := 0
+	if cached != nil {
+		remote = len(cached.Policies)
+	}
+	if len(cfg.Rules) == 0 && remote == 0 {
 		fmt.Fprintln(out, "No limit rules configured. Add one with `budgetclaw limit set`.")
 		return nil
 	}
 
 	tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
-	fmt.Fprintln(tw, "#\tPROJECT\tBRANCH\tPERIOD\tCAP\tACTION")
-	for i, r := range cfg.Rules {
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t$%.2f\t%s\n",
-			i+1, r.Project, r.Branch, r.Period, r.CapUSD, r.Action)
+	fmt.Fprintln(tw, "#\tPROJECT\tBRANCH\tPERIOD\tCAP\tACTION\tSOURCE")
+	n := 0
+	for _, r := range cfg.Rules {
+		n++
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t$%.2f\t%s\tlocal\n",
+			n, r.Project, r.Branch, r.Period, r.CapUSD, r.Action)
+	}
+	if cached != nil {
+		for _, p := range cached.Policies {
+			n++
+			action := p.Action
+			if !p.IsLocalExact() {
+				action = "warn" // server-aggregate caps are warn-only on a single machine
+			}
+			fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t$%.2f\t%s\tgoei\n",
+				n, remoteProjectLabel(p), "*", policy.MapPeriod(p.Period).String(), p.CapUSD(), action)
+		}
 	}
 	return tw.Flush()
+}
+
+// remoteProjectLabel renders a remote policy's scope in the PROJECT column.
+func remoteProjectLabel(p policy.Policy) string {
+	switch p.ScopeType {
+	case "team":
+		return "(team)"
+	case "dev":
+		return "(you)"
+	default:
+		return p.ScopeValue
+	}
 }
 
 func newLimitRmCmd() *cobra.Command {

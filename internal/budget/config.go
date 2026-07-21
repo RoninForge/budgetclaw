@@ -176,6 +176,12 @@ type Config struct {
 	GoeiToken    string
 	GoeiEndpoint string
 	GoeiMachine  string
+
+	// AcceptRemotePolicies opts this machine in to Guard Mode: only when
+	// true does `budgetclaw watch` fetch and locally enforce the budget caps
+	// a Goei team owner set. Defaults false — a device never silently obeys a
+	// server. Toggle it with `budgetclaw guard on|off`.
+	AcceptRemotePolicies bool
 }
 
 // tomlConfig mirrors the TOML schema for deserialization. Keep it
@@ -192,9 +198,10 @@ type tomlConfig struct {
 		} `toml:"ntfy"`
 	} `toml:"alerts"`
 	Goei struct {
-		Token    string `toml:"token"`
-		Endpoint string `toml:"endpoint"`
-		Machine  string `toml:"machine"`
+		Token                string `toml:"token"`
+		Endpoint             string `toml:"endpoint"`
+		Machine              string `toml:"machine"`
+		AcceptRemotePolicies bool   `toml:"accept_remote_policies"`
 	} `toml:"goei"`
 	Limit []tomlLimit `toml:"limit"`
 }
@@ -219,12 +226,13 @@ func Parse(data []byte) (*Config, error) {
 	}
 
 	cfg := &Config{
-		NtfyServer:     t.Alerts.Ntfy.Server,
-		NtfyTopic:      t.Alerts.Ntfy.Topic,
-		NtfyMinCostUSD: t.Alerts.Ntfy.MinCostUSD,
-		GoeiToken:      t.Goei.Token,
-		GoeiEndpoint:   t.Goei.Endpoint,
-		GoeiMachine:    t.Goei.Machine,
+		NtfyServer:           t.Alerts.Ntfy.Server,
+		NtfyTopic:            t.Alerts.Ntfy.Topic,
+		NtfyMinCostUSD:       t.Alerts.Ntfy.MinCostUSD,
+		GoeiToken:            t.Goei.Token,
+		GoeiEndpoint:         t.Goei.Endpoint,
+		GoeiMachine:          t.Goei.Machine,
+		AcceptRemotePolicies: t.Goei.AcceptRemotePolicies,
 	}
 
 	if t.General.Timezone == "" {

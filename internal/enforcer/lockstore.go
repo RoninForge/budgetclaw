@@ -47,6 +47,11 @@ type Lock struct {
 	CurrentUSD float64   `json:"current_usd"`
 	LockedAt   time.Time `json:"locked_at"`
 	ExpiresAt  time.Time `json:"expires_at"` // auto-unlock at this time
+	// PolicyID is set when the lock came from a remote Guard Mode policy
+	// (empty for a local rule). It lets `budgetclaw unlock` emit an override
+	// audit event so the team owner sees the cap was lifted. Omitted from JSON
+	// when empty so local locks are byte-for-byte unchanged.
+	PolicyID string `json:"policy_id,omitempty"`
 }
 
 // Expired reports whether the lock's period has rolled over and
