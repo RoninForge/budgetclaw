@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.3.0] - 2026-07-21
+
+### Added
+
+- Guard Mode: enforce your Goei team's budget caps locally. Opt in with `budgetclaw guard on`; `budgetclaw watch` then fetches the caps your team owner set (over your existing device token) and enforces them on this machine, even offline. A per-developer or team cap sums your whole machine's spend; a per-project cap sums that project. Only caps that are exactly computable on your machine can kill (SIGTERM the runaway, plus a lockfile that names the rule, who set it, and spend versus cap); team-aggregate caps warn only and show how stale the team figure is. It polices agents, not developers: a kill stops a runaway session, and every enforcement event that syncs back is content-free (rule id, amount, cap, machine, timestamp; never prompts or code). A device never obeys a server until you turn Guard Mode on.
+- `budgetclaw guard on` / `off` / `status` manage the opt-in and show which caps are cached.
+- `budgetclaw limit list` gains a SOURCE column so local rules and team (`goei`) caps are distinguishable at a glance.
+
+### Changed
+
+- `budgetclaw sync` now carries any queued Guard Mode audit events up with your spend and refreshes the cached policy set from the response. Nothing new leaves your machine beyond the content-free enforcement events above.
+
 ## [v1.2.1] - 2026-07-20
 
 ### Changed
