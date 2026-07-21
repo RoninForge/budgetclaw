@@ -666,6 +666,8 @@ func (d *DB) DeleteGuardEvents(ctx context.Context, ids []int64) error {
 		placeholders[i] = "?"
 		args[i] = id
 	}
+	// #nosec G202 -- placeholders contains only "?" bind markers (one per id); the
+	// ids are passed as bound args, so this is parameterized, not injectable.
 	q := "DELETE FROM guard_pending WHERE id IN (" + strings.Join(placeholders, ",") + ")"
 	if _, err := d.sql.ExecContext(ctx, q, args...); err != nil {
 		return fmt.Errorf("delete guard events: %w", err)
