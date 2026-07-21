@@ -8,6 +8,8 @@
 
 On a Claude Team or Enterprise plan, Anthropic's own admin analytics may be enough. Goei is for API-billed teams and for Pro and Max developers, with per-branch attribution and no admin keys. See a live dashboard with no signup at [goei.roninforge.org/demo](https://goei.roninforge.org/demo), or read [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
 
+For a zero-install one-off from a single machine, [`npx goei-sync`](https://github.com/RoninForge/goei-sync) pushes the same daily usage to Goei by day and model. budgetclaw goes further: per-project and per-git-branch attribution, and hard spend caps.
+
 ```sh
 curl -fsSL https://roninforge.org/get | sh
 ```
