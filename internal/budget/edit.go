@@ -178,6 +178,24 @@ func SetGoeiConfig(path, token, endpoint, machine string) error {
 	return writeTOML(path, t)
 }
 
+// SetGoeiEndpoint sets (or, with an empty string, CLEARS) the [goei].endpoint. Unlike
+// SetGoeiConfig, which treats an empty argument as "leave unchanged", this always
+// writes the given value, so a caller can deliberately reset the endpoint back to the
+// built-in default. Used by `team join` so switching from a self-hosted team to a
+// default-hosted one does not leave a stale custom endpoint behind that would then
+// misdirect sync.
+func SetGoeiEndpoint(path, endpoint string) error {
+	t, err := loadTOML(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if t == nil {
+		t = &tomlConfig{}
+	}
+	t.Goei.Endpoint = endpoint
+	return writeTOML(path, t)
+}
+
 // SetAcceptRemotePolicies persists the [goei].accept_remote_policies opt-in,
 // the interactive consent that turns Guard Mode on for this machine. Like the
 // other edit helpers it preserves the rest of the [goei] section and drops

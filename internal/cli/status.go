@@ -83,6 +83,7 @@ func runStatus(ctx context.Context, out io.Writer) error {
 
 	if len(rows) == 0 {
 		fmt.Fprintln(out, "No activity tracked yet. Run `budgetclaw watch` to start.")
+		maybeShowDiscovery(out)
 		return nil
 	}
 
@@ -115,7 +116,14 @@ func runStatus(ctx context.Context, out io.Writer) error {
 	if len(keys) > 1 {
 		fmt.Fprintf(tw, "TOTAL\t\t$%.2f\t$%.2f\t$%.2f\n", sumDay, sumWeek, sumMonth)
 	}
-	return tw.Flush()
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+
+	// Best-effort: if this repo points at a Goei team and this machine has not joined,
+	// show the one-time join disclosure. Never affects the status command's success.
+	maybeShowDiscovery(out)
+	return nil
 }
 
 // loadConfigOrDefault loads config.toml or returns a sane empty

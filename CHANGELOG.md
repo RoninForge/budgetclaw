@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v1.3.0] - 2026-07-21
+## [v1.4.0] - 2026-07-22
+
+### Added
+
+- `budgetclaw team join`: join a Goei team from inside a repo whose lead has committed a `.budgetclaw.toml` pointer. The command requests to join, prints a short code plus a URL to confirm in your browser, and finishes automatically once a team owner or admin approves your device, saving the device token and running a first sync. No API keys change hands, and no credential ever lives in the repo: the committed file holds only a team name, endpoint, and a revocable join code that authorizes a request to join, never access to any data. A repo-readable code never auto-admits anyone; a human always approves the device. If the pointer targets a non-default host, the host is shown before anything is contacted.
+- `budgetclaw team link`: write the committed `.budgetclaw.toml` pointer for a repo from a join code you copy out of Goei (Link a repo), for leads who prefer the terminal to the web panel.
+- `budgetclaw status` shows a one-line notice, at most once per repo every 14 days, when the current repo has a team pointer but this machine has not joined. Set `prompts = false` in the pointer's `[goei]` section to silence it. The line is generated purely by reading the committed file; a non-member never makes a network call.
 
 ### Added
 

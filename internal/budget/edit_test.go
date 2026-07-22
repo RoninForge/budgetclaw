@@ -389,3 +389,52 @@ func TestLoadTOMLMalformed(t *testing.T) {
 		t.Errorf("expected ErrConfig, got %v", err)
 	}
 }
+
+// TestSetGoeiEndpointAlwaysWritesAndClears verifies the endpoint setter used by
+// `team join`: unlike SetGoeiConfig (empty = leave unchanged), SetGoeiEndpoint always
+// writes the given value, so an empty string deliberately resets the endpoint to the
+// built-in default without disturbing the saved token. This is what prevents a stale
+// self-hosted endpoint from stranding when a user later joins a default-hosted team.
+func TestSetGoeiEndpointAlwaysWritesAndClears(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+
+	// Start with a token + a self-hosted endpoint.
+	if err := SetGoeiConfig(path, "goei_dt_"+"00000000000000000000000000000000", "https://a.example/api/ingest", ""); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GoeiEndpoint != "https://a.example/api/ingest" {
+		t.Fatalf("setup endpoint = %q", cfg.GoeiEndpoint)
+	}
+
+	// Clearing to empty resets the endpoint but preserves the token.
+	if err := SetGoeiEndpoint(path, ""); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GoeiEndpoint != "" {
+		t.Errorf("endpoint should be cleared, got %q", cfg.GoeiEndpoint)
+	}
+	if cfg.GoeiToken == "" {
+		t.Error("token must be preserved when clearing the endpoint")
+	}
+
+	// Setting a new endpoint writes it.
+	if err := SetGoeiEndpoint(path, "https://b.example/api/ingest"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.GoeiEndpoint != "https://b.example/api/ingest" {
+		t.Errorf("endpoint = %q, want https://b.example/api/ingest", cfg.GoeiEndpoint)
+	}
+}
