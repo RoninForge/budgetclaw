@@ -117,6 +117,26 @@ type Payload struct {
 	// with the sync (Guard Mode's audit channel). Omitted when there are
 	// none, so a plain sync is byte-for-byte unchanged.
 	GuardEvents []GuardEvent `json:"guardEvents,omitempty"`
+	// PRs carries content-free cost-per-PR metadata (opt-in via `budgetclaw
+	// prs on`). Omitted when empty, so a plain sync is unchanged.
+	PRs []PRRecord `json:"prs,omitempty"`
+}
+
+// PRRecord is one pull request (or in-flight branch) for cost-per-PR attribution.
+// Content-free: a PR number, branch and base names, commit count, and diff size, never
+// commit messages or code. State is "merged", "squashed", or "open". Goei joins it to
+// local spend by (project, branch); a squashed PR has no head branch, so it carries the
+// number and diff size but no per-branch cost.
+type PRRecord struct {
+	Project   string `json:"project"`
+	Branch    string `json:"branch,omitempty"`
+	PR        int    `json:"pr,omitempty"`
+	Base      string `json:"base,omitempty"`
+	State     string `json:"state"`
+	MergedAt  string `json:"mergedAt,omitempty"`
+	Commits   int    `json:"commits"`
+	Additions int    `json:"additions"`
+	Deletions int    `json:"deletions"`
 }
 
 // GuardEvent is one enforcement audit record: a remote policy warned or

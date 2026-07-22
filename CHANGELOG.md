@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.5.0] - 2026-07-22
+
+### Added
+
+- `budgetclaw prs on` / `off` / `status`: opt in to cost-per-PR. With it on, `budgetclaw sync` reads local git for the repos you already have Claude Code spend in and sends content-free pull-request metadata (the PR number, base branch, commit count, and added/removed line counts) so Goei can show usage value per merged PR, per commit, and per in-flight branch. Off by default: git is a new data source beyond the Claude Code logs, so it is never read until you turn it on. Never a commit message, a title, or a line of code leaves your machine, and you can see exactly what would be sent with `budgetclaw sync --show-payload`.
+- Squash-merged PRs are scoped to your own git identity, so opting in never sends a teammate's PR metadata.
+
 ## [v1.4.1] - 2026-07-22
 
 ### Changed

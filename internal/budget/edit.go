@@ -212,6 +212,21 @@ func SetAcceptRemotePolicies(path string, accept bool) error {
 	return writeTOML(path, t)
 }
 
+// SetCollectGit persists the [goei].collect_git opt-in, the consent that lets
+// `budgetclaw sync` read local git metadata for cost-per-PR. Like the other edit
+// helpers it preserves the rest of the [goei] section and drops hand-written comments.
+func SetCollectGit(path string, collect bool) error {
+	t, err := loadTOML(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if t == nil {
+		t = &tomlConfig{}
+	}
+	t.Goei.CollectGit = collect
+	return writeTOML(path, t)
+}
+
 // loadTOML reads and decodes the config file into a tomlConfig.
 // Returns (empty tomlConfig, nil) for a missing file so callers
 // can treat "no config" and "empty config" identically.

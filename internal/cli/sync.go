@@ -12,6 +12,7 @@ import (
 
 	"github.com/RoninForge/budgetclaw/internal/budget"
 	"github.com/RoninForge/budgetclaw/internal/db"
+	"github.com/RoninForge/budgetclaw/internal/gitmeta"
 	"github.com/RoninForge/budgetclaw/internal/goei"
 	"github.com/RoninForge/budgetclaw/internal/policy"
 )
@@ -187,6 +188,37 @@ func runSync(ctx context.Context, out io.Writer, opts syncOptions) error {
 		gAggs[i] = goei.Aggregate(a)
 	}
 	payloads := goei.BuildPayloads(gAggs, !opts.noBranch, machine)
+
+	// Cost-per-PR (opt-in via `budgetclaw prs on`): read local git for the repos with
+	// spend in this window and attach content-free PR metadata to the first request, so
+	// Goei can attribute cost per pull request. Collected before --show-payload/--dry-run
+	// so both reflect exactly what would be sent. Fail-soft: a git problem never blocks
+	// the sync, and nothing is collected when opted out.
+	if cfg.CollectGit && len(payloads) > 0 {
+		if keys, kerr := store.SpendRepoKeys(ctx, start); kerr != nil {
+			fmt.Fprintf(out, "warning: could not read repo keys for cost-per-PR: %v\n", kerr)
+		} else {
+			gkeys := make([]gitmeta.SpendKey, len(keys))
+			for i, k := range keys {
+				gkeys[i] = gitmeta.SpendKey{Project: k.Project, Branch: k.Branch, CWD: k.CWD}
+			}
+			// Cap what rides the request so the additive PR side-channel can never grow
+			// large enough to threaten the sync it piggybacks on (the server also bounds
+			// its own side). 400 covers many repos' worth of the caller's PRs.
+			const maxPRRecords = 400
+			collected := gitmeta.Collect(ctx, gkeys, start)
+			if len(collected) > maxPRRecords {
+				collected = collected[:maxPRRecords]
+			}
+			for _, r := range collected {
+				payloads[0].PRs = append(payloads[0].PRs, goei.PRRecord{
+					Project: r.Project, Branch: r.Branch, PR: r.PR, Base: r.Base,
+					State: r.State, MergedAt: r.MergedAt, Commits: r.Commits,
+					Additions: r.Additions, Deletions: r.Deletions,
+				})
+			}
+		}
+	}
 
 	// --show-payload prints the exact request body (sends nothing), so a user can
 	// audit every byte that would leave the machine against the ingest contract.

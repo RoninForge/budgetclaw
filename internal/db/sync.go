@@ -102,3 +102,43 @@ func (d *DB) SyncAggregates(ctx context.Context, since time.Time) ([]SyncAggrega
 	})
 	return out, nil
 }
+
+// RepoSpendKey is one (project, branch) that had spend in the sync window, plus the
+// most recent working directory it was seen in, so the git-metadata collector can
+// locate the repository. project and branch are the exact keys spend records join on.
+type RepoSpendKey struct {
+	Project string
+	Branch  string
+	CWD     string
+}
+
+// SpendRepoKeys returns one row per (project, git_branch) with events since `since`,
+// carrying the latest cwd for that pair. It powers the opt-in cost-per-PR collector,
+// which resolves each cwd to a git repo and reads branch/PR metadata locally. SQLite
+// returns the cwd from the MAX(ts) row for each group.
+func (d *DB) SpendRepoKeys(ctx context.Context, since time.Time) ([]RepoSpendKey, error) {
+	rows, err := d.sql.QueryContext(ctx, `
+		SELECT project, git_branch, cwd, MAX(ts)
+		FROM events
+		WHERE ts >= ? AND cwd != ''
+		GROUP BY project, git_branch
+	`, since.UTC())
+	if err != nil {
+		return nil, fmt.Errorf("query spend repo keys: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []RepoSpendKey
+	for rows.Next() {
+		var project, branch, cwd string
+		var ts time.Time
+		if err := rows.Scan(&project, &branch, &cwd, &ts); err != nil {
+			return nil, fmt.Errorf("scan spend repo key: %w", err)
+		}
+		out = append(out, RepoSpendKey{Project: project, Branch: branch, CWD: cwd})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate spend repo keys: %w", err)
+	}
+	return out, nil
+}

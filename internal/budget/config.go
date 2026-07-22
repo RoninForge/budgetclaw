@@ -179,9 +179,17 @@ type Config struct {
 
 	// AcceptRemotePolicies opts this machine in to Guard Mode: only when
 	// true does `budgetclaw watch` fetch and locally enforce the budget caps
-	// a Goei team owner set. Defaults false — a device never silently obeys a
+	// a Goei team owner set. Defaults false: a device never silently obeys a
 	// server. Toggle it with `budgetclaw guard on|off`.
 	AcceptRemotePolicies bool
+
+	// CollectGit opts this machine in to cost-per-PR: only when true does
+	// `budgetclaw sync` read local git (branch and merge/squash metadata) for the
+	// repos it has spend in, and send content-free PR records (number, base, commit
+	// count, diff size) so Goei can attribute cost per pull request. Defaults false:
+	// git is a new data source, so it is never read without opt-in. Toggle it with
+	// `budgetclaw prs on|off`.
+	CollectGit bool
 }
 
 // tomlConfig mirrors the TOML schema for deserialization. Keep it
@@ -202,6 +210,7 @@ type tomlConfig struct {
 		Endpoint             string `toml:"endpoint"`
 		Machine              string `toml:"machine"`
 		AcceptRemotePolicies bool   `toml:"accept_remote_policies"`
+		CollectGit           bool   `toml:"collect_git"`
 	} `toml:"goei"`
 	Limit []tomlLimit `toml:"limit"`
 }
@@ -233,6 +242,7 @@ func Parse(data []byte) (*Config, error) {
 		GoeiEndpoint:         t.Goei.Endpoint,
 		GoeiMachine:          t.Goei.Machine,
 		AcceptRemotePolicies: t.Goei.AcceptRemotePolicies,
+		CollectGit:           t.Goei.CollectGit,
 	}
 
 	if t.General.Timezone == "" {
