@@ -69,7 +69,10 @@ func git(ctx context.Context, dir string, args ...string) (string, error) {
 	cctx, cancel := context.WithTimeout(ctx, gitTimeout)
 	defer cancel()
 	full := append([]string{"-C", dir}, args...)
-	cmd := exec.CommandContext(cctx, "git", full...)
+	// The binary is the fixed literal "git" and every argument is a structured value
+	// (not a shell string): callers pass validated refs/paths and prefix untrusted
+	// revisions with --end-of-options, and no shell is ever involved.
+	cmd := exec.CommandContext(cctx, "git", full...) // #nosec G204 -- fixed "git" binary, structured args, no shell
 	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
 	var out bytes.Buffer
 	cmd.Stdout = &out
