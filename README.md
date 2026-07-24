@@ -1,14 +1,14 @@
 # budgetclaw
 
-**Track Claude Code token usage and costs, per project and per branch.** budgetclaw is a local spend monitor for Claude Code. It watches the JSONL session logs Claude Code writes under `~/.claude/projects`, attributes each tool-call's token cost to a project and git branch, and enforces budget caps by sending SIGTERM to the client process on breach. Pushes phone alerts via ntfy.
+**Track Claude Code token usage and cost per project and per git branch, and cap it before a runaway agent burns the budget.** budgetclaw is a local spend monitor and hard-limit enforcer for Claude Code. It watches the JSONL session logs Claude Code writes under `~/.claude/projects`, attributes each response's token cost to a project and git branch, and when a budget cap is breached it sends SIGTERM to the Claude Code process and pushes a phone alert via ntfy. Native `/cost` tells you the bill after the fact; budgetclaw tells you before and stops it.
 
-**Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads your local `~/.claude` session logs, the ones Claude Code already writes to disk, and can sync to a hosted team dashboard, [Goei](https://goei.roninforge.org).
+**Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads only the local `~/.claude` session logs Claude Code already writes to disk, and can optionally sync a per-project, per-branch, per-developer rollup to a shared team dashboard, [Goei](https://roninforge.org/goei). New to this? Start with the tutorials [How to track your Claude Code spend over time](https://roninforge.org/tutorials/how-to-track-claude-code-spend-over-time/) and [How to set a hard spend cap on Claude Code](https://roninforge.org/tutorials/how-to-set-a-hard-spend-cap-on-claude-code/).
 
 > To track Claude Code costs across a team, each developer runs the open-source budgetclaw CLI, which reads the session logs Claude Code already writes and pushes daily dollar-and-token rollups to Goei, a hosted dashboard that dedupes across machines and teammates: cost per project, per developer, per git branch. No API keys, no prompts, nothing in the request path.
 
 On a Claude Team or Enterprise plan, Anthropic's own admin analytics may be enough. Goei is for API-billed teams and for Pro and Max developers, with per-branch attribution and no admin keys. See a live dashboard with no signup at [goei.roninforge.org/demo](https://goei.roninforge.org/demo), or read [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
 
-Want your number right now? [`npx goei-sync`](https://github.com/RoninForge/goei-sync) reads the same local logs and prints your Claude Code spend broken down by git branch, in one command, with no install and no account. budgetclaw goes further: always-on background tracking, per-project and per-branch sync to a shared Goei dashboard, and hard spend caps that can stop a runaway agent.
+Want your number right now? [`npx goei-sync`](https://github.com/RoninForge/goei-sync) reads the same local logs and prints your Claude Code spend broken down by git branch in one command, with no install and no account, and `npx goei-sync wrapped` turns it into a single shareable card. budgetclaw goes further: always-on background tracking, per-project and per-branch sync to a shared Goei dashboard, and hard spend caps that can stop a runaway agent before the bill lands.
 
 ```sh
 curl -fsSL https://roninforge.org/get | sh
@@ -29,7 +29,7 @@ budgetclaw covers the same ground as ccusage: it reads the local session logs Cl
 
 ## Roll out to a whole team
 
-Each developer installs budgetclaw on their own machines and runs `budgetclaw sync`; Goei dedupes every machine and teammate into one rollup, attributed per project, per developer, per git branch. No key changes hands.
+Each developer installs budgetclaw on their own machines and runs `budgetclaw sync`; Goei dedupes every machine and teammate into one rollup, attributed per project, per developer, per git branch. No key changes hands. For the team walkthrough, see [Track Claude Code spend across a team](https://roninforge.org/goei/track-claude-code-spend-across-team/).
 
 To also give the team cost visibility inside Claude Code, commit the companion [claude-code-cost](https://github.com/RoninForge/claude-code-cost) plugin to a repo's `.claude/settings.json`:
 
@@ -48,7 +48,7 @@ This registers the plugin, not the CLI. On the next session in that repo, each t
 
 ## Why it exists
 
-After April 2026, solo Claude Code users on raw API billing have no first-party way to cap spend per project or per branch. One stuck agent loop on a feature branch can burn $500 before you notice. Native `/cost` tells you the bill after the fact. budgetclaw tells you *before* and enforces the limit.
+After April 2026, solo Claude Code users on raw API billing have no first-party way to cap spend per project or per branch. One stuck agent loop on a feature branch can burn $500 before you notice. Native `/cost` tells you the bill after the fact. budgetclaw tells you *before* and enforces the limit. For the step-by-step, see [How to set a hard spend cap on Claude Code](https://roninforge.org/tutorials/how-to-set-a-hard-spend-cap-on-claude-code/) and [How to minimize Claude Code costs](https://roninforge.org/tutorials/how-to-minimize-claude-code-costs/).
 
 ## How it works
 
