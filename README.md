@@ -208,13 +208,6 @@ The model audit catches new model IDs but not changes to existing rates -- Anthr
 
 budgetclaw only reads from `$HOME/.claude/projects/` and only SIGTERMs processes named `claude`. It writes only to its own XDG directories. See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.
 
-## Roadmap
-
-- v0.1: local JSONL parser, per-project/branch rollups, budget caps, SIGTERM enforcer, ntfy alerts, Claude Code plugin manifest, zero-key sync to Goei
-- v0.2: per-branch forecasting, multiple budget periods, shell completion
-- v0.3: launchd/systemd daemon integration, Homebrew tap
-- Later: optional hosted sync tier, Cursor per-branch attribution (on top of Cursor's native caps)
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and PRs welcome.
