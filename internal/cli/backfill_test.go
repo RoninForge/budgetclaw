@@ -47,8 +47,8 @@ func TestBackfillCountsAndAttributes(t *testing.T) {
 	if !strings.Contains(stdout, "priced 1") {
 		t.Errorf("expected priced=1, got %q", stdout)
 	}
-	if !strings.Contains(stdout, "skipped 1") {
-		t.Errorf("expected skipped=1, got %q", stdout)
+	if !strings.Contains(stdout, "stored unpriced 1") {
+		t.Errorf("expected stored unpriced=1, got %q", stdout)
 	}
 	if !strings.Contains(stdout, "some-future-model") {
 		t.Errorf("expected unknown-models block to name some-future-model, got %q", stdout)
