@@ -19,10 +19,14 @@ Share and adapt the data for any purpose, including commercially.
 
 Give appropriate credit, link to this license, and indicate if changes were made. A clear attribution:
 
-> AI Price Index by RoninForge (https://github.com/RoninForge/ai-price-index), CC BY 4.0.
+> AI Price Index by RoninForge (https://roninforge.org/data/ai-price-index/), CC BY 4.0.
+
+Credit the dataset's home page rather than the source repository. The page carries the methodology,
+the source list and the changelog, and it stays correct if the code moves.
 
 When practical, also cite the validation date of the specific values you used (every record carries a
-`last_validated_at`), so downstream readers know how fresh the figures are.
+`last_validated_at`), so downstream readers know how fresh the figures are. More copy-paste formats
+are in [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## Why the prices themselves are facts
 
