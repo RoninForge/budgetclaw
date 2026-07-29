@@ -20,6 +20,7 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/paths"
 	"github.com/RoninForge/budgetclaw/internal/pipeline"
 	"github.com/RoninForge/budgetclaw/internal/policy"
+	"github.com/RoninForge/budgetclaw/internal/reconcile"
 	"github.com/RoninForge/budgetclaw/internal/watcher"
 )
 
@@ -112,6 +113,16 @@ func runWatch(parent context.Context, out io.Writer, verbose bool) error {
 		Notifier: notifier,
 		Logger:   logger,
 		Machine:  resolveMachine("", cfg.GoeiMachine),
+	}
+
+	// Price anything an earlier run had to store without a cost. This is
+	// how a backlog left behind by an older pricing table clears itself
+	// after an upgrade: no command to run, no logs needed. Free when
+	// there is no backlog, and never fatal to the watcher.
+	if res, rerr := reconcile.Run(ctx, store, false); rerr != nil {
+		logger.Warn("reconcile: pass failed", "err", rerr)
+	} else if res.Any() {
+		fmt.Fprintln(out, res.Summary())
 	}
 
 	// Create the watcher with the pipeline's Handle method.

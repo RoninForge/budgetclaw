@@ -17,6 +17,7 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/budget"
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/pricing"
+	"github.com/RoninForge/budgetclaw/internal/reconcile"
 )
 
 // newStatusCmd creates the `budgetclaw status` command. It opens
@@ -47,6 +48,15 @@ func runStatus(ctx context.Context, out io.Writer) error {
 		return fmt.Errorf("open db: %w", err)
 	}
 	defer func() { _ = store.Close() }()
+
+	// Price any backlog before rendering, so "upgrade, then run status"
+	// shows corrected totals immediately rather than stale minimums.
+	// Best-effort: a reconcile failure must never stop status printing
+	// the numbers it does have.
+	if res, rerr := reconcile.Run(ctx, store, false); rerr == nil && res.Any() {
+		fmt.Fprintln(out, res.Summary())
+		fmt.Fprintln(out)
+	}
 
 	now := time.Now()
 	todayStart, todayEnd := budget.PeriodBounds(budget.PeriodDaily, now, cfg.Timezone)
