@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.6.0] - 2026-07-29
+
+### Added
+
+- An event whose model the pricing table does not know is now stored instead of discarded. It keeps its full token counts with a cost of zero, so a model released after your build no longer costs you the record of what you spent. Previously the event was dropped and the only way to recover it was to re-scan Claude Code's session logs, which are pruned after roughly a month.
+- Those stored events are priced automatically as soon as the pricing table learns the model. The pass runs at the start of `watch`, `status` and `backfill`, prices each event at the rate that was effective on its own date, and reports what it recovered: `repriced 900 previously unpriced event(s): $63.00 recovered`. It works entirely from the stored rows, so it recovers spend whose original logs are long gone. There is nothing to run and no flag to remember: upgrade, and the next command settles it.
+- `budgetclaw status` marks any figure covering unpriced events with a trailing `+`, meaning "at least this much", and lists each affected model with its event count, token volume and first-seen date. It never estimates a dollar value for a model it has no rate for. When nothing is unpriced, the output is unchanged.
+
+### Changed
+
+- `budgetclaw backfill` now reports `stored unpriced N` where it previously reported `skipped N`, because those events are no longer skipped.
+
+### Notes
+
+- Upgrading is enough. The database migration is additive and runs on first use, every event already recorded stays priced exactly as it was, and dollar totals do not move: an unpriced event contributes zero until it is priced, so budget caps and Guard Mode behave as before. No `backfill --rebuild` is needed.
+
 ## [v1.5.2] - 2026-07-29
 
 ### Changed
@@ -285,7 +301,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.5.2...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.6.0...HEAD
+[v1.6.0]: https://github.com/RoninForge/budgetclaw/compare/v1.5.2...v1.6.0
 [v1.5.2]: https://github.com/RoninForge/budgetclaw/compare/v1.5.1...v1.5.2
 [v1.5.1]: https://github.com/RoninForge/budgetclaw/compare/v1.4.1...v1.5.1
 [v1.4.1]: https://github.com/RoninForge/budgetclaw/compare/v1.2.1...v1.4.1
