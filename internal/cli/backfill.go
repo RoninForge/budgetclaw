@@ -48,8 +48,13 @@ writes the same response on several lines, so this is what keeps the
 totals honest.
 
 Use after upgrading to a release that adds new model pricing -
-historical events the prior watcher saw but skipped (because the
-model was unknown) become attributable on the next run.
+historical events the prior watcher could not price become
+attributable on the next run.
+
+An event whose model has no rate is stored anyway, with its token
+counts and a cost of zero, so nothing is lost while the pricing
+table catches up. Those events are priced automatically once the
+model is known.
 
 Re-pricing is point-in-time: each event is priced at the rate that
 was in effect on its own timestamp, not at today's rate, so a rebuilt
@@ -72,13 +77,14 @@ fully deduped, correctly priced dataset.`,
 
 // backfillStats accumulates the per-run summary returned to stdout.
 type backfillStats struct {
-	scanned     int            // assistant events parsed
-	priced      int            // events successfully priced and forwarded to DB.Insert
-	skipped     int            // events for which pricing returned ErrUnknownModel
-	parseErrors int            // malformed JSONL lines we ignored
-	dbErrors    int            // db.Insert failures (logged, then skipped)
-	models      map[string]int // count per priceable model
-	unknown     map[string]int // count per unpriceable model
+	scanned       int            // assistant events parsed
+	priced        int            // events successfully priced and stored
+	unpriced      int            // events stored with no rate (tokens kept, cost unknown)
+	parseErrors   int            // malformed JSONL lines we ignored
+	pricingErrors int            // unexpected pricing failures (not unknown-model)
+	dbErrors      int            // db insert failures (logged, then skipped)
+	models        map[string]int // count per priceable model
+	unknown       map[string]int // count per unpriceable model
 }
 
 func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) error {
@@ -134,8 +140,8 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 		return fmt.Errorf("walk %s: %w", dir, walkErr)
 	}
 
-	fmt.Fprintf(out, "scanned %d events, priced %d, skipped %d (unknown model)",
-		stats.scanned, stats.priced, stats.skipped)
+	fmt.Fprintf(out, "scanned %d events, priced %d, stored unpriced %d (unknown model)",
+		stats.scanned, stats.priced, stats.unpriced)
 	if stats.parseErrors > 0 {
 		fmt.Fprintf(out, ", %d malformed line(s)", stats.parseErrors)
 	}
@@ -152,11 +158,12 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
-		fmt.Fprintln(out, "Unknown models (events not attributed):")
+		fmt.Fprintln(out, "Unknown models (stored with tokens, cost not yet known):")
 		for _, k := range keys {
 			fmt.Fprintf(out, "  %s: %d events\n", k, stats.unknown[k])
 		}
-		fmt.Fprintln(out, "Run `budgetclaw pricing diagnose` for the full per-model breakdown.")
+		fmt.Fprintln(out, "Nothing is lost. These price automatically once the pricing table")
+		fmt.Fprintln(out, "learns the model. Run `budgetclaw pricing diagnose` for the breakdown.")
 	}
 
 	return nil
@@ -199,13 +206,20 @@ func scanFileIntoDB(ctx context.Context, root *os.Root, path string, store *db.D
 		if perr != nil {
 			// ErrUnknownModel (not in the table) and ErrNoRateAtTime
 			// (known model, no interval covers the event's timestamp)
-			// are both unpriceable: record the model and skip.
-			if errors.Is(perr, pricing.ErrUnknownModel) || errors.Is(perr, pricing.ErrNoRateAtTime) {
-				stats.skipped++
-				stats.unknown[ev.Model]++
+			// are both unpriceable. Store the event anyway so its tokens
+			// survive: a later release can price it from the stored row,
+			// long after Claude Code has pruned the log we read it from.
+			if !errors.Is(perr, pricing.ErrUnknownModel) && !errors.Is(perr, pricing.ErrNoRateAtTime) {
+				// Unexpected pricing failure. Still store it; losing the
+				// event would be strictly worse than recording it unpriced.
+				stats.pricingErrors++
+			}
+			if err := store.InsertUnpriced(ctx, ev); err != nil {
+				stats.dbErrors++
 				continue
 			}
-			stats.skipped++
+			stats.unpriced++
+			stats.unknown[ev.Model]++
 			continue
 		}
 

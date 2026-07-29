@@ -135,10 +135,16 @@ func TestHandleMissingDependencies(t *testing.T) {
 	}
 }
 
-// TestHandleUnknownModelDroppedSilently verifies that an event
-// for a model we don't have pricing for is logged and skipped
-// rather than halting the watcher. No db insert, no verdict.
-func TestHandleUnknownModelDroppedSilently(t *testing.T) {
+// TestHandleUnknownModelStoredUnpriced verifies that an event for a
+// model we have no pricing for is STORED, not discarded: the tokens
+// are retained with a zero cost and an unpriced marker, so a later
+// release can price them from the row itself.
+//
+// This test previously asserted the opposite (that the event was
+// dropped). Dropping it is what silently destroyed 1,530 Opus 5 events
+// on 2026-07-27, recoverable then only because Claude Code still had
+// the logs; those are pruned after roughly a month.
+func TestHandleUnknownModelStoredUnpriced(t *testing.T) {
 	p := buildPipeline(t, nil, nil, nil)
 
 	e := sampleEvent("u1", "app", "main")
@@ -148,12 +154,26 @@ func TestHandleUnknownModelDroppedSilently(t *testing.T) {
 		t.Fatalf("Handle: %v", err)
 	}
 
-	// Verify nothing was inserted.
 	rows, _ := p.DB.StatusByProject(context.Background(),
 		time.Date(2026, 4, 9, 0, 0, 0, 0, time.UTC),
 		time.Date(2026, 4, 9, 23, 59, 59, 0, time.UTC))
-	if len(rows) != 0 {
-		t.Errorf("expected 0 rows, got %d", len(rows))
+	if len(rows) != 1 {
+		t.Fatalf("expected the event stored unpriced, got %d rows", len(rows))
+	}
+	if rows[0].CostUSD != 0 {
+		t.Errorf("CostUSD = %v, want 0 (unpriced must not invent a cost)", rows[0].CostUSD)
+	}
+	if rows[0].UnpricedCount != 1 {
+		t.Errorf("UnpricedCount = %d, want 1", rows[0].UnpricedCount)
+	}
+	if rows[0].EventCount != 1 {
+		t.Errorf("EventCount = %d, want 1 (activity happened, only the price is unknown)", rows[0].EventCount)
+	}
+	// The tokens are the whole point: they are what lets a later
+	// release recover the spend without the JSONL logs.
+	if rows[0].InputTokens != e.InputTokens || rows[0].OutputTokens != e.OutputTokens {
+		t.Errorf("tokens not retained: got in=%d out=%d, want in=%d out=%d",
+			rows[0].InputTokens, rows[0].OutputTokens, e.InputTokens, e.OutputTokens)
 	}
 }
 
@@ -217,11 +237,11 @@ func TestHandlePricesAtEventTimestamp(t *testing.T) {
 	}
 }
 
-// TestHandleNoRateAtTimeSkippedNonFatally verifies that a known model
+// TestHandleNoRateAtTimeStoredUnpriced verifies that a known model
 // queried before its earliest recorded price (ErrNoRateAtTime) is
-// skipped like an unknown model: no db insert, no crash, and it is
-// tracked in the unknown-models dedupe map.
-func TestHandleNoRateAtTimeSkippedNonFatally(t *testing.T) {
+// treated like an unknown model: stored unpriced rather than dropped,
+// no crash, and tracked in the unknown-models dedupe map.
+func TestHandleNoRateAtTimeStoredUnpriced(t *testing.T) {
 	p := buildPipeline(t, nil, nil, nil)
 
 	e := sampleEvent("norate", "app", "main")
@@ -232,12 +252,16 @@ func TestHandleNoRateAtTimeSkippedNonFatally(t *testing.T) {
 		t.Fatalf("Handle: %v", err)
 	}
 
-	// Nothing inserted.
+	// Stored, unpriced.
 	rows, _ := p.DB.StatusByProject(context.Background(),
 		time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 		time.Date(2024, 1, 1, 23, 59, 59, 0, time.UTC))
-	if len(rows) != 0 {
-		t.Errorf("expected 0 rows for an unpriceable-at-time event, got %d", len(rows))
+	if len(rows) != 1 {
+		t.Fatalf("expected the unpriceable-at-time event stored, got %d rows", len(rows))
+	}
+	if rows[0].CostUSD != 0 || rows[0].UnpricedCount != 1 {
+		t.Errorf("want cost 0 and unpriced 1, got cost=%v unpriced=%d",
+			rows[0].CostUSD, rows[0].UnpricedCount)
 	}
 	// Tracked in the dedupe map so a long retired-model session does
 	// not flood stderr.

@@ -29,6 +29,14 @@
 // table. A future Anthropic rate change will not retroactively
 // re-price old events.
 //
+// An event the caller could not price is still stored, via
+// InsertUnpriced, with cost_usd = 0 and priced = 0. No billable event is
+// ever discarded, so a pricing table that has not yet learned a new
+// model costs visibility, not data: the tokens are retained and can be
+// priced later from the stored row. Unpriced rows contribute $0 to every
+// cost sum, and rollups.unpriced_count records how many are waiting so
+// callers can present affected totals as minimums.
+//
 // Day boundaries in rollups are UTC. Budget evaluators that need
 // local-timezone semantics should use RollupSum over a UTC time
 // range computed from the user's tz, not the day string directly.
@@ -72,6 +80,7 @@ CREATE TABLE IF NOT EXISTS events (
 	cost_usd                  REAL    NOT NULL,
 	message_id                TEXT    NOT NULL DEFAULT '',
 	request_id                TEXT    NOT NULL DEFAULT '',
+	priced                    INTEGER NOT NULL DEFAULT 1,
 	inserted_at               DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -88,6 +97,14 @@ CREATE INDEX IF NOT EXISTS idx_events_session_id  ON events(session_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_events_message_request
 	ON events(message_id, request_id) WHERE message_id != '';
 
+-- Unpriced backlog. An event whose model had no rate at insert time is
+-- stored with cost_usd = 0 and priced = 0 rather than discarded, so the
+-- token counts survive and can be priced later from the row itself. The
+-- partial index is empty in the healthy case, which keeps the "is there
+-- a backlog?" probe free.
+CREATE INDEX IF NOT EXISTS idx_events_unpriced
+	ON events(model, ts) WHERE priced = 0;
+
 CREATE TABLE IF NOT EXISTS rollups (
 	project                   TEXT    NOT NULL,
 	git_branch                TEXT    NOT NULL,
@@ -99,6 +116,7 @@ CREATE TABLE IF NOT EXISTS rollups (
 	cache_write_5m_tokens     INTEGER NOT NULL DEFAULT 0,
 	cache_write_1h_tokens     INTEGER NOT NULL DEFAULT 0,
 	cost_usd                  REAL    NOT NULL DEFAULT 0,
+	unpriced_count            INTEGER NOT NULL DEFAULT 0,
 	updated_at                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (project, git_branch, day)
 );
@@ -142,6 +160,12 @@ type Rollup struct {
 	CacheWrite5mTokens int
 	CacheWrite1hTokens int
 	CostUSD            float64
+
+	// UnpricedCount is how many events in this aggregate are stored but
+	// not yet priced. When it is non-zero, CostUSD is a minimum: the
+	// tokens are recorded but their dollar value is not known to this
+	// build's pricing table.
+	UnpricedCount int
 }
 
 // Open opens or creates the state database.
@@ -198,41 +222,94 @@ func Open(path string) (*DB, error) {
 	return &DB{sql: sqlDB}, nil
 }
 
-// migrate brings an events table created by an older binary up to the
-// current shape. CREATE TABLE IF NOT EXISTS never alters an existing
-// table, so new columns are added here with idempotent ALTER TABLE
-// statements (SQLite errors with "duplicate column name" if the column
-// already exists, which we treat as success). A freshly created table
-// already has the columns via schema, so the ALTERs are no-ops there
-// too. Must run before the schema's unique index on (message_id,
-// request_id) is created.
+// columnMigration is one additive column added to a table after that
+// table's first release. Applied on every Open, in order.
+type columnMigration struct {
+	table  string
+	column string
+	ddl    string
+}
+
+// columnMigrations lists every column added since the original schema.
+//
+// The DEFAULT on each is load-bearing for existing rows. events.priced
+// defaults to 1 because every row written by an older binary exists only
+// because pricing succeeded, so "priced" is correct by construction;
+// rollups.unpriced_count defaults to 0 for the same reason.
+var columnMigrations = []columnMigration{
+	{"events", "message_id", `ALTER TABLE events ADD COLUMN message_id TEXT NOT NULL DEFAULT ''`},
+	{"events", "request_id", `ALTER TABLE events ADD COLUMN request_id TEXT NOT NULL DEFAULT ''`},
+	{"events", "priced", `ALTER TABLE events ADD COLUMN priced INTEGER NOT NULL DEFAULT 1`},
+	{"rollups", "unpriced_count", `ALTER TABLE rollups ADD COLUMN unpriced_count INTEGER NOT NULL DEFAULT 0`},
+}
+
+// migrate brings tables created by an older binary up to the current
+// shape. CREATE TABLE IF NOT EXISTS never alters an existing table, so
+// new columns are added here.
+//
+// Each migration is skipped when its table does not exist yet (a
+// brand-new database gets the columns from the schema DDL) or when the
+// column is already present. The "duplicate column name" tolerance is
+// kept as a belt-and-braces fallback in case the pragma probe and the
+// ALTER ever disagree.
+//
+// Must run before the schema DDL, whose indexes reference columns added
+// here (message_id/request_id for the dedupe index, priced for the
+// unpriced index).
+//
+// Downgrade safety: an older binary opening a migrated database ignores
+// the extra columns, since every INSERT names its columns explicitly.
+// It resumes discarding unknown-model events, but nothing is corrupted.
 func migrate(db *sql.DB) error {
-	alters := []string{
-		`ALTER TABLE events ADD COLUMN message_id TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE events ADD COLUMN request_id TEXT NOT NULL DEFAULT ''`,
-	}
-	// The events table may not exist yet on a brand-new database; in
-	// that case the schema DDL creates it with the columns already
-	// present, so skip the ALTERs entirely.
-	var name string
-	err := db.QueryRow(
-		`SELECT name FROM sqlite_master WHERE type='table' AND name='events'`,
-	).Scan(&name)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("inspect events table: %w", err)
-	}
-	for _, stmt := range alters {
-		if _, err := db.Exec(stmt); err != nil {
+	for _, m := range columnMigrations {
+		exists, err := tableExists(db, m.table)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			continue
+		}
+		has, err := hasColumn(db, m.table, m.column)
+		if err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := db.Exec(m.ddl); err != nil {
 			if strings.Contains(err.Error(), "duplicate column name") {
-				continue // column already present, idempotent
+				continue // already present, idempotent
 			}
-			return fmt.Errorf("migrate events: %w", err)
+			return fmt.Errorf("migrate %s.%s: %w", m.table, m.column, err)
 		}
 	}
 	return nil
+}
+
+// tableExists reports whether a table has been created yet.
+func tableExists(db *sql.DB, table string) (bool, error) {
+	var name string
+	err := db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table,
+	).Scan(&name)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("inspect table %s: %w", table, err)
+	}
+	return true, nil
+}
+
+// hasColumn reports whether table already has the named column.
+func hasColumn(db *sql.DB, table, column string) (bool, error) {
+	var n int
+	if err := db.QueryRow(
+		`SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?`, table, column,
+	).Scan(&n); err != nil {
+		return false, fmt.Errorf("inspect %s.%s: %w", table, column, err)
+	}
+	return n > 0, nil
 }
 
 // OpenMemory returns an in-memory database for tests. Equivalent to
@@ -310,9 +387,42 @@ func applyPragmas(db *sql.DB, memory bool) error {
 // costUSD is passed in so the db package stays independent of the
 // pricing table. Callers should compute it via pricing.CostForModel
 // before calling Insert.
+//
+// Use InsertUnpriced when the pricing table has no rate for the event's
+// model; the row is stored either way, so no billable event is ever
+// discarded.
 func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error {
+	return d.insert(ctx, e, costUSD, true)
+}
+
+// InsertUnpriced stores an event the pricing table could not price.
+//
+// The row keeps its full token counts, model id, timestamp, project and
+// branch, and carries cost_usd = 0 with priced = 0. This is what makes a
+// stale pricing table a reporting problem instead of data loss: the
+// tokens are a permanent local fact from the moment they are seen, and a
+// later release (or a fetched table) can price them from the stored row
+// alone, with no dependence on Claude Code's JSONL logs, which are
+// pruned after roughly a month.
+//
+// Dollar totals are unaffected while a row is unpriced: it contributes
+// exactly $0 to every rollup, cap evaluation and Guard Mode sum. The
+// rollup's event_count and token columns DO count it, because activity
+// genuinely happened; only the cost is unknown. rollups.unpriced_count
+// records how many such rows a (project, branch, day) holds so callers
+// can report the totals as minimums.
+func (d *DB) InsertUnpriced(ctx context.Context, e *parser.Event) error {
+	return d.insert(ctx, e, 0, false)
+}
+
+// insert is the shared implementation behind Insert and InsertUnpriced.
+func (d *DB) insert(ctx context.Context, e *parser.Event, costUSD float64, priced bool) error {
 	if e == nil {
 		return errors.New("nil event")
+	}
+	unpricedDelta := 0
+	if !priced {
+		unpricedDelta = 1
 	}
 
 	tx, err := d.sql.BeginTx(ctx, nil)
@@ -337,7 +447,7 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 			e.Model, e.ServiceTier,
 			e.InputTokens, e.OutputTokens,
 			e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
-			costUSD, e.MessageID, e.RequestID,
+			costUSD, e.MessageID, e.RequestID, priced,
 		); err != nil {
 			return fmt.Errorf("insert event: %w", err)
 		}
@@ -345,7 +455,7 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 			e.Timestamp, 1,
 			e.InputTokens, e.OutputTokens,
 			e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
-			costUSD,
+			costUSD, unpricedDelta,
 		); err != nil {
 			return err
 		}
@@ -367,7 +477,7 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 		e.Model, e.ServiceTier,
 		e.InputTokens, e.OutputTokens,
 		e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
-		costUSD, e.MessageID, e.RequestID,
+		costUSD, e.MessageID, e.RequestID, priced,
 	); err != nil {
 		return fmt.Errorf("replace event: %w", err)
 	}
@@ -375,11 +485,21 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 	// Remove the old row's contribution from its rollup (event_count
 	// unchanged overall, so subtract 0 here and add 0 below: a replace
 	// is the same response, not a new one).
+	//
+	// The unpriced delta follows the same subtract-old/add-new shape, so
+	// replaying a previously-unpriced line with an upgraded pricing table
+	// heals it: the old -1 clears the backlog counter and the new row
+	// carries its real cost. That makes plain `backfill` a second,
+	// independent recovery path.
+	oldUnpriced := 0
+	if !existing.priced {
+		oldUnpriced = 1
+	}
 	if err := applyRollupDelta(ctx, tx, existing.project, existing.branch,
 		existing.ts, 0,
 		-existing.input, -existing.output,
 		-existing.cacheRead, -existing.cacheWrite5m, -existing.cacheWrite1h,
-		-existing.cost,
+		-existing.cost, -oldUnpriced,
 	); err != nil {
 		return err
 	}
@@ -388,7 +508,7 @@ func (d *DB) Insert(ctx context.Context, e *parser.Event, costUSD float64) error
 		e.Timestamp, 0,
 		e.InputTokens, e.OutputTokens,
 		e.CacheReadTokens, e.CacheCreation5mTokens, e.CacheCreation1hTokens,
-		costUSD,
+		costUSD, unpricedDelta,
 	); err != nil {
 		return err
 	}
@@ -404,8 +524,8 @@ const insertEventSQL = `
 		model, service_tier,
 		input_tokens, output_tokens,
 		cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-		cost_usd, message_id, request_id
-	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+		cost_usd, message_id, request_id, priced
+	) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 `
 
 // existingEvent holds the stored row that represents the same response
@@ -423,6 +543,7 @@ type existingEvent struct {
 	cacheWrite5m int
 	cacheWrite1h int
 	cost         float64
+	priced       bool
 }
 
 // lookupExisting finds the row already representing e's response. When
@@ -434,13 +555,13 @@ func lookupExisting(ctx context.Context, tx *sql.Tx, e *parser.Event) (existingE
 		SELECT uuid, project, git_branch, ts,
 		       input_tokens, output_tokens,
 		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-		       cost_usd
+		       cost_usd, priced
 		FROM events WHERE message_id = ? AND request_id = ? LIMIT 1`
 	const byUUIDSQL = `
 		SELECT uuid, project, git_branch, ts,
 		       input_tokens, output_tokens,
 		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-		       cost_usd
+		       cost_usd, priced
 		FROM events WHERE uuid = ? LIMIT 1`
 
 	query := byUUIDSQL
@@ -456,7 +577,7 @@ func lookupExisting(ctx context.Context, tx *sql.Tx, e *parser.Event) (existingE
 		&ex.uuid, &ex.project, &ex.branch, &ex.ts,
 		&ex.input, &ex.output,
 		&ex.cacheRead, &ex.cacheWrite5m, &ex.cacheWrite1h,
-		&ex.cost,
+		&ex.cost, &ex.priced,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return existingEvent{}, nil
@@ -470,13 +591,14 @@ func lookupExisting(ctx context.Context, tx *sql.Tx, e *parser.Event) (existingE
 
 // applyRollupDelta folds a signed token/cost contribution into the
 // rollup row for (project, branch, day-of ts). Positive values add,
-// negative values subtract. countDelta tracks event_count. The row is
-// created on first touch via upsert. Day is derived from ts in UTC.
+// negative values subtract. countDelta tracks event_count and
+// unpricedDelta tracks unpriced_count. The row is created on first
+// touch via upsert. Day is derived from ts in UTC.
 func applyRollupDelta(
 	ctx context.Context, tx *sql.Tx,
 	project, branch string, ts time.Time, countDelta int,
 	input, output, cacheRead, cacheWrite5m, cacheWrite1h int,
-	cost float64,
+	cost float64, unpricedDelta int,
 ) error {
 	day := ts.UTC().Format(dayFormat)
 	if _, err := tx.ExecContext(ctx, `
@@ -485,8 +607,8 @@ func applyRollupDelta(
 			event_count,
 			input_tokens, output_tokens,
 			cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-			cost_usd, updated_at
-		) VALUES (?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+			cost_usd, unpriced_count, updated_at
+		) VALUES (?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 		ON CONFLICT(project, git_branch, day) DO UPDATE SET
 			event_count           = event_count           + excluded.event_count,
 			input_tokens          = input_tokens          + excluded.input_tokens,
@@ -495,13 +617,14 @@ func applyRollupDelta(
 			cache_write_5m_tokens = cache_write_5m_tokens + excluded.cache_write_5m_tokens,
 			cache_write_1h_tokens = cache_write_1h_tokens + excluded.cache_write_1h_tokens,
 			cost_usd              = cost_usd              + excluded.cost_usd,
+			unpriced_count        = unpriced_count        + excluded.unpriced_count,
 			updated_at            = CURRENT_TIMESTAMP
 	`,
 		project, branch, day,
 		countDelta,
 		input, output,
 		cacheRead, cacheWrite5m, cacheWrite1h,
-		cost,
+		cost, unpricedDelta,
 	); err != nil {
 		return fmt.Errorf("upsert rollup: %w", err)
 	}
@@ -518,7 +641,7 @@ func (d *DB) RollupForDay(ctx context.Context, project, branch string, day time.
 		SELECT project, git_branch, day, event_count,
 		       input_tokens, output_tokens,
 		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
-		       cost_usd
+		       cost_usd, unpriced_count
 		FROM rollups
 		WHERE project = ? AND git_branch = ? AND day = ?
 	`, project, branch, dayStr)
@@ -528,7 +651,7 @@ func (d *DB) RollupForDay(ctx context.Context, project, branch string, day time.
 		&r.Project, &r.GitBranch, &r.Day, &r.EventCount,
 		&r.InputTokens, &r.OutputTokens,
 		&r.CacheReadTokens, &r.CacheWrite5mTokens, &r.CacheWrite1hTokens,
-		&r.CostUSD,
+		&r.CostUSD, &r.UnpricedCount,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -558,7 +681,8 @@ func (d *DB) RollupSum(ctx context.Context, project, branch string, start, end t
 			COALESCE(SUM(cache_read_tokens),     0),
 			COALESCE(SUM(cache_write_5m_tokens), 0),
 			COALESCE(SUM(cache_write_1h_tokens), 0),
-			COALESCE(SUM(cost_usd),              0)
+			COALESCE(SUM(cost_usd),              0),
+			COALESCE(SUM(unpriced_count),        0)
 		FROM rollups
 		WHERE project = ? AND git_branch = ? AND day >= ? AND day <= ?
 	`, project, branch, startStr, endStr)
@@ -568,7 +692,7 @@ func (d *DB) RollupSum(ctx context.Context, project, branch string, start, end t
 		&r.EventCount,
 		&r.InputTokens, &r.OutputTokens,
 		&r.CacheReadTokens, &r.CacheWrite5mTokens, &r.CacheWrite1hTokens,
-		&r.CostUSD,
+		&r.CostUSD, &r.UnpricedCount,
 	); err != nil {
 		return nil, fmt.Errorf("scan rollup sum: %w", err)
 	}
@@ -606,6 +730,76 @@ func (d *DB) ProjectSum(ctx context.Context, project string, start, end time.Tim
 		return 0, fmt.Errorf("scan project sum: %w", err)
 	}
 	return v, nil
+}
+
+// UnpricedModel summarizes the stored-but-unpriced backlog for one model.
+type UnpricedModel struct {
+	Model      string
+	EventCount int
+	Tokens     int
+
+	// FirstSeen is the UTC day of the earliest unpriced event for this
+	// model, as YYYY-MM-DD. It is a string rather than a time.Time
+	// because ts is stored as text ("2006-01-02 15:04:05.000 +0000 UTC")
+	// and an aggregate like MIN(ts) loses the column type affinity the
+	// driver needs to hand back a time.Time. The day is sliced out in
+	// SQL, which is both simpler and exactly what callers display.
+	FirstSeen string
+}
+
+// HasUnpriced reports whether any stored event is still unpriced.
+//
+// This is the cheap probe callers use before doing any unpriced-specific
+// work: the partial index idx_events_unpriced is empty when everything is
+// priced, so the healthy case costs one index lookup and callers can keep
+// their output byte-identical to a build without this feature.
+func (d *DB) HasUnpriced(ctx context.Context) (bool, error) {
+	var n int
+	if err := d.sql.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM events WHERE priced = 0)`,
+	).Scan(&n); err != nil {
+		return false, fmt.Errorf("probe unpriced: %w", err)
+	}
+	return n > 0, nil
+}
+
+// UnpricedByModel returns the stored-but-unpriced backlog grouped by
+// model, most events first, so the CLI can name exactly which models are
+// missing from this build's pricing table and how much activity is
+// waiting on them.
+//
+// Deliberately reports counts and tokens but never a dollar estimate:
+// guessing a rate for an unpriced model would trade one dishonest number
+// for another.
+func (d *DB) UnpricedByModel(ctx context.Context) ([]UnpricedModel, error) {
+	rows, err := d.sql.QueryContext(ctx, `
+		SELECT model,
+		       COUNT(*),
+		       COALESCE(SUM(input_tokens + output_tokens + cache_read_tokens +
+		                    cache_write_5m_tokens + cache_write_1h_tokens), 0),
+		       substr(MIN(ts), 1, 10)
+		FROM events
+		WHERE priced = 0
+		GROUP BY model
+		ORDER BY COUNT(*) DESC, model
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query unpriced: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []UnpricedModel
+	for rows.Next() {
+		var m UnpricedModel
+		if err := rows.Scan(&m.Model, &m.EventCount, &m.Tokens, &m.FirstSeen); err != nil {
+			return nil, fmt.Errorf("scan unpriced row: %w", err)
+		}
+		out = append(out, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("unpriced rows: %w", err)
+	}
+	return out, nil
 }
 
 // PendingGuardEvent is one queued audit record awaiting sync.
@@ -691,7 +885,7 @@ func (d *DB) StatusByProject(ctx context.Context, start, end time.Time) ([]Rollu
 		       SUM(input_tokens), SUM(output_tokens),
 		       SUM(cache_read_tokens),
 		       SUM(cache_write_5m_tokens), SUM(cache_write_1h_tokens),
-		       SUM(cost_usd)
+		       SUM(cost_usd), SUM(unpriced_count)
 		FROM rollups
 		WHERE day >= ? AND day <= ?
 		GROUP BY project, git_branch
@@ -711,7 +905,7 @@ func (d *DB) StatusByProject(ctx context.Context, start, end time.Time) ([]Rollu
 			&r.InputTokens, &r.OutputTokens,
 			&r.CacheReadTokens,
 			&r.CacheWrite5mTokens, &r.CacheWrite1hTokens,
-			&r.CostUSD,
+			&r.CostUSD, &r.UnpricedCount,
 		); err != nil {
 			return nil, fmt.Errorf("scan status row: %w", err)
 		}

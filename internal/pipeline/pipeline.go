@@ -84,10 +84,11 @@ type Pipeline struct {
 	// dedupe correct if that ever changes.
 	unknownModelsMu sync.Mutex
 	// unknownModels remembers which model IDs already produced a
-	// loud WARN in this watcher run so a single Opus 4.7 session
-	// burning thousands of unpriceable events does not flood
-	// stderr. Run `budgetclaw pricing diagnose` for ground-truth
-	// detection across the historical log corpus.
+	// loud WARN in this watcher run so a single session burning
+	// thousands of unpriceable events does not flood stderr. The
+	// events themselves are stored unpriced, not dropped. Run
+	// `budgetclaw pricing diagnose` for ground-truth detection
+	// across the historical log corpus.
 	unknownModels map[string]int
 }
 
@@ -133,26 +134,38 @@ func (p *Pipeline) Handle(ctx context.Context, e *parser.Event, _ string) error 
 		CacheWrite5m: e.CacheCreation5mTokens,
 		CacheWrite1h: e.CacheCreation1hTokens,
 	})
+	priced := true
 	if err != nil {
 		if errors.Is(err, pricing.ErrUnknownModel) || errors.Is(err, pricing.ErrNoRateAtTime) {
 			// ErrUnknownModel: model not in the table at all.
 			// ErrNoRateAtTime: known model, but no price interval covers
 			// the event's timestamp (a retired model, or an event older
-			// than the model's earliest recorded price). Both are skipped
-			// non-fatally with the same dedupe-WARN so a long session of
-			// unpriceable events does not flood stderr.
+			// than the model's earliest recorded price).
+			//
+			// Neither is a reason to drop the event. We store it unpriced
+			// so the tokens survive, and emit one dedupe-WARN per model so
+			// a long session of unpriceable events does not flood stderr.
 			p.logUnknownModel(log, e.Model, e.UUID)
-			return nil
+		} else {
+			// Some other pricing failure (shouldn't happen with the
+			// current implementation, but keep the path safe). Store it
+			// too: an unexplained pricing bug must not cost the user data.
+			log.Warn("pricing: unexpected error, storing event unpriced",
+				"uuid", e.UUID, "model", e.Model, "err", err)
 		}
-		// Some other pricing failure (shouldn't happen with the
-		// current implementation, but keep the path safe).
-		log.Warn("pricing: unexpected error, skipping event",
-			"uuid", e.UUID, "model", e.Model, "err", err)
-		return nil
+		cost, priced = 0, false
 	}
 
 	// --- 2. persist -----------------------------------------------
-	if err := p.DB.Insert(ctx, e, cost); err != nil {
+	// Every parsed billable event reaches the store, priced or not. This
+	// is the structural guarantee: there is no path from a parsed event
+	// to a discarded one.
+	if priced {
+		err = p.DB.Insert(ctx, e, cost)
+	} else {
+		err = p.DB.InsertUnpriced(ctx, e)
+	}
+	if err != nil {
 		log.Error("db: insert failed",
 			"uuid", e.UUID, "project", e.Project, "err", err)
 		return nil
@@ -408,7 +421,7 @@ func (p *Pipeline) logUnknownModel(log *slog.Logger, model, uuid string) int {
 	p.unknownModelsMu.Unlock()
 
 	if count == 1 {
-		log.Warn("pricing: unknown model — events skipped until next release; run `budgetclaw pricing diagnose` for the full set",
+		log.Warn("pricing: unknown model, storing events unpriced; totals under-report until the pricing table learns it. Upgrade budgetclaw, then run `budgetclaw pricing diagnose`",
 			"model", model, "uuid", uuid)
 	} else {
 		log.Debug("pricing: unknown model (suppressed repeat)",
@@ -417,9 +430,10 @@ func (p *Pipeline) logUnknownModel(log *slog.Logger, model, uuid string) int {
 	return count
 }
 
-// UnknownModels returns a snapshot of model IDs the pipeline has
-// skipped this run, paired with their event counts. Useful for
-// status output and tests; safe for concurrent callers.
+// UnknownModels returns a snapshot of model IDs the pipeline could not
+// price this run, paired with their event counts. Their events are
+// stored unpriced, not dropped. Useful for status output and tests;
+// safe for concurrent callers.
 func (p *Pipeline) UnknownModels() map[string]int {
 	p.unknownModelsMu.Lock()
 	defer p.unknownModelsMu.Unlock()
