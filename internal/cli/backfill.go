@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -37,6 +38,7 @@ func newBackfillCmd() *cobra.Command {
 	var (
 		dir     string
 		rebuild bool
+		force   bool
 	)
 	cmd := &cobra.Command{
 		Use:   "backfill",
@@ -62,17 +64,28 @@ was in effect on its own timestamp, not at today's rate, so a rebuilt
 rollup reflects what the model actually cost when the event happened.
 
 --rebuild truncates the events and rollups tables before scanning,
-then replays from the logs. Use it after a pricing correction, or
-after upgrading from a binary that double-counted streamed responses:
-the wipe clears the old uuid-keyed rows so the rescan produces a
-fully deduped, correctly priced dataset.`,
+then replays from the logs. Its remaining use is repairing a database
+written by a binary that double-counted streamed responses (pre-dedupe):
+the wipe clears the old uuid-keyed rows so the rescan produces a fully
+deduped dataset. A pricing correction no longer needs it, because
+stored events reprice in place.
+
+--rebuild is destructive and is refused when it would destroy history
+the logs can no longer replay. Claude Code prunes its session logs
+after roughly a month while this database keeps everything, so a
+rebuild can silently discard months of spend. Override with --force
+only if you accept losing it.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return runBackfill(cmd.Context(), cmd.OutOrStdout(), dir, rebuild)
+			if force && !rebuild {
+				return errors.New("--force only applies to --rebuild")
+			}
+			return runBackfill(cmd.Context(), cmd.OutOrStdout(), dir, rebuild, force)
 		},
 	}
 	cmd.Flags().StringVar(&dir, "dir", "", "log directory to scan (default: $HOME/.claude/projects)")
-	cmd.Flags().BoolVar(&rebuild, "rebuild", false, "wipe events + rollups before scanning (use after a pricing correction)")
+	cmd.Flags().BoolVar(&rebuild, "rebuild", false, "wipe events + rollups before scanning (destructive; repairs a pre-dedupe database)")
+	cmd.Flags().BoolVar(&force, "force", false, "allow --rebuild to discard history the logs cannot replay")
 	return cmd
 }
 
@@ -88,7 +101,7 @@ type backfillStats struct {
 	unknown       map[string]int // count per unpriceable model
 }
 
-func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) error {
+func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild, force bool) error {
 	if dir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -103,7 +116,23 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 	}
 	defer func() { _ = store.Close() }()
 
+	// Open the log directory before anything destructive happens. A
+	// --rebuild against a missing directory would otherwise wipe the
+	// database and then find nothing to replay from.
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintln(out, "No log directory at", dir, "- nothing to backfill.")
+			return nil
+		}
+		return fmt.Errorf("open %s: %w", dir, err)
+	}
+	defer func() { _ = root.Close() }()
+
 	if rebuild {
+		if err := checkRebuildSafe(ctx, out, store, root, force); err != nil {
+			return err
+		}
 		if err := store.Reset(ctx); err != nil {
 			return fmt.Errorf("reset db: %w", err)
 		}
@@ -125,16 +154,6 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 		models:  make(map[string]int),
 		unknown: make(map[string]int),
 	}
-
-	root, err := os.OpenRoot(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Fprintln(out, "No log directory at", dir, "- nothing to backfill.")
-			return nil
-		}
-		return fmt.Errorf("open %s: %w", dir, err)
-	}
-	defer func() { _ = root.Close() }()
 
 	walkErr := fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -179,6 +198,155 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 	}
 
 	return nil
+}
+
+// oldestLogDay returns the earliest day a backfill could replay from the
+// logs, as YYYY-MM-DD, or "" when the logs hold no billable event at all.
+//
+// Claude Code appends to a session file in time order, so the first
+// parseable assistant event in a file bounds that file. Scanning stops at
+// that line, which keeps this O(number of files) rather than O(bytes).
+func oldestLogDay(root *os.Root) (string, error) {
+	oldest := ""
+	err := fs.WalkDir(root.FS(), ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".jsonl") {
+			return nil
+		}
+		day, derr := firstEventDay(root, path)
+		if derr != nil {
+			// An unreadable file tells us nothing about coverage. Skip
+			// it rather than abort: the guard errs toward refusing.
+			return nil //nolint:nilerr // deliberately tolerant, see comment
+		}
+		if day == "" {
+			return nil
+		}
+		if oldest == "" || day < oldest {
+			oldest = day // both are YYYY-MM-DD, so string order is date order
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return oldest, nil
+}
+
+// firstEventDay returns the UTC day of the first billable event in one
+// log file, or "" if it holds none.
+func firstEventDay(root *os.Root, path string) (string, error) {
+	f, err := root.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = f.Close() }()
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 8*1024*1024)
+	for scanner.Scan() {
+		ev, perr := parser.Parse(scanner.Bytes())
+		if perr != nil || ev == nil {
+			continue // user lines, tool results, malformed lines
+		}
+		return ev.Timestamp.UTC().Format("2006-01-02"), nil
+	}
+	return "", scanner.Err()
+}
+
+// checkRebuildSafe refuses a --rebuild that would destroy history the
+// logs can no longer replay.
+//
+// --rebuild wipes events and rollups and replays from the logs, but
+// Claude Code prunes those after roughly a month while the database
+// keeps everything. On 2026-07-27 a real database held rollups back to
+// 05-13 while the logs only reached 06-26: a rebuild would have silently
+// destroyed six weeks of spend with no way to get it back.
+//
+// Returns a non-nil error to abort. force bypasses the check.
+func checkRebuildSafe(ctx context.Context, out io.Writer, store *db.DB, root *os.Root, force bool) error {
+	oldestDB, err := store.OldestRollupDay(ctx)
+	if err != nil {
+		return err
+	}
+	if oldestDB == "" {
+		return nil // no history to lose
+	}
+
+	oldestLog, err := oldestLogDay(root)
+	if err != nil {
+		return fmt.Errorf("scan logs for coverage: %w", err)
+	}
+
+	// Covered: the logs reach at least as far back as the database.
+	if oldestLog != "" && oldestLog <= oldestDB {
+		fmt.Fprintf(out, "rebuild coverage check: logs reach back to %s, database starts %s. Safe to replay.\n",
+			oldestLog, oldestDB)
+		return nil
+	}
+
+	if force {
+		fmt.Fprintf(out, "warning: --force given, discarding database history before %s.\n", horizon(oldestLog))
+		return nil
+	}
+
+	return &rebuildUnsafeError{oldestDB: oldestDB, oldestLog: oldestLog}
+}
+
+// horizon renders the earliest day a replay could restore.
+func horizon(oldestLog string) string {
+	if oldestLog == "" {
+		return "today (the logs hold no billable events)"
+	}
+	return oldestLog
+}
+
+// rebuildUnsafeError aborts a destructive rebuild and explains exactly
+// what would be lost and how to proceed anyway.
+type rebuildUnsafeError struct {
+	oldestDB  string
+	oldestLog string
+}
+
+func (e *rebuildUnsafeError) Error() string {
+	var b strings.Builder
+	b.WriteString("refusing --rebuild: the database holds history the logs can no longer replay.\n\n")
+	fmt.Fprintf(&b, "  oldest day in database:  %s\n", e.oldestDB)
+	if e.oldestLog == "" {
+		b.WriteString("  oldest day in logs:      none found\n\n")
+		b.WriteString("The logs hold no billable events, so a rebuild would wipe the\n")
+		b.WriteString("database and replay nothing at all.\n")
+	} else {
+		fmt.Fprintf(&b, "  oldest day in logs:      %s\n\n", e.oldestLog)
+		b.WriteString("Claude Code prunes its session logs after roughly a month. A rebuild\n")
+		b.WriteString("replays only from the logs, so ")
+		if days := daysBetween(e.oldestDB, e.oldestLog); days > 0 {
+			fmt.Fprintf(&b, "all %d days ", days)
+		}
+		fmt.Fprintf(&b, "before %s would be\npermanently lost.\n", e.oldestLog)
+	}
+	b.WriteString("\nYou almost never need --rebuild. Plain `budgetclaw backfill` is additive\n")
+	b.WriteString("and dedup-safe, and events stored unpriced reprice automatically after\n")
+	b.WriteString("an upgrade. If you accept losing that history, re-run with:\n\n")
+	b.WriteString("  budgetclaw backfill --rebuild --force\n")
+	return b.String()
+}
+
+// daysBetween counts whole days between two YYYY-MM-DD strings, or 0 if
+// either fails to parse. Only used to sharpen the warning text.
+func daysBetween(from, to string) int {
+	const layout = "2006-01-02"
+	a, err := time.Parse(layout, from)
+	if err != nil {
+		return 0
+	}
+	b, err := time.Parse(layout, to)
+	if err != nil {
+		return 0
+	}
+	return int(b.Sub(a).Hours() / 24)
 }
 
 // scanFileIntoDB reads one JSONL file via the rooted FS, parses each

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `budgetclaw backfill --rebuild` now refuses to run when it would destroy history the logs can no longer replay, and says exactly what would be lost. A rebuild wipes the database and replays from Claude Code's session logs, but those are pruned after roughly a month while the database keeps everything, so a rebuild could silently discard months of spend. Pass `--force` if you accept losing it. When the logs do cover the database, the rebuild proceeds as before and reports the range it checked.
+- A `--rebuild` pointed at a missing log directory no longer wipes the database before discovering there is nothing to replay. The directory is opened first.
+- `--rebuild`'s documented purpose is narrowed to repairing a database written by a pre-dedupe binary. A pricing correction no longer needs it, because stored events reprice in place.
+
 ## [v1.6.0] - 2026-07-29
 
 ### Added

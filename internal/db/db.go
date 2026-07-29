@@ -812,6 +812,22 @@ func (d *DB) UnpricedByModel(ctx context.Context) ([]UnpricedModel, error) {
 	return out, nil
 }
 
+// OldestRollupDay returns the earliest day the database holds, as
+// YYYY-MM-DD, or "" when there is no history at all.
+//
+// rollups is authoritative here rather than events: both are written in
+// the same transaction, and both are what a rebuild would destroy.
+func (d *DB) OldestRollupDay(ctx context.Context) (string, error) {
+	var day sql.NullString
+	if err := d.sql.QueryRowContext(ctx, `SELECT MIN(day) FROM rollups`).Scan(&day); err != nil {
+		return "", fmt.Errorf("oldest rollup day: %w", err)
+	}
+	if !day.Valid {
+		return "", nil
+	}
+	return day.String, nil
+}
+
 // MetaGet reads a small state value. Returns "" when the key is unset,
 // which callers treat as "never run".
 func (d *DB) MetaGet(ctx context.Context, key string) (string, error) {
