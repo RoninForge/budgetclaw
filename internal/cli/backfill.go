@@ -17,6 +17,7 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/parser"
 	"github.com/RoninForge/budgetclaw/internal/pricing"
+	"github.com/RoninForge/budgetclaw/internal/reconcile"
 )
 
 // newBackfillCmd creates the `budgetclaw backfill` subcommand. It
@@ -107,6 +108,17 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 			return fmt.Errorf("reset db: %w", err)
 		}
 		fmt.Fprintln(out, "wiped events + rollups (rebuild mode)")
+	} else {
+		// Price any stored backlog from the rows themselves before
+		// touching the logs. Forced, because an explicit backfill is a
+		// repair request: run the pass even if the pricing table has not
+		// changed since the last one. This also means a backfill recovers
+		// spend whose logs Claude Code has already pruned.
+		if res, rerr := reconcile.Run(ctx, store, true); rerr != nil {
+			fmt.Fprintf(out, "warning: reprice pass failed: %v\n", rerr)
+		} else if res.Any() {
+			fmt.Fprintln(out, res.Summary())
+		}
 	}
 
 	stats := backfillStats{
@@ -117,7 +129,7 @@ func runBackfill(ctx context.Context, out io.Writer, dir string, rebuild bool) e
 	root, err := os.OpenRoot(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintln(out, "No log directory at", dir, "— nothing to backfill.")
+			fmt.Fprintln(out, "No log directory at", dir, "- nothing to backfill.")
 			return nil
 		}
 		return fmt.Errorf("open %s: %w", dir, err)

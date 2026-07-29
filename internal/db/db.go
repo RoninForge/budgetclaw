@@ -135,6 +135,16 @@ CREATE TABLE IF NOT EXISTS guard_pending (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_guard_pending_dedup
 	ON guard_pending(dedup_key) WHERE dedup_key != '';
+
+-- Small key-value state that is not user data: the reconciliation
+-- watermark today, notification dedupe later. Kept in the database
+-- rather than a file so it shares the same transaction and lifetime as
+-- the rows it describes.
+CREATE TABLE IF NOT EXISTS meta (
+	key        TEXT PRIMARY KEY,
+	value      TEXT NOT NULL,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 `
 
 // dayFormat is the string format used for the rollups.day column.
@@ -800,6 +810,178 @@ func (d *DB) UnpricedByModel(ctx context.Context) ([]UnpricedModel, error) {
 		return nil, fmt.Errorf("unpriced rows: %w", err)
 	}
 	return out, nil
+}
+
+// MetaGet reads a small state value. Returns "" when the key is unset,
+// which callers treat as "never run".
+func (d *DB) MetaGet(ctx context.Context, key string) (string, error) {
+	var v string
+	err := d.sql.QueryRowContext(ctx, `SELECT value FROM meta WHERE key = ?`, key).Scan(&v)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("meta get %s: %w", key, err)
+	}
+	return v, nil
+}
+
+// MetaSet writes a small state value, overwriting any previous one.
+func (d *DB) MetaSet(ctx context.Context, key, value string) error {
+	if _, err := d.sql.ExecContext(ctx, `
+		INSERT INTO meta (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+		ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+	`, key, value); err != nil {
+		return fmt.Errorf("meta set %s: %w", key, err)
+	}
+	return nil
+}
+
+// UnpricedEvent is one stored-but-unpriced row, carrying everything a
+// caller needs to price it. The db package deliberately does not import
+// pricing, so the caller computes the cost and hands it back via
+// ApplyReprice.
+type UnpricedEvent struct {
+	UUID         string
+	Model        string
+	Timestamp    time.Time
+	Project      string
+	GitBranch    string
+	Input        int
+	Output       int
+	CacheRead    int
+	CacheWrite5m int
+	CacheWrite1h int
+}
+
+// RepricedEvent is the result of pricing an UnpricedEvent.
+type RepricedEvent struct {
+	UUID      string
+	Project   string
+	GitBranch string
+	Timestamp time.Time
+	CostUSD   float64
+}
+
+// UnpricedModels returns the distinct models in the unpriced backlog.
+// Served by the partial index, so it stays cheap even on a large events
+// table, and returns nothing at all in the healthy case.
+func (d *DB) UnpricedModels(ctx context.Context) ([]string, error) {
+	rows, err := d.sql.QueryContext(ctx,
+		`SELECT DISTINCT model FROM events WHERE priced = 0 ORDER BY model`)
+	if err != nil {
+		return nil, fmt.Errorf("query unpriced models: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []string
+	for rows.Next() {
+		var m string
+		if err := rows.Scan(&m); err != nil {
+			return nil, fmt.Errorf("scan unpriced model: %w", err)
+		}
+		out = append(out, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("unpriced model rows: %w", err)
+	}
+	return out, nil
+}
+
+// UnpricedBatch returns up to limit unpriced events for one model whose
+// uuid sorts after afterUUID.
+//
+// Keyset pagination on uuid, rather than repeatedly selecting WHERE
+// priced = 0, is deliberate: a row that stays unpriceable (a known model
+// with no interval covering its timestamp) would otherwise be returned
+// forever and the caller would never terminate.
+func (d *DB) UnpricedBatch(ctx context.Context, model, afterUUID string, limit int) ([]UnpricedEvent, error) {
+	rows, err := d.sql.QueryContext(ctx, `
+		SELECT uuid, model, ts, project, git_branch,
+		       input_tokens, output_tokens,
+		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens
+		FROM events
+		WHERE priced = 0 AND model = ? AND uuid > ?
+		ORDER BY uuid
+		LIMIT ?
+	`, model, afterUUID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query unpriced batch: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []UnpricedEvent
+	for rows.Next() {
+		var e UnpricedEvent
+		if err := rows.Scan(
+			&e.UUID, &e.Model, &e.Timestamp, &e.Project, &e.GitBranch,
+			&e.Input, &e.Output,
+			&e.CacheRead, &e.CacheWrite5m, &e.CacheWrite1h,
+		); err != nil {
+			return nil, fmt.Errorf("scan unpriced batch row: %w", err)
+		}
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("unpriced batch rows: %w", err)
+	}
+	return out, nil
+}
+
+// ApplyReprice flips a batch of events from unpriced to priced and folds
+// their newly known cost into the matching rollups, in one transaction.
+//
+// Idempotent and safe under concurrency. Each update is guarded by
+// "AND priced = 0" and the rollup delta is applied only when that update
+// actually changed a row, so a second pass, or a racing writer in
+// another process, applies nothing rather than double-counting. The
+// tokens and event_count are already in the rollup from the original
+// insert, so the delta here is cost only, plus clearing one from the
+// unpriced counter.
+//
+// Returns how many events were repriced by this call.
+func (d *DB) ApplyReprice(ctx context.Context, priced []RepricedEvent) (int, error) {
+	if len(priced) == 0 {
+		return 0, nil
+	}
+
+	tx, err := d.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	applied := 0
+	for _, p := range priced {
+		res, err := tx.ExecContext(ctx,
+			`UPDATE events SET cost_usd = ?, priced = 1 WHERE uuid = ? AND priced = 0`,
+			p.CostUSD, p.UUID)
+		if err != nil {
+			return 0, fmt.Errorf("reprice event %s: %w", p.UUID, err)
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return 0, fmt.Errorf("reprice rows affected %s: %w", p.UUID, err)
+		}
+		if n != 1 {
+			// Someone else priced it first. Applying the rollup delta
+			// now would double-count, so skip it entirely.
+			continue
+		}
+		if err := applyRollupDelta(ctx, tx, p.Project, p.GitBranch,
+			p.Timestamp, 0,
+			0, 0, 0, 0, 0,
+			p.CostUSD, -1,
+		); err != nil {
+			return 0, err
+		}
+		applied++
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit reprice: %w", err)
+	}
+	return applied, nil
 }
 
 // PendingGuardEvent is one queued audit record awaiting sync.
