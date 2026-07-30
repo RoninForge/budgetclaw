@@ -227,6 +227,22 @@ func SetCollectGit(path string, collect bool) error {
 	return writeTOML(path, t)
 }
 
+// SetAutoUpdatePricing persists the [pricing].auto_update opt-in, the consent
+// that lets budgetclaw fetch a signed price table over the network instead of
+// waiting for a binary upgrade. Like the other edit helpers it preserves the
+// rest of the file and drops hand-written comments.
+func SetAutoUpdatePricing(path string, enabled bool) error {
+	t, err := loadTOML(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if t == nil {
+		t = &tomlConfig{}
+	}
+	t.Pricing.AutoUpdate = enabled
+	return writeTOML(path, t)
+}
+
 // loadTOML reads and decodes the config file into a tomlConfig.
 // Returns (empty tomlConfig, nil) for a missing file so callers
 // can treat "no config" and "empty config" identically.

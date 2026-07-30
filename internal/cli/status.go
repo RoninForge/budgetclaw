@@ -43,6 +43,10 @@ func runStatus(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
+	// Adopt the cached price table, if the user opted in, so these figures
+	// match what the watcher is pricing with.
+	usePricingCache(cfg)
+
 	store, err := db.Open("")
 	if err != nil {
 		return fmt.Errorf("open db: %w", err)

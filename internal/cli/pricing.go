@@ -34,6 +34,8 @@ func newPricingCmd() *cobra.Command {
 		newPricingDiagnoseCmd(),
 		newPricingHistoryCmd(),
 		newPricingProvenanceCmd(),
+		newPricingAutoCmd(),
+		newPricingRefreshCmd(),
 	)
 	return cmd
 }
@@ -198,13 +200,26 @@ repo commit it resolves to. Every rate in the binary traces back to this
 commit, so an auditor can reproduce the table from source.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if cfg, err := loadConfigOrDefault(); err == nil {
+				usePricingCache(cfg)
+			}
 			tag, commit := pricing.Provenance()
+			source, _, dataDate := pricing.ActiveTable()
 			out := cmd.OutOrStdout()
 			if asJSON {
 				return json.NewEncoder(out).Encode(pricingProvenanceRow{Tag: tag, Commit: commit})
 			}
 			fmt.Fprintf(out, "dataset tag:   %s\n", tag)
-			fmt.Fprintf(out, "index commit:  %s\n", commit)
+			// The signed bundle identifies its release by tag and data
+			// date, not by commit, so this line is absent for a fetched
+			// table rather than shown blank.
+			if commit != "" {
+				fmt.Fprintf(out, "index commit:  %s\n", commit)
+			}
+			fmt.Fprintf(out, "data date:     %s\n", dataDate)
+			// Say plainly whether these rates came from the binary or from
+			// a verified download, so a surprising number is traceable.
+			fmt.Fprintf(out, "table source:  %s\n", source)
 			return nil
 		},
 	}

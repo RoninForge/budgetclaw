@@ -105,12 +105,13 @@ func ptrTime(t time.Time) *time.Time { return &t }
 // context variant is billed at standard rates) and then applies any
 // alias mapping. It returns the canonical id and whether it is known.
 func canonicalModel(model string) (string, bool) {
+	t := current()
 	m := strings.TrimSuffix(model, "[1m]")
-	if _, ok := modelSeries[m]; ok {
+	if _, ok := t.series[m]; ok {
 		return m, true
 	}
-	if canon, ok := modelAliases[m]; ok {
-		if _, ok := modelSeries[canon]; ok {
+	if canon, ok := t.aliases[m]; ok {
+		if _, ok := t.series[canon]; ok {
 			return canon, true
 		}
 	}
@@ -139,7 +140,7 @@ func RatesForAt(model string, at time.Time) (Rates, error) {
 	if !ok {
 		return Rates{}, fmt.Errorf("%w: %q", ErrUnknownModel, model)
 	}
-	hist := modelSeries[canon]
+	hist := current().series[canon]
 	t := at.UTC()
 
 	in, ok := priceAt(hist.input, t)
@@ -221,7 +222,7 @@ func History(model string) ([]Interval, error) {
 	if !ok {
 		return nil, fmt.Errorf("%w: %q", ErrUnknownModel, model)
 	}
-	hist := modelSeries[canon]
+	hist := current().series[canon]
 
 	// Collect every distinct interval boundary across both series.
 	bounds := make(map[time.Time]struct{})
@@ -316,18 +317,20 @@ func lastUpperBound(h modelHist, from time.Time) *time.Time {
 // `budgetclaw pricing provenance` so an auditor can trace every rate to
 // an exact upstream commit.
 func Provenance() (tag, commit string) {
-	return generatedTag, generatedIndexCommit
+	t := current()
+	return t.tag, t.commit
 }
 
 // KnownModels returns a sorted list of model IDs that price successfully:
 // the union of canonical series ids and alias ids. Useful for
 // `budgetclaw pricing list` and for fuzzing tests.
 func KnownModels() []string {
-	seen := make(map[string]bool, len(modelSeries)+len(modelAliases))
-	for k := range modelSeries {
+	t := current()
+	seen := make(map[string]bool, len(t.series)+len(t.aliases))
+	for k := range t.series {
 		seen[k] = true
 	}
-	for k := range modelAliases {
+	for k := range t.aliases {
 		seen[k] = true
 	}
 	keys := make([]string, 0, len(seen))
