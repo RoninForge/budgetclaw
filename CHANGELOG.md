@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.6.1] - 2026-07-30
+
+### Changed
+
+- pricing: refresh vendored ai-price-index to `v2026.07.30-d31d0e2`. Point-in-time pricing means a new rate adds a new interval and does not change rows already priced at their then-effective rate, so no `backfill --rebuild` is needed.
+
+
 ### Changed
 
 - `budgetclaw backfill --rebuild` now refuses to run when it would destroy history the logs can no longer replay, and says exactly what would be lost. A rebuild wipes the database and replays from Claude Code's session logs, but those are pruned after roughly a month while the database keeps everything, so a rebuild could silently discard months of spend. Pass `--force` if you accept losing it. When the logs do cover the database, the rebuild proceeds as before and reports the range it checked.
@@ -307,7 +314,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.6.1...HEAD
+[v1.6.1]: https://github.com/RoninForge/budgetclaw/compare/v1.6.0...v1.6.1
 [v1.6.0]: https://github.com/RoninForge/budgetclaw/compare/v1.5.2...v1.6.0
 [v1.5.2]: https://github.com/RoninForge/budgetclaw/compare/v1.5.1...v1.5.2
 [v1.5.1]: https://github.com/RoninForge/budgetclaw/compare/v1.4.1...v1.5.1
