@@ -198,6 +198,11 @@ func TestPricingHistoryUnknownModel(t *testing.T) {
 // TestPricingProvenance verifies the provenance command prints the
 // pinned dataset tag and index commit.
 func TestPricingProvenance(t *testing.T) {
+	// Isolated deliberately: this asserts what the COMPILED-IN dataset
+	// reports, so it must not see a fetched table, whether from a previous
+	// test or from the developer's own cache.
+	setupXDG(t)
+
 	stdout, _, err := execCmd(t, "pricing", "provenance")
 	if err != nil {
 		t.Fatalf("pricing provenance: %v", err)
@@ -212,6 +217,8 @@ func TestPricingProvenance(t *testing.T) {
 
 // TestPricingProvenanceJSON verifies --json emits {tag, commit}.
 func TestPricingProvenanceJSON(t *testing.T) {
+	setupXDG(t) // same reason as TestPricingProvenance: assert the built-in table
+
 	stdout, _, err := execCmd(t, "pricing", "provenance", "--json")
 	if err != nil {
 		t.Fatalf("pricing provenance --json: %v", err)

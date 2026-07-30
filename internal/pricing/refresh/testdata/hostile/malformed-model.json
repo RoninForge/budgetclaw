@@ -1,0 +1,30 @@
+{
+  "dataModified": "2026-07-27",
+  "license": "CC-BY-4.0",
+  "models": [
+    {
+      "model": "",
+      "provider": "anthropic",
+      "variations": {
+        "input": [
+          {
+            "from": "2026-02-19",
+            "price_usd": 5,
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "output": [
+          {
+            "from": "2026-02-19",
+            "price_usd": 25,
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ]
+      }
+    }
+  ],
+  "provider": "anthropic",
+  "schemaVersion": "1.0.0"
+}

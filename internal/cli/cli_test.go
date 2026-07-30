@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -11,11 +12,46 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+
+	"github.com/RoninForge/budgetclaw/internal/pricing"
 )
 
+// TestMain makes the whole package hermetic before any test runs.
+//
+// Without this, a test that forgets setupXDG reads the DEVELOPER'S real
+// config and cache. That is not hypothetical: it is what happened once
+// price auto-update shipped. On a machine with `pricing auto on` and a
+// populated cache, commands under test loaded the user's fetched price
+// table into the pricing package's global, and the provenance tests then
+// asserted against fetched data while believing they were checking the
+// compiled-in dataset. CI never saw it, because CI has no config and no
+// cache: the suite passed everywhere except on a machine actually using
+// the feature, which is the worst possible place for it to hold.
+//
+// The per-test setupXDG still exists for tests that want a fresh dir they
+// can inspect. This is the floor underneath it.
+func TestMain(m *testing.M) {
+	dir, err := os.MkdirTemp("", "budgetclaw-cli-test")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "test setup: %v\n", err)
+		os.Exit(1)
+	}
+	for _, k := range []string{"XDG_CONFIG_HOME", "XDG_STATE_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "HOME"} {
+		if err := os.Setenv(k, dir); err != nil {
+			fmt.Fprintf(os.Stderr, "test setup: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	code := m.Run()
+	_ = os.RemoveAll(dir)
+	os.Exit(code)
+}
+
 // setupXDG points every XDG base directory at a fresh temp dir
-// for the lifetime of the test. Returns the temp dir root so
-// assertions can locate files by hand.
+// for the lifetime of the test, and guarantees the test starts from the
+// compiled-in price table. Returns the temp dir root so assertions can
+// locate files by hand.
 func setupXDG(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -23,6 +59,13 @@ func setupXDG(t *testing.T) string {
 	t.Setenv("XDG_STATE_HOME", dir)
 	t.Setenv("XDG_DATA_HOME", dir)
 	t.Setenv("XDG_CACHE_HOME", dir)
+	t.Setenv("HOME", dir)
+
+	// The active price table is a package global in internal/pricing, so a
+	// test that installs one leaks into every test after it. Reset going
+	// in and coming out.
+	pricing.RestoreBuiltIn()
+	t.Cleanup(pricing.RestoreBuiltIn)
 	return dir
 }
 

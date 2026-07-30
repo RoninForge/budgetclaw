@@ -1,0 +1,88 @@
+{
+  "description": "Pinned hostile-payload corpus for the pricing bundle parser. Every file here MUST be refused, and refused by the named gate. Driven by TestHostileCorpus in hostile_test.go.",
+  "why_this_exists": [
+    "A valid signature proves a bundle is the one we published. It does not prove the numbers in it are right: an upstream data-entry mistake would be signed exactly as faithfully as a correct price. These payloads are the second line of defence, and that line is the one that actually fires in practice.",
+    "None of these files is reachable over the network without our signing key, because verification runs before parsing. That is deliberate, and it is why the corpus is exercised against parseBundle directly rather than through the fetch path. What it defends is the two cases a signature cannot help with: a wrong export that gets signed legitimately, and a future in which the key is compromised.",
+    "Each case asserts the REASON, not merely that something was refused. Without that, a payload aimed at the rate window could quietly start failing at the schema check instead, the intended gate would stop being exercised at all, and a test that only looked for ErrRejected would stay green while the gate decayed."
+  ],
+  "cases": [
+    {
+      "file": "unparseable-html.json",
+      "reason": "unparseable",
+      "note": "A captive portal or a login wall. The single most likely thing a laptop on hotel wifi is served instead of the file it asked for."
+    },
+    {
+      "file": "unparseable-truncated.json",
+      "reason": "unparseable",
+      "note": "A connection dropped mid-body. Must not parse as a partial table."
+    },
+    {
+      "file": "unparseable-array.json",
+      "reason": "unparseable",
+      "note": "Valid JSON of the wrong shape: an array where a document belongs."
+    },
+    {
+      "file": "unsupported-schema.json",
+      "reason": "unsupported_schema",
+      "note": "schemaVersion 2.0.0. A major bump can change what a field MEANS, so guessing is not acceptable when the answer sets dollar figures."
+    },
+    {
+      "file": "unexpected-provider.json",
+      "reason": "unexpected_provider",
+      "note": "Someone else's price list. Anthropic rates applied to it would be fiction."
+    },
+    {
+      "file": "bad-data-date.json",
+      "reason": "bad_data_date",
+      "note": "dataModified in DD-MM-YYYY. An unparseable date would disable the anti-rollback check, so it must fail closed rather than be ignored."
+    },
+    {
+      "file": "no-models.json",
+      "reason": "no_models",
+      "note": "A structurally perfect, entirely empty release. Applying it would silently strip pricing."
+    },
+    {
+      "file": "malformed-model.json",
+      "reason": "malformed_model",
+      "note": "A model record with no id, which could not be looked up or attributed."
+    },
+    {
+      "file": "bad-interval-date.json",
+      "reason": "bad_interval_date",
+      "note": "Month 13, day 45. A tolerated bad date would put an interval at the zero time and mis-window every lookup before it."
+    },
+    {
+      "file": "unexpected-unit.json",
+      "reason": "unexpected_unit",
+      "note": "usd_per_ktok. The table is per-million-token throughout; a different unit is wrong by a factor we would have to guess."
+    },
+    {
+      "file": "input-only.json",
+      "reason": "no_priceable_model",
+      "note": "Output rates missing entirely. A model that cannot price both sides cannot price a call, and must not half-apply."
+    },
+    {
+      "file": "rate-per-ktok.json",
+      "reason": "rate_out_of_range",
+      "note": "The realistic upstream mistake: a rate recorded per thousand tokens instead of per million, inflating every total 1000x."
+    },
+    {
+      "file": "rate-zero.json",
+      "reason": "rate_out_of_range",
+      "note": "Everything free. This is the most valuable payload for an attacker who wants spend to look like nothing, and the most damaging one to accept."
+    },
+    {
+      "file": "rate-dust.json",
+      "reason": "rate_out_of_range",
+      "note": "A near-zero rate: the same attack as rate-zero, wearing a number that looks less obviously wrong."
+    },
+    {
+      "file": "rate-negative.json",
+      "reason": "rate_out_of_range",
+      "note": "A negative rate, which would let usage subtract from a total and defeat every budget cap."
+    }
+  ],
+  "gate_stage_cases": {
+    "note": "Four reasons cannot be expressed as a standalone file, because they are judged by COMPARISON against the table already in force rather than from the bundle alone: future_data_date, rollback, model_loss, rate_jump. Those are exercised in hostile_test.go as mutations of the real live fixture, so they are compared against the actual production dataset instead of a stub. TestHostileCorpus asserts that both halves together cover every declared Reason, so a new gate added without a payload fails CI."
+  }
+}

@@ -3,7 +3,6 @@ package refresh
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -23,8 +22,9 @@ import (
 // discarded and the table already in force stays. That is stale but
 // honest, and the unpriced-event reporting still surfaces any gap.
 
-// ErrRejected reports that a bundle parsed and verified but failed a
-// plausibility check. It carries a stable reason for logs and diagnostics.
+// ErrRejected reports that a bundle verified but failed a structural or
+// plausibility check. Every rejection also carries a stable Reason code;
+// see reason.go and ReasonOf.
 var ErrRejected = errors.New("pricing bundle rejected")
 
 // Plausibility bounds.
@@ -76,38 +76,36 @@ type wireBundle struct {
 // It does not consult the currently active table; that comparison is
 // checkPlausible's job, so parsing stays a pure function of its input.
 func parseBundle(raw []byte) (pricing.ExternalTable, string, error) {
+	// Unknown fields are tolerated by design, not by accident. Published
+	// price records legitimately carry provenance alongside the rate
+	// (confidence, src, snapshot, last_validated), none of which is a
+	// pricing input, and upstream may add more. Safety here comes from
+	// checking the fields we DO use, explicitly and below, rather than
+	// from insisting the field set match a struct exactly.
 	var w wireBundle
-	dec := json.NewDecoder(strings.NewReader(string(raw)))
-	dec.DisallowUnknownFields() // a shape we do not understand is not one we should price from
-	if err := dec.Decode(&w); err != nil {
-		// Retry permissively: an added field upstream should not brick
-		// clients, but we want to know it happened.
-		var w2 wireBundle
-		if err2 := json.Unmarshal(raw, &w2); err2 != nil {
-			return pricing.ExternalTable{}, "", fmt.Errorf("%w: unparseable: %v", ErrRejected, err2)
-		}
-		w = w2
+	if err := json.Unmarshal(raw, &w); err != nil {
+		return pricing.ExternalTable{}, "", reject(ReasonUnparseable, "%v", err)
 	}
 
 	// Only schema 1.x is understood. A major bump means the meaning of a
 	// field may have changed, and guessing is not acceptable here.
 	if major := strings.SplitN(w.SchemaVersion, ".", 2)[0]; major != "1" {
-		return pricing.ExternalTable{}, "", fmt.Errorf("%w: unsupported schemaVersion %q", ErrRejected, w.SchemaVersion)
+		return pricing.ExternalTable{}, "", reject(ReasonUnsupportedSchema, "schemaVersion %q", w.SchemaVersion)
 	}
 	if w.Provider != "anthropic" {
-		return pricing.ExternalTable{}, "", fmt.Errorf("%w: unexpected provider %q", ErrRejected, w.Provider)
+		return pricing.ExternalTable{}, "", reject(ReasonUnexpectedProvider, "provider %q", w.Provider)
 	}
 	if _, err := time.Parse("2006-01-02", w.DataModified); err != nil {
-		return pricing.ExternalTable{}, "", fmt.Errorf("%w: bad dataModified %q", ErrRejected, w.DataModified)
+		return pricing.ExternalTable{}, "", reject(ReasonBadDataDate, "dataModified %q", w.DataModified)
 	}
 	if len(w.Models) == 0 {
-		return pricing.ExternalTable{}, "", fmt.Errorf("%w: no models", ErrRejected)
+		return pricing.ExternalTable{}, "", reject(ReasonNoModels, "the bundle carries no models")
 	}
 
 	out := pricing.ExternalTable{DataDate: w.DataModified}
 	for _, m := range w.Models {
 		if m.Model == "" {
-			return pricing.ExternalTable{}, "", fmt.Errorf("%w: a model has no id", ErrRejected)
+			return pricing.ExternalTable{}, "", reject(ReasonMalformedModel, "a model has no id")
 		}
 		in, err := convertWire(m.Model, "input", m.Variations["input"])
 		if err != nil {
@@ -131,7 +129,7 @@ func parseBundle(raw []byte) (pricing.ExternalTable, string, error) {
 		})
 	}
 	if len(out.Models) == 0 {
-		return pricing.ExternalTable{}, "", fmt.Errorf("%w: no model had both input and output rates", ErrRejected)
+		return pricing.ExternalTable{}, "", reject(ReasonNoPriceableModel, "no model had both input and output rates")
 	}
 	return out, w.DataModified, nil
 }
@@ -147,24 +145,25 @@ func convertWire(model, variation string, ivs []struct {
 	for i, iv := range ivs {
 		from, err := time.Parse("2006-01-02", iv.From)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s %s interval %d bad from %q", ErrRejected, model, variation, i, iv.From)
+			return nil, reject(ReasonBadIntervalDate, "%s %s interval %d bad from %q", model, variation, i, iv.From)
 		}
 		var to *time.Time
 		if iv.To != nil && *iv.To != "" {
 			t, err := time.Parse("2006-01-02", *iv.To)
 			if err != nil {
-				return nil, fmt.Errorf("%w: %s %s interval %d bad to %q", ErrRejected, model, variation, i, *iv.To)
+				return nil, reject(ReasonBadIntervalDate, "%s %s interval %d bad to %q", model, variation, i, *iv.To)
 			}
 			to = &t
 		}
 		// The whole table is per-million-token; a different unit would be
 		// silently mispriced by a factor we cannot guess.
 		if iv.Unit != "" && iv.Unit != "usd_per_mtok" {
-			return nil, fmt.Errorf("%w: %s %s interval %d unit %q", ErrRejected, model, variation, i, iv.Unit)
+			return nil, reject(ReasonUnexpectedUnit, "%s %s interval %d unit %q", model, variation, i, iv.Unit)
 		}
 		if iv.PriceUSD < minRatePerMTok || iv.PriceUSD > maxRatePerMTok {
-			return nil, fmt.Errorf("%w: %s %s rate %v is outside $%v..$%v per MTok, which suggests a unit error",
-				ErrRejected, model, variation, iv.PriceUSD, minRatePerMTok, maxRatePerMTok)
+			return nil, reject(ReasonRateOutOfRange,
+				"%s %s rate %v is outside $%v..$%v per MTok, which suggests a unit error",
+				model, variation, iv.PriceUSD, minRatePerMTok, maxRatePerMTok)
 		}
 		out = append(out, pricing.ExternalInterval{From: from, To: to, Price: iv.PriceUSD})
 	}
@@ -178,13 +177,13 @@ func convertWire(model, variation string, ivs []struct {
 func checkPlausible(t pricing.ExternalTable, now time.Time) error {
 	newDate, err := time.Parse("2006-01-02", t.DataDate)
 	if err != nil {
-		return fmt.Errorf("%w: bad dataModified %q", ErrRejected, t.DataDate)
+		return reject(ReasonBadDataDate, "dataModified %q", t.DataDate)
 	}
 
 	// Future-dated data means a clock problem on one side or a bad record.
 	if newDate.After(now.UTC().Add(maxFutureSkew)) {
-		return fmt.Errorf("%w: dataModified %s is more than %s in the future",
-			ErrRejected, t.DataDate, maxFutureSkew)
+		return reject(ReasonFutureDataDate, "dataModified %s is more than %s in the future",
+			t.DataDate, maxFutureSkew)
 	}
 
 	// Anti-rollback. A signature stays valid forever, so replaying a
@@ -192,8 +191,8 @@ func checkPlausible(t pricing.ExternalTable, now time.Time) error {
 	// itself. Refusing to move backwards is what stops it.
 	if _, _, activeDate := pricing.ActiveTable(); activeDate != "" {
 		if cur, err := time.Parse("2006-01-02", activeDate); err == nil && newDate.Before(cur) {
-			return fmt.Errorf("%w: dataModified %s is older than the active table's %s (rollback)",
-				ErrRejected, t.DataDate, activeDate)
+			return reject(ReasonRollback, "dataModified %s is older than the active table's %s",
+				t.DataDate, activeDate)
 		}
 	}
 
@@ -214,8 +213,8 @@ func checkPlausible(t pricing.ExternalTable, now time.Time) error {
 			}
 		}
 		if frac := float64(missing) / float64(len(active)); frac >= maxModelLossFraction {
-			return fmt.Errorf("%w: %d of %d known models absent (%.0f%%), which looks truncated",
-				ErrRejected, missing, len(active), frac*100)
+			return reject(ReasonModelLoss, "%d of %d known models absent (%.0f%%), which looks truncated",
+				missing, len(active), frac*100)
 		}
 	}
 
@@ -232,8 +231,8 @@ func checkPlausible(t pricing.ExternalTable, now time.Time) error {
 			continue
 		}
 		if factor := ratio(next, cur.InputPerMTok); factor > maxRateJumpFactor {
-			return fmt.Errorf("%w: %s input rate moves %.0fx (%v to %v), which needs a human look",
-				ErrRejected, m.ID, factor, cur.InputPerMTok, next)
+			return reject(ReasonRateJump, "%s input rate moves %.0fx (%v to %v), which needs a human look",
+				m.ID, factor, cur.InputPerMTok, next)
 		}
 	}
 
