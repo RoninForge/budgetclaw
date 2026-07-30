@@ -183,5 +183,9 @@ func jitter(minDur, maxDur time.Duration) time.Duration {
 	if maxDur <= minDur {
 		return minDur
 	}
+	// #nosec G404 -- this picks a delay to spread request timing across
+	// installs, nothing more. It guards no secret and gates no decision:
+	// predicting it reveals only when a client will ask for a public file.
+	// A CSPRNG here would add error handling for no benefit.
 	return minDur + time.Duration(rand.Int64N(int64(maxDur-minDur)+1))
 }
