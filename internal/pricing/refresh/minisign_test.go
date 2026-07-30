@@ -13,7 +13,7 @@ import (
 // rather than against something this package generated itself.
 func liveFixture(t *testing.T) (bundle, sig []byte) {
 	t.Helper()
-	dir := filepath.Join("testdata")
+	const dir = "testdata"
 	b, err := os.ReadFile(filepath.Join(dir, "anthropic.json"))
 	if err != nil {
 		t.Fatalf("read bundle fixture: %v", err)
