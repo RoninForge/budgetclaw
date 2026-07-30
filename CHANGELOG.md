@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.0] - 2026-07-30
+
 ### Added
 
 - `budgetclaw pricing auto on` opts in to refreshing the price table over the network, so a model released after your build starts pricing without waiting for an upgrade. **Off by default**, and fully offline operation stays a first-class supported mode. Turning it on prints exactly what happens: an HTTPS GET for a public price file, with no key, no token, no identifier, no usage data, no query string and no cookie. Your API traffic is still never touched, and nothing is added to the path of a Claude Code call.
@@ -322,7 +324,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.0...HEAD
+[v1.7.0]: https://github.com/RoninForge/budgetclaw/compare/v1.6.1...v1.7.0
 [v1.6.1]: https://github.com/RoninForge/budgetclaw/compare/v1.6.0...v1.6.1
 [v1.6.0]: https://github.com/RoninForge/budgetclaw/compare/v1.5.2...v1.6.0
 [v1.5.2]: https://github.com/RoninForge/budgetclaw/compare/v1.5.1...v1.5.2
