@@ -156,8 +156,12 @@ func (p *pricingRefresher) once(ctx context.Context, reason string) {
 			"reason", reason, "err", err)
 		return
 	case errors.Is(err, refresh.ErrRejected):
+		// The gate code is logged separately from the free-text error so it
+		// can be grepped and counted across machines: "rate_out_of_range"
+		// appearing in the field means the published data has a unit error,
+		// which is ours to fix, not the user's.
 		p.logger.Warn("pricing: downloaded table failed a plausibility check, discarded",
-			"reason", reason, "err", err)
+			"reason", reason, "gate", string(refresh.ReasonOf(err)), "err", err)
 		return
 	case err != nil:
 		p.logger.Warn("pricing: refresh failed", "reason", reason, "err", err)

@@ -1,0 +1,111 @@
+name: Pricing signature check
+
+# Verifies the LIVE published price bundle against the public key compiled
+# into this repository, once a day.
+#
+# Why this needs to exist. When price auto-update fails, it fails silently by
+# design: the signature does not verify, the built-in table is kept, a debug
+# line is logged, and the user sees nothing. That is the correct behaviour for
+# a client and a terrible property for an operator, because the feature can be
+# dead for days with no symptom.
+#
+# It is not theoretical. On 2026-07-30 a VPS cron re-export deleted the
+# detached signature upstream, the landing sync warned instead of failing, and
+# production served the bundle with a 404 for its signature. Every opted-in
+# client stopped updating. Nothing alerted. A test found it.
+#
+# The ordinary test job cannot cover this: it runs against a pinned fixture,
+# which is exactly what a test should do, and a pinned fixture cannot notice
+# that reality has moved. So this job is separate, scheduled, and the only one
+# in the repo permitted to touch the network.
+
+on:
+  schedule:
+    # 06:40 UTC, comfortably after ai-price-index's own signing safety net at
+    # 05:25 UTC, so a signature it repaired overnight is seen as repaired
+    # rather than reported as broken.
+    - cron: '40 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pricing-signature-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: true
+
+      # A network failure is not a signing failure, and the tests skip rather
+      # than fail on one. Whether the service is reachable belongs to uptime
+      # monitoring; conflating the two would make this job cry wolf and get
+      # muted, which costs more than the coverage is worth.
+      - name: Verify the live bundle and signature
+        id: check
+        env:
+          BUDGETCLAW_LIVE_PRICING_CHECK: '1'
+        run: go test ./internal/pricing/refresh/ -run 'TestLive' -v
+
+      - name: Open or update an issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          title="Live price bundle does not verify"
+
+          body="$(cat <<MSG
+          While this is true, every client with \`budgetclaw pricing auto on\` is
+          silently refusing every price update: verification fails, the built-in
+          table is kept, and no user-visible error is produced.
+
+          Most likely causes, in order of how often they have actually happened:
+
+          1. The detached signature is missing or stale in production. An export
+          over already-signed bytes deletes or invalidates it. Fix at the source:
+          \`gh workflow run sign-history.yml --repo RoninForge/ai-price-index --ref main\`
+
+          2. The signing key was rotated without adding the new public key to
+          \`internal/pricing/refresh/keys.go\`.
+
+          3. The published bundle changed shape and now fails a plausibility gate.
+          The test output names which gate.
+
+          Run log: ${RUN_URL}
+          MSG
+          )"
+          # Strip the indentation the heredoc carries, so the body is prose
+          # rather than one long Markdown code block.
+          body="$(printf '%s\n' "$body" | sed 's/^          //')"
+
+          # One issue, reopened and commented rather than duplicated, so a
+          # multi-day breakage does not bury the repo in identical reports.
+          existing="$(gh issue list --state all --search "$title in:title" \
+            --json number,state --jq '.[0] | select(.) | "\(.number) \(.state)"' || true)"
+
+          if [ -z "$existing" ]; then
+            gh issue create --title "$title" --body "$body" --label pricing 2>/dev/null \
+              || gh issue create --title "$title" --body "$body"
+            echo "opened a new issue"
+            exit 0
+          fi
+
+          num="${existing%% *}"
+          state="${existing##* }"
+          if [ "$state" = "CLOSED" ]; then
+            gh issue reopen "$num"
+          fi
+          gh issue comment "$num" --body "$body"
+          echo "updated issue #$num"

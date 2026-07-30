@@ -15,6 +15,9 @@
 #   gocritic   - opinionated but catches real bugs
 #   unconvert  - redundant type conversions
 #   unparam    - unused function parameters
+#   depguard   - confines net/http to the packages allowed to reach the
+#                network, so "zero keys, zero prompts, zero latency added"
+#                and offline-by-default cannot be broken by an import
 
 version: "2"
 
@@ -36,8 +39,37 @@ linters:
     - gocritic
     - unconvert
     - unparam
+    - depguard
 
   settings:
+    depguard:
+      rules:
+        # Network egress is a product promise, not an implementation
+        # detail. Three packages are allowed to make requests, each for a
+        # reason a user opted into:
+        #
+        #   pricing/refresh - the signed price table, off by default
+        #   goei           - syncing to a dashboard the user configured
+        #   ntfy           - push alerts to a server the user configured
+        #
+        # Everywhere else, an import of net/http is the beginning of a
+        # version check, a telemetry ping, or an eager warm-up on a path
+        # nobody consented to. The zero-egress canary tests catch one that
+        # actually fires; this catches one before it is even wired up,
+        # which is the cheaper place to catch it.
+        network-egress:
+          list-mode: lax
+          files:
+            - "!**/internal/pricing/refresh/**"
+            - "!**/internal/goei/**"
+            - "!**/internal/ntfy/**"
+            # Tests legitimately need httptest to serve fixtures locally,
+            # and the canaries need net/http to install a tripwire.
+            - "!$test"
+          deny:
+            - pkg: net/http
+              desc: "network egress is confined to internal/pricing/refresh, internal/goei and internal/ntfy; see the depguard rule in .golangci.yml"
+
     errcheck:
       exclude-functions:
         # CLI output to stdout/stderr. If the pipe is broken the
