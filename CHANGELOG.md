@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `budgetclaw pricing auto on` opts in to refreshing the price table over the network, so a model released after your build starts pricing without waiting for an upgrade. **Off by default**, and fully offline operation stays a first-class supported mode. Turning it on prints exactly what happens: an HTTPS GET for a public price file, with no key, no token, no identifier, no usage data, no query string and no cookie. Your API traffic is still never touched, and nothing is added to the path of a Claude Code call.
+- `budgetclaw pricing refresh` fetches now; `--force` fetches once without changing the saved setting.
+- A downloaded table is only used if its Ed25519 signature verifies against a key compiled into this binary AND the contents pass plausibility checks: rates within a sane range per million tokens, no jump of more than tenfold on a model you already price, no mass loss of models, and no going backwards to an older dataset. Anything else is discarded and the table already in force is kept, which is stale but never wrong. You can verify the same file yourself with the standard `minisign` tool; see the ai-price-index README.
+- `budgetclaw watch` checks about once a day on a jittered schedule, and immediately (rate limited) when it meets a model it cannot price, so a new model shows as unpriced for about a minute rather than until your next upgrade. The check never runs on the event path: rates are read from memory through a single atomic load.
+- `budgetclaw pricing provenance` now reports the data date and whether the rates in force came from this binary or from a verified download.
+
 ## [v1.6.1] - 2026-07-30
 
 ### Changed

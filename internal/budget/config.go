@@ -190,6 +190,19 @@ type Config struct {
 	// git is a new data source, so it is never read without opt-in. Toggle it with
 	// `budgetclaw prs on|off`.
 	CollectGit bool
+
+	// AutoUpdatePricing opts this machine in to refreshing the price table
+	// over the network, so a model released after this build stops showing
+	// as unpriced without waiting for an upgrade. Defaults FALSE: fully
+	// offline operation is the default posture and a first-class supported
+	// mode. Toggle it with `budgetclaw pricing auto on|off`.
+	AutoUpdatePricing bool
+
+	// PricingURL overrides where the signed bundle is fetched from, for a
+	// mirror or an internal host. The Ed25519 signature is required
+	// regardless of host, so pointing this elsewhere does not weaken
+	// verification. Empty means the published default.
+	PricingURL string
 }
 
 // tomlConfig mirrors the TOML schema for deserialization. Keep it
@@ -212,6 +225,10 @@ type tomlConfig struct {
 		AcceptRemotePolicies bool   `toml:"accept_remote_policies"`
 		CollectGit           bool   `toml:"collect_git"`
 	} `toml:"goei"`
+	Pricing struct {
+		AutoUpdate bool   `toml:"auto_update"`
+		URL        string `toml:"url"`
+	} `toml:"pricing"`
 	Limit []tomlLimit `toml:"limit"`
 }
 
@@ -243,6 +260,8 @@ func Parse(data []byte) (*Config, error) {
 		GoeiMachine:          t.Goei.Machine,
 		AcceptRemotePolicies: t.Goei.AcceptRemotePolicies,
 		CollectGit:           t.Goei.CollectGit,
+		AutoUpdatePricing:    t.Pricing.AutoUpdate,
+		PricingURL:           t.Pricing.URL,
 	}
 
 	if t.General.Timezone == "" {

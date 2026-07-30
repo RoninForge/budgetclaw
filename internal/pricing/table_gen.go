@@ -6,6 +6,7 @@ import "time"
 
 const generatedTag = "v2026.07.30-d31d0e2"
 const generatedIndexCommit = "d31d0e2014e3b187f3951b431d77db9f3536948a"
+const generatedDataModified = "2026-07-27"
 
 // modelSeries maps a canonical anthropic model id to its
 // point-in-time input/output price history (half-open [from,to)).

@@ -66,6 +66,13 @@ type Pipeline struct {
 	// fine (the server treats it as unknown).
 	Machine string
 
+	// OnUnknownModel, when set, is called the first time each unpriceable
+	// model is seen in this run. The watch loop uses it to ask the opt-in
+	// price refresher to check now rather than at its next scheduled tick,
+	// which turns "unpriced until you upgrade" into "unpriced for about a
+	// minute". It must not block: it is called from the ingest path.
+	OnUnknownModel func()
+
 	// guardMu guards guardPolicies, the locally-enforceable remote caps.
 	// The watch loop's policy ticker swaps the set atomically via
 	// SetGuardPolicies while Handle reads a snapshot per event.
@@ -423,6 +430,11 @@ func (p *Pipeline) logUnknownModel(log *slog.Logger, model, uuid string) int {
 	if count == 1 {
 		log.Warn("pricing: unknown model, storing events unpriced; totals under-report until the pricing table learns it. Upgrade budgetclaw, then run `budgetclaw pricing diagnose`",
 			"model", model, "uuid", uuid)
+		// Ask the opt-in refresher to look now. Nil when the user has not
+		// opted in, and non-blocking by contract.
+		if p.OnUnknownModel != nil {
+			p.OnUnknownModel()
+		}
 	} else {
 		log.Debug("pricing: unknown model (suppressed repeat)",
 			"model", model, "count", count)

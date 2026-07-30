@@ -20,7 +20,10 @@ import (
 	"github.com/RoninForge/budgetclaw/internal/paths"
 	"github.com/RoninForge/budgetclaw/internal/pipeline"
 	"github.com/RoninForge/budgetclaw/internal/policy"
+	"github.com/RoninForge/budgetclaw/internal/pricing"
+	"github.com/RoninForge/budgetclaw/internal/pricing/refresh"
 	"github.com/RoninForge/budgetclaw/internal/reconcile"
+	"github.com/RoninForge/budgetclaw/internal/version"
 	"github.com/RoninForge/budgetclaw/internal/watcher"
 )
 
@@ -106,6 +109,15 @@ func runWatch(parent context.Context, out io.Writer, verbose bool) error {
 	}
 	logger := slog.New(slog.NewTextHandler(out, &slog.HandlerOptions{Level: level}))
 
+	// Opt-in price refresher. nil when the user has not opted in, in which
+	// case budgetclaw makes no network requests at all. Built before the
+	// pipeline so the ingest path can trigger it.
+	refresher := newPricingRefresher(cfg.AutoUpdatePricing, cfg.PricingURL, store, logger)
+	refresh.SetVersion(version.Get().Version)
+	// Install the last verified table before the first event is priced, so
+	// a restart does not briefly reprice on stale rates.
+	refresher.LoadCache()
+
 	p := &pipeline.Pipeline{
 		Config:   cfg,
 		DB:       store,
@@ -113,6 +125,9 @@ func runWatch(parent context.Context, out io.Writer, verbose bool) error {
 		Notifier: notifier,
 		Logger:   logger,
 		Machine:  resolveMachine("", cfg.GoeiMachine),
+		// Turns "unpriced until the next scheduled check" into "unpriced
+		// for about a minute". No-op when the refresher is disabled.
+		OnUnknownModel: refresher.Trigger,
 	}
 
 	// Price anything an earlier run had to store without a cost. This is
@@ -152,6 +167,15 @@ func runWatch(parent context.Context, out io.Writer, verbose bool) error {
 		} else {
 			fmt.Fprintln(out, "(guard mode on but no Goei token; add one with `budgetclaw sync --save --token ...`)")
 		}
+	}
+
+	// Opt-in price refresh, on a jittered schedule plus a rate-limited
+	// reactive check when an unknown model appears. Off unless the user
+	// turned it on; never on the event path.
+	if refresher != nil {
+		src, tag, dataDate := pricing.ActiveTable()
+		fmt.Fprintf(out, "price auto-update on: table %s (%s, data %s)\n", tag, src, dataDate)
+		go refresher.Run(ctx)
 	}
 
 	fmt.Fprintln(out, "press Ctrl-C to stop.")
