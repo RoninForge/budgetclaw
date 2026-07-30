@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.2] - 2026-07-30
+
+### Fixed
+
+- The published price table's detached signature went missing from the server between 09:20 and 10:47 UTC on 2026-07-30. During that window a client with `pricing auto on` refused every update. Nothing was lost and no recorded spend was affected: clients did exactly what they are built to do, kept the price table compiled into the binary, and carried on. Prices simply could not advance, and because that failure is silent by design there was no symptom to notice. The cause was outside this binary, in a second publishing path that deleted the signature, and it is fixed at the source. A daily check now verifies the live published signature against the key compiled into this release, so a recurrence surfaces within a day instead of whenever someone happens to look.
+
+### Changed
+
+- When a downloaded price table is refused, the log now names the check that refused it (`gate=rate_out_of_range`, `gate=rollback`, `gate=model_loss`, and so on) rather than only reporting that a plausibility check failed. A refusal should be diagnosable: a code naming a unit error in the published data says the problem is ours to fix, not yours.
+- Hardening for the price guard, with no change to how pricing behaves: a pinned corpus of hostile bundles each required to be refused by a named check, the shared golden vectors run through all three routes a price can reach a lookup (compiled in, fetched, and re-read from cache) to prove they cannot disagree, a canary that measures rather than documents the promise that the default posture makes no network requests, and a lint rule confining network access to the three packages that have a reason to make a request.
+
 ## [v1.7.1] - 2026-07-30
 
 ### Changed
@@ -331,7 +342,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.2...HEAD
+[v1.7.2]: https://github.com/RoninForge/budgetclaw/compare/v1.7.1...v1.7.2
 [v1.7.1]: https://github.com/RoninForge/budgetclaw/compare/v1.7.0...v1.7.1
 [v1.7.0]: https://github.com/RoninForge/budgetclaw/compare/v1.6.1...v1.7.0
 [v1.6.1]: https://github.com/RoninForge/budgetclaw/compare/v1.6.0...v1.6.1
