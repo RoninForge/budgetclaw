@@ -1,71 +1,10 @@
 # budgetclaw
 
-**Track Claude Code token usage and cost per project and per git branch, and cap it before a runaway agent burns the budget.** budgetclaw is a local spend monitor and hard-limit enforcer for Claude Code. It watches the JSONL session logs Claude Code writes under `~/.claude/projects`, attributes each response's token cost to a project and git branch, and when a budget cap is breached it sends SIGTERM to the Claude Code process and pushes a phone alert via ntfy. Native `/cost` tells you the bill after the fact; budgetclaw tells you before and stops it.
+**Track Claude Code token usage and cost per project and per git branch, and cap it before a runaway agent burns the budget.** budgetclaw is a local spend monitor and hard-limit enforcer for Claude Code. It watches the JSONL session logs Claude Code already writes under `~/.claude/projects`, attributes each response's token cost to a `{project, branch}` pair, and when a cap is breached it sends SIGTERM to the Claude Code process and pushes a phone alert via ntfy.
 
-**Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads only the local `~/.claude` session logs Claude Code already writes to disk, and can optionally sync a per-project, per-branch, per-developer rollup to a shared team dashboard, [Goei](https://roninforge.org/goei). New to this? Start with the tutorials [How to track your Claude Code spend over time](https://roninforge.org/tutorials/how-to-track-claude-code-spend-over-time/) and [How to set a hard spend cap on Claude Code](https://roninforge.org/tutorials/how-to-set-a-hard-spend-cap-on-claude-code/).
+**Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads local log files that already exist on your disk.
 
-> To track Claude Code costs across a team, each developer runs the open-source budgetclaw CLI, which reads the session logs Claude Code already writes and pushes daily dollar-and-token rollups to Goei, a hosted dashboard that dedupes across machines and teammates: cost per project, per developer, per git branch. No API keys, no prompts, nothing in the request path.
-
-On a Claude Team or Enterprise plan, Anthropic's own admin analytics may be enough. Goei is for API-billed teams and for Pro and Max developers, with per-branch attribution and no admin keys. See a live dashboard with no signup at [goei.roninforge.org/demo](https://goei.roninforge.org/demo), or read [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
-
-Want your number right now? [`npx goei-sync`](https://github.com/RoninForge/goei-sync) reads the same local logs and prints your Claude Code spend broken down by git branch in one command, with no install and no account, and `npx goei-sync wrapped` turns it into a single shareable card. budgetclaw goes further: always-on background tracking, per-project and per-branch sync to a shared Goei dashboard, and hard spend caps that can stop a runaway agent before the bill lands.
-
-```sh
-curl -fsSL https://roninforge.org/get | sh
-```
-
-## What it does
-
-- **Cost per project, per branch, per model** from Claude Code session logs
-- Hard budget caps with SIGTERM enforcement on breach
-- Phone push alerts via self-hosted or public [ntfy.sh](https://ntfy.sh)
-- **A model the pricing table does not know never costs you the record.** The event is stored with its full token counts and prices itself once the table learns the model, so a launch you have not upgraded for is a display gap, not lost data
-- **Zero API keys, reads your local `~/.claude` session logs.** Offline by default, no account, no telemetry leaves your machine
-- Single static Go binary, no runtime, no Python, no Node
-
-## ccusage-style tracking, plus a hosted team rollup via Goei
-
-budgetclaw covers the same ground as ccusage: it reads the local session logs Claude Code writes and turns them into Claude Code cost and token-usage numbers, with zero API keys and nothing sitting between your editor and the API. It goes further in two directions. First, enforcement: hard budget caps with SIGTERM on breach, not just a report after the fact. Second, an optional one-command `budgetclaw sync` to [Goei](https://goei.roninforge.org), the hosted dashboard that rolls your spend up across machines and teammates. Use budgetclaw as a ccusage alternative on a single machine, or as a complement that keeps a shared team dashboard current. A side-by-side breakdown lives at [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/).
-
-## Roll out to a whole team
-
-Each developer installs budgetclaw on their own machines and runs `budgetclaw sync`; Goei dedupes every machine and teammate into one rollup, attributed per project, per developer, per git branch. No key changes hands. For the team walkthrough, see [Track Claude Code spend across a team](https://roninforge.org/goei/track-claude-code-spend-across-team/).
-
-To also give the team cost visibility inside Claude Code, commit the companion [claude-code-cost](https://github.com/RoninForge/claude-code-cost) plugin to a repo's `.claude/settings.json`:
-
-```json
-{
-  "extraKnownMarketplaces": {
-    "roninforge": { "source": { "source": "github", "repo": "RoninForge/claude-code-cost" } }
-  },
-  "enabledPlugins": {
-    "claude-code-cost@roninforge": true
-  }
-}
-```
-
-This registers the plugin, not the CLI. On the next session in that repo, each teammate is prompted once to install it (Claude Code v2.1.195 or newer); nothing installs silently.
-
-## Why it exists
-
-After April 2026, solo Claude Code users on raw API billing have no first-party way to cap spend per project or per branch. One stuck agent loop on a feature branch can burn $500 before you notice. Native `/cost` tells you the bill after the fact. budgetclaw tells you *before* and enforces the limit. For the step-by-step, see [How to set a hard spend cap on Claude Code](https://roninforge.org/tutorials/how-to-set-a-hard-spend-cap-on-claude-code/) and [How to minimize Claude Code costs](https://roninforge.org/tutorials/how-to-minimize-claude-code-costs/).
-
-## How it works
-
-1. A background watcher tails `~/.claude/projects/*/*.jsonl` using inotify / FSEvents.
-2. Each log entry has `usage.*` token counts, `model`, `cwd`, and `timestamp`. budgetclaw reads the cwd, walks up to find `.git/HEAD`, and attributes the event to `{project, branch}`.
-3. Token counts are priced point-in-time against the table compiled into the binary (Opus, Sonnet, Haiku, cache-read, cache-creation) and written to a local SQLite rollup. A model the table does not know is stored unpriced rather than dropped, and priced later.
-4. On each new event, the budget evaluator checks the active limit rules. If a cap is breached, budgetclaw SIGTERMs the matching `claude` process and writes a lockfile to prevent silent relaunch.
-5. A phone alert fires via ntfy with the breach context.
-
-No data leaves your machine unless you explicitly turn something on. Two things can: `budgetclaw sync` sends rollups to [Goei](https://goei.roninforge.org), and `budgetclaw pricing auto on` fetches the public price table. The price fetch sends nothing at all, not even an identifier, though like any request it reveals your IP to our server. Both are off until you enable them.
-
-## What it does NOT do
-
-- **Does not read your prompts or responses.** It only reads the `usage` and `cwd` fields of each JSONL line.
-- **Does not see your API key.** It never talks to Anthropic's API.
-- **Does not proxy, intercept, or modify requests.** It is a local log reader.
-- **Does not kill arbitrary processes.** It only SIGTERMs processes whose name matches `claude`.
+Docs, the ccusage comparison, the team guide and the pricing methodology: **<https://roninforge.org/budgetclaw>**
 
 ## Install
 
@@ -119,8 +58,8 @@ budgetclaw watch
 
 budgetclaw follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html):
 
-| Kind   | Path                                     |
-| ------ | ---------------------------------------- |
+| Kind   | Path                                      |
+| ------ | ----------------------------------------- |
 | Config | `$XDG_CONFIG_HOME/budgetclaw/config.toml` |
 | State  | `$XDG_STATE_HOME/budgetclaw/state.db`     |
 | Data   | `$XDG_DATA_HOME/budgetclaw/`              |
@@ -131,10 +70,6 @@ When the XDG variables are unset, defaults are `~/.config`, `~/.local/state`, `~
 See [`examples/config.toml`](examples/config.toml) for a documented template.
 
 ## Phone alerts via ntfy
-
-budgetclaw pushes breach notifications to your phone via [ntfy.sh](https://ntfy.sh) (or any self-hosted ntfy instance). When a budget cap is breached, you get an instant push notification with the project, branch, and spend amount.
-
-Setup takes 60 seconds:
 
 ```sh
 # 1. Install the ntfy app on your phone (iOS or Android)
@@ -153,13 +88,30 @@ budgetclaw alerts setup --server https://ntfy.sh --topic "$TOPIC"
 budgetclaw alerts test
 ```
 
-You should see a "budgetclaw test" notification on your phone. From now on, warn and kill breaches will push automatically. Kill actions use max priority to bypass Do Not Disturb.
+Works with ntfy.sh or any self-hosted ntfy instance. Kill actions use max priority so they bypass Do Not Disturb.
 
-## Syncs to Goei: team spend across every machine and teammate
+## Pricing
 
-[Goei](https://goei.roninforge.org) is the hosted web dashboard that unifies AI provider costs into one view. `budgetclaw sync` pushes your locally-computed Claude Code spend to Goei so it sits alongside your other AI costs, with the per-project, per-branch, and per-model attribution budgetclaw already tracks. Goei is where the local numbers become a team view: it rolls up Claude Code spend across every machine and teammate into one deduplicated view and keeps a re-priced 12-month history, each past month priced at the rates that were live then, so old months stay correct after a price change.
+Rates come from the open [ai-price-index](https://roninforge.org/data/ai-price-index/) dataset (CC BY 4.0), embedded in the binary at build time, so pricing works offline by default. Each event is priced at the rate that was effective on its own date, not today's rate.
 
-This is the zero-key path: budgetclaw still only ever reads `~/.claude/projects/*.jsonl`. Sync transmits aggregated dollar amounts and token counts per project, branch, model, and day. No Anthropic key is involved, and no key leaves your machine. You never have to hand Goei an admin API key.
+An event whose model the table does not recognise is **stored with its full token counts** rather than discarded, and prices itself once the table learns the model. `budgetclaw status` marks any total covering unpriced events with a trailing `+` and names the models involved.
+
+```sh
+# which models your logs contain, and whether each has a rate
+budgetclaw pricing diagnose
+
+# opt in to fetching the signed price table over the network (off by default)
+budgetclaw pricing auto on
+budgetclaw pricing refresh
+```
+
+A fetched table is only used if its Ed25519 signature verifies against a key compiled into your binary and the contents pass plausibility checks; otherwise it is discarded and the table already in force is kept.
+
+> **Do not run `backfill --rebuild` after a price change.** It wipes the database and replays from Claude Code's session logs, which are pruned after roughly a month while the database keeps everything, so it can discard months of spend. It refuses when it would, and needs `--force` to override. Its remaining purpose is repairing a database written by a pre-dedupe binary. Nothing needs running after a price change: [why that is](https://roninforge.org/budgetclaw#pricing-freshness).
+
+## Sync to Goei
+
+One command pushes your locally computed rollup to [Goei](https://roninforge.org/goei), the hosted dashboard that dedupes spend across machines and teammates.
 
 ```sh
 # 1. In Goei, go to Settings -> Device Tokens and create a token (starts with goei_dt_)
@@ -175,7 +127,7 @@ budgetclaw sync --days 7
 budgetclaw sync --dry-run
 ```
 
-Or store the token in your config file so a bare `budgetclaw sync` works:
+Or store the token in config so a bare `budgetclaw sync` works:
 
 ```toml
 [goei]
@@ -184,35 +136,20 @@ token = "goei_dt_..."
 # machine = "my-laptop"  # optional; defaults to the OS hostname
 ```
 
-Each spend record carries the branch as its own field, so Goei keeps the per-branch breakdown without mangling the project name. Re-running sync is safe. Goei deduplicates by (day, model, project, branch), so the same day re-sent overwrites rather than double-counting. Useful flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--no-branch` to omit the branch field so Goei collapses every branch of a project into one project-level row, and `--dry-run`.
+Only aggregate dollar and token totals per project, branch, model and day are transmitted. No Anthropic key is involved and none leaves your machine. Re-running sync is safe: Goei deduplicates by `(day, model, project, branch)`, so re-sending a day overwrites rather than double-counts.
 
-Sync also stamps each record with a machine identity so spend from two machines stays separate on the dashboard instead of merging. By default this is your OS hostname (not a secret, so sync stays zero-key and zero-prompt). Override it with `--machine`, the `GOEI_MACHINE` env var, or `[goei].machine` in config if you would rather send a custom label.
+Flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--machine LABEL`, `--no-branch` to collapse every branch into one project row, `--dry-run`.
 
-**Upgrading from a pre-machine version:** if you synced with an older budgetclaw, your first sync after upgrading will show a one-time double-count over the re-synced window (default 30 days). The machine identity is new, so the Goei server now keeps per-machine rows separate and no longer deletes the untagged rows it stored before (that would lose data once you sync from more than one machine). The old untagged rows and the new machine-tagged rows briefly coexist and add up. This is a one-time step, not an ongoing error: it does not grow with each sync, it self-limits as older days age out of the window, and it clears once every machine on your account has upgraded and re-synced, after which the stale untagged rows can be removed on the Goei side. It may trip a single spurious budget alert during the transition. New installs are unaffected.
+Upgrading from a version before per-machine identity shows a one-time double-count over the re-synced window: [what to expect and why](https://roninforge.org/budgetclaw#team).
 
-## Pricing freshness
+## Scope and security
 
-Anthropic ships new models often, so budgetclaw is built to survive not knowing one. An event whose model the pricing table does not recognise is **stored with its full token counts** rather than discarded, marked unpriced, and priced automatically as soon as the table learns the model, at the rate that was effective on its own date. `budgetclaw status` marks any total covering unpriced events with a trailing `+` and names the models involved, so a gap is visible rather than silent. Nothing has to be run to recover it and no flag has to be remembered.
+- Reads only the `usage`, `model`, `cwd` and `timestamp` fields of `~/.claude/projects/*.jsonl`. It does not read prompts or responses.
+- Never sees your API key. It never talks to Anthropic's API and never sits between your editor and it.
+- Only sends SIGTERM to processes named `claude`. It writes only to its own XDG directories.
+- Makes no network request until you turn one on. `budgetclaw sync` and `budgetclaw pricing auto on` are both opt-in and off by default.
 
-To shorten how long such a gap stays open, a daily GitHub Action ([`.github/workflows/pricing-audit.yml`](.github/workflows/pricing-audit.yml)):
-
-1. Calls Anthropic's `/v1/models` metadata endpoint (free, no inference billed).
-2. Diffs the model list against the embedded pricing table.
-3. Opens a GitHub issue if a new model is detected.
-
-A maintainer then verifies pricing on the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and ships a patch release. **Detection is automated; pricing is verified by hand** -- a wrong auto-merged price would compromise the kill action, so the verification step stays human.
-
-If you ever notice `budgetclaw status` reporting suspiciously low spend, run `budgetclaw pricing diagnose` to see which models the local logs contain and whether any are missing from the table. Open an issue, we add the entry, and upgrading is enough: the stored events reprice themselves on the next command.
-
-If you would rather not wait for a release, `budgetclaw pricing auto on` opts in to fetching the published price table directly, so a model released after your build starts pricing without an upgrade. It is **off by default** and fully offline operation stays a supported mode. A downloaded table is only used if its Ed25519 signature verifies against a key compiled into your binary and the contents pass plausibility checks; anything else is discarded and the table already in force is kept.
-
-The model audit catches new model IDs but not changes to existing rates -- Anthropic's `/v1/models` returns metadata only, no pricing. As a second line of defense, the maintainer cross-checks rates against the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and the community-maintained [`model_prices_and_context_window.json`](https://github.com/BerriAI/litellm/blob/main/litellm/model_prices_and_context_window_backup.json) periodically. v0.1.4 corrected the Opus 4.5 / 4.6 / 4.7 rates from the pre-cut $15 / $75 to the current $5 / $25 after a cross-check turned up the gap.
-
-**Do not use `backfill --rebuild` after a price correction.** It wipes the database and replays from Claude Code's session logs, which are pruned after roughly a month while the database keeps everything, so it can discard months of spend. It refuses when it would and needs `--force` to override. Point-in-time pricing means a corrected rate adds a new interval rather than rewriting rows already priced at their then-effective rate, so there is nothing to recompute. `--rebuild`'s remaining purpose is repairing a database written by a pre-dedupe binary.
-
-## Security
-
-budgetclaw only reads from `$HOME/.claude/projects/` and only SIGTERMs processes named `claude`. It writes only to its own XDG directories. See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.
+See [SECURITY.md](SECURITY.md) for the responsible-disclosure policy.
 
 ## Contributing
 
@@ -222,21 +159,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and PRs welcome.
 
 MIT. See [LICENSE](LICENSE).
 
-## About
+## Docs
 
-budgetclaw is part of [RoninForge](https://roninforge.org), a small venture building honest tools for the army of one. Source: [github.com/RoninForge/budgetclaw](https://github.com/RoninForge/budgetclaw).
+- [How to set a hard spend cap on Claude Code](https://roninforge.org/tutorials/how-to-set-a-hard-spend-cap-on-claude-code/)
+- [How to track your Claude Code spend over time](https://roninforge.org/tutorials/how-to-track-claude-code-spend-over-time/)
+- [How to minimize Claude Code costs](https://roninforge.org/tutorials/how-to-minimize-claude-code-costs/)
+- [Track Claude Code spend across a team](https://roninforge.org/goei/track-claude-code-spend-across-team/)
+- [Goei vs ccusage](https://roninforge.org/goei/vs-ccusage/)
+- [Why a price change should not restate your recorded history](https://roninforge.org/data/ai-price-index/back-dating/)
 
-
-## More from RoninForge
-
-Free, local-first tools for developers working with AI coding assistants. No accounts, MIT licensed.
-
-- [Hanko](https://roninforge.org/hanko) - validate Claude Code plugin manifests
-- [Tsuba](https://roninforge.org/tsuba) - scaffold Claude Code plugins and skills
-- [Goei](https://roninforge.org/goei) - unified AI provider cost dashboard
-
-Free web tools (run in your browser, nothing uploaded):
-
-- [GitHub Copilot AI Credits calculator](https://roninforge.org/copilot-credits-calculator) - estimate your monthly credit burn under usage-based billing
-- [Copilot usage CSV analyzer](https://roninforge.org/copilot-csv-analyzer) - break your usage report down by model, day, and SKU
-- [LLM API pricing comparison](https://roninforge.org/llm-pricing) - Claude, GPT, Gemini, DeepSeek, Mistral, and Grok token prices side by side
+budgetclaw is part of [RoninForge.org](https://roninforge.org).
