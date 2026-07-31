@@ -108,6 +108,8 @@ release:
 
     **Full changelog**: https://github.com/RoninForge/budgetclaw/compare/{{ .PreviousTag }}...{{ .Tag }}
 
+    **Docs, the ccusage comparison and the pricing methodology**: https://roninforge.org/budgetclaw
+
 brews:
   - name: budgetclaw
     repository:
