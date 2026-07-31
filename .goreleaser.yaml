@@ -108,7 +108,7 @@ release:
 
     **Full changelog**: https://github.com/RoninForge/budgetclaw/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-    **Docs, the ccusage comparison and the pricing methodology**: https://roninforge.org/budgetclaw
+    **Docs, the ccusage comparison and the pricing methodology**: https://roninforge.org/budgetclaw/
 
 brews:
   - name: budgetclaw
@@ -122,7 +122,7 @@ brews:
       email: bot@roninforge.org
     commit_msg_template: "budgetclaw {{ .Tag }}"
     directory: Formula
-    homepage: "https://roninforge.org/budgetclaw"
+    homepage: "https://roninforge.org/budgetclaw/"
     description: "Local spend monitor for Claude Code"
     license: "MIT"
     # Prereleases (tags like v0.1.7-rc1) never overwrite the tap formula.

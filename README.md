@@ -4,7 +4,7 @@
 
 **Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads local log files that already exist on your disk.
 
-Docs, the ccusage comparison, the team guide and the pricing methodology: **<https://roninforge.org/budgetclaw>**
+Docs, the ccusage comparison, the team guide and the pricing methodology: **<https://roninforge.org/budgetclaw/>**
 
 ## Install
 
@@ -107,11 +107,11 @@ budgetclaw pricing refresh
 
 A fetched table is only used if its Ed25519 signature verifies against a key compiled into your binary and the contents pass plausibility checks; otherwise it is discarded and the table already in force is kept.
 
-> **Do not run `backfill --rebuild` after a price change.** It wipes the database and replays from Claude Code's session logs, which are pruned after roughly a month while the database keeps everything, so it can discard months of spend. It refuses when it would, and needs `--force` to override. Its remaining purpose is repairing a database written by a pre-dedupe binary. Nothing needs running after a price change: [why that is](https://roninforge.org/budgetclaw#pricing-freshness).
+> **Do not run `backfill --rebuild` after a price change.** It wipes the database and replays from Claude Code's session logs, which are pruned after roughly a month while the database keeps everything, so it can discard months of spend. It refuses when it would, and needs `--force` to override. Its remaining purpose is repairing a database written by a pre-dedupe binary. Nothing needs running after a price change: [why that is](https://roninforge.org/budgetclaw/#pricing-freshness).
 
 ## Sync to Goei
 
-One command pushes your locally computed rollup to [Goei](https://roninforge.org/goei), the hosted dashboard that dedupes spend across machines and teammates.
+One command pushes your locally computed rollup to [Goei](https://roninforge.org/goei/), the hosted dashboard that dedupes spend across machines and teammates.
 
 ```sh
 # 1. In Goei, go to Settings -> Device Tokens and create a token (starts with goei_dt_)
@@ -140,7 +140,7 @@ Only aggregate dollar and token totals per project, branch, model and day are tr
 
 Flags: `--days N` (default 30), `--since YYYY-MM-DD`, `--machine LABEL`, `--no-branch` to collapse every branch into one project row, `--dry-run`.
 
-Upgrading from a version before per-machine identity shows a one-time double-count over the re-synced window: [what to expect and why](https://roninforge.org/budgetclaw#team).
+Upgrading from a version before per-machine identity shows a one-time double-count over the re-synced window: [what to expect and why](https://roninforge.org/budgetclaw/#team).
 
 ## Scope and security
 
