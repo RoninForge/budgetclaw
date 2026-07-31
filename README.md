@@ -19,8 +19,8 @@ curl -fsSL https://roninforge.org/get | sh
 - **Cost per project, per branch, per model** from Claude Code session logs
 - Hard budget caps with SIGTERM enforcement on breach
 - Phone push alerts via self-hosted or public [ntfy.sh](https://ntfy.sh)
-- **Daily audit against Anthropic's models API** -- new models are detected within 24 hours and surfaced via a GitHub issue, so the pricing table cannot silently lag a release
-- **Zero API keys, reads your local `~/.claude` session logs.** Works offline, no account, no telemetry leaves your machine
+- **A model the pricing table does not know never costs you the record.** The event is stored with its full token counts and prices itself once the table learns the model, so a launch you have not upgraded for is a display gap, not lost data
+- **Zero API keys, reads your local `~/.claude` session logs.** Offline by default, no account, no telemetry leaves your machine
 - Single static Go binary, no runtime, no Python, no Node
 
 ## ccusage-style tracking, plus a hosted team rollup via Goei
@@ -54,11 +54,11 @@ After April 2026, solo Claude Code users on raw API billing have no first-party 
 
 1. A background watcher tails `~/.claude/projects/*/*.jsonl` using inotify / FSEvents.
 2. Each log entry has `usage.*` token counts, `model`, `cwd`, and `timestamp`. budgetclaw reads the cwd, walks up to find `.git/HEAD`, and attributes the event to `{project, branch}`.
-3. Token counts are priced against a static table (Opus, Sonnet, Haiku, cache-read, cache-creation) and written to a local SQLite rollup.
+3. Token counts are priced point-in-time against the table compiled into the binary (Opus, Sonnet, Haiku, cache-read, cache-creation) and written to a local SQLite rollup. A model the table does not know is stored unpriced rather than dropped, and priced later.
 4. On each new event, the budget evaluator checks the active limit rules. If a cap is breached, budgetclaw SIGTERMs the matching `claude` process and writes a lockfile to prevent silent relaunch.
 5. A phone alert fires via ntfy with the breach context.
 
-No data leaves your machine unless you explicitly opt into a future hosted tier.
+No data leaves your machine unless you explicitly turn something on. Two things can: `budgetclaw sync` sends rollups to [Goei](https://goei.roninforge.org), and `budgetclaw pricing auto on` fetches the public price table. The price fetch sends nothing at all, not even an identifier, though like any request it reveals your IP to our server. Both are off until you enable them.
 
 ## What it does NOT do
 
@@ -192,7 +192,9 @@ Sync also stamps each record with a machine identity so spend from two machines 
 
 ## Pricing freshness
 
-Anthropic ships new models often, and a missing model in the pricing table means events get silently skipped from the rollups (no cost recorded, no cap fired). budgetclaw guards against that with a daily GitHub Action ([`.github/workflows/pricing-audit.yml`](.github/workflows/pricing-audit.yml)) that:
+Anthropic ships new models often, so budgetclaw is built to survive not knowing one. An event whose model the pricing table does not recognise is **stored with its full token counts** rather than discarded, marked unpriced, and priced automatically as soon as the table learns the model, at the rate that was effective on its own date. `budgetclaw status` marks any total covering unpriced events with a trailing `+` and names the models involved, so a gap is visible rather than silent. Nothing has to be run to recover it and no flag has to be remembered.
+
+To shorten how long such a gap stays open, a daily GitHub Action ([`.github/workflows/pricing-audit.yml`](.github/workflows/pricing-audit.yml)):
 
 1. Calls Anthropic's `/v1/models` metadata endpoint (free, no inference billed).
 2. Diffs the model list against the embedded pricing table.
@@ -200,9 +202,13 @@ Anthropic ships new models often, and a missing model in the pricing table means
 
 A maintainer then verifies pricing on the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and ships a patch release. **Detection is automated; pricing is verified by hand** -- a wrong auto-merged price would compromise the kill action, so the verification step stays human.
 
-If you ever notice `budgetclaw status` reporting suspiciously low spend, run `budgetclaw pricing diagnose` to see which models the local logs contain and whether any are missing from the table. The same fix flow applies: open an issue, we add the entry, you upgrade and run `budgetclaw backfill` to recover historical attribution.
+If you ever notice `budgetclaw status` reporting suspiciously low spend, run `budgetclaw pricing diagnose` to see which models the local logs contain and whether any are missing from the table. Open an issue, we add the entry, and upgrading is enough: the stored events reprice themselves on the next command.
 
-The model audit catches new model IDs but not changes to existing rates -- Anthropic's `/v1/models` returns metadata only, no pricing. As a second line of defense, the maintainer cross-checks rates against the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and the community-maintained [`model_prices_and_context_window.json`](https://github.com/BerriAI/litellm/blob/main/litellm/model_prices_and_context_window_backup.json) periodically. v0.1.4 corrected the Opus 4.5 / 4.6 / 4.7 rates from the pre-cut $15 / $75 to the current $5 / $25 after a cross-check turned up the gap. If a price correction lands, run `budgetclaw backfill --rebuild` to recompute historical rollups; without `--rebuild`, idempotent inserts leave the old rate baked into existing rows.
+If you would rather not wait for a release, `budgetclaw pricing auto on` opts in to fetching the published price table directly, so a model released after your build starts pricing without an upgrade. It is **off by default** and fully offline operation stays a supported mode. A downloaded table is only used if its Ed25519 signature verifies against a key compiled into your binary and the contents pass plausibility checks; anything else is discarded and the table already in force is kept.
+
+The model audit catches new model IDs but not changes to existing rates -- Anthropic's `/v1/models` returns metadata only, no pricing. As a second line of defense, the maintainer cross-checks rates against the [Anthropic pricing page](https://docs.anthropic.com/en/docs/about-claude/pricing) and the community-maintained [`model_prices_and_context_window.json`](https://github.com/BerriAI/litellm/blob/main/litellm/model_prices_and_context_window_backup.json) periodically. v0.1.4 corrected the Opus 4.5 / 4.6 / 4.7 rates from the pre-cut $15 / $75 to the current $5 / $25 after a cross-check turned up the gap.
+
+**Do not use `backfill --rebuild` after a price correction.** It wipes the database and replays from Claude Code's session logs, which are pruned after roughly a month while the database keeps everything, so it can discard months of spend. It refuses when it would and needs `--force` to override. Point-in-time pricing means a corrected rate adds a new interval rather than rewriting rows already priced at their then-effective rate, so there is nothing to recompute. `--rebuild`'s remaining purpose is repairing a database written by a pre-dedupe binary.
 
 ## Security
 
