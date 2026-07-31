@@ -192,17 +192,46 @@ jobs:
           #     on 2026-07-31. The bundle and its signature are PUBLIC, so the
           #     honest fix is to move the pair forward together; the fixture
           #     stays a real signed artifact, which is the whole point of it.
-          base="https://roninforge.org/data/ai-price-index/history/anthropic.json"
-          curl -fsSL --retry 3 --retry-delay 5 -o /tmp/fixture.json     "$base"
-          curl -fsSL --retry 3 --retry-delay 5 -o /tmp/fixture.minisig  "$base.minisig"
+          #
+          #     WHERE TO FETCH IT FROM - this is the subtle part.
+          #
+          #     NOT roninforge.org/data/ai-price-index/history/: that path is
+          #     served from the PLATFORM repo's vendored copy, which only moves
+          #     when the platform's own pricing bump merges and deploys. It
+          #     therefore lags the dataset by a release cycle, and this job
+          #     races it. First attempt at this guard used that URL and failed
+          #     on the very next bump with "not yet re-signed", pointing at a
+          #     stale mirror rather than at anything actually wrong.
+          #
+          #     NOT the tag either: the dataset's sign-history workflow runs
+          #     AFTER the export commit that carries the tag, so the signature
+          #     for release N lands on main one commit later and is not
+          #     reachable from tag N.
+          #
+          #     So: the dataset repo's main branch, which is where the signature
+          #     appears within seconds of the release and stays authoritative.
+          base="https://raw.githubusercontent.com/RoninForge/ai-price-index/main/data/ai-price-index/history/anthropic.json"
 
-          # The published bundle is re-signed by the dataset's own sign-history
-          # workflow. If it has not caught up to the tag we are vendoring, stop:
-          # a mismatched pair would fail the tests in a way that reads like a
-          # code bug rather than a timing one.
-          if ! grep -qF "$TARGET_TAG" /tmp/fixture.minisig; then
-            echo "::error::published bundle is not yet re-signed for $TARGET_TAG."
+          # The signature is pushed moments after the tag, and raw.githubusercontent
+          # caches briefly, so a fresh dispatch can arrive a beat early. Poll rather
+          # than fail on the first miss; a genuine mismatch still errors out loudly
+          # instead of silently vendoring a mismatched pair.
+          signed_for_target=false
+          for attempt in 1 2 3 4 5 6; do
+            curl -fsSL --retry 3 --retry-delay 5 -H 'Cache-Control: no-cache' -o /tmp/fixture.json    "$base"
+            curl -fsSL --retry 3 --retry-delay 5 -H 'Cache-Control: no-cache' -o /tmp/fixture.minisig "$base.minisig"
+            if grep -qF "$TARGET_TAG" /tmp/fixture.minisig; then
+              signed_for_target=true
+              break
+            fi
+            echo "attempt $attempt: signature does not name $TARGET_TAG yet; waiting."
+            sleep 20
+          done
+
+          if [ "$signed_for_target" != "true" ]; then
+            echo "::error::the dataset's published bundle is still not re-signed for $TARGET_TAG."
             echo "Trusted comment was:"; grep -a 'trusted comment' /tmp/fixture.minisig || true
+            echo "Check that RoninForge/ai-price-index's sign-history workflow succeeded for this release."
             exit 1
           fi
           mv /tmp/fixture.json    internal/pricing/refresh/testdata/anthropic.json
