@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"sync"
 	"testing"
-	"time"
 )
 
 // The zero-egress canary.
@@ -69,7 +68,7 @@ func TestLocalOperationsMakeNoRequests(t *testing.T) {
 	isolate(t)
 	noEgress(t)
 
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	// No cache present: must return quietly, not go looking for one.
 	res, err := LoadCachedTable(now)
@@ -99,7 +98,7 @@ func TestLocalOperationsMakeNoRequests(t *testing.T) {
 // round trip, so a laptop opening on a plane still prices correctly.
 func TestCacheLoadOfAVerifiedBundleMakesNoRequests(t *testing.T) {
 	isolate(t)
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	// Populate the cache through the real path, with the tripwire not yet
 	// armed: this fetch is expected.

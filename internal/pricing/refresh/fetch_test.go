@@ -69,7 +69,7 @@ func TestRefreshInstallsVerifiedBundle(t *testing.T) {
 	srv := bundleServer(t, nil)
 
 	// A date after the fixture's dataModified so the freshness gates pass.
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	res, err := refreshVia(context.Background(), srv, now)
 	if err != nil {
@@ -101,7 +101,7 @@ func TestRefreshInstallsVerifiedBundle(t *testing.T) {
 func TestRefreshRoundTripsThroughTheCache(t *testing.T) {
 	isolate(t)
 	srv := bundleServer(t, nil)
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	first, err := refreshVia(context.Background(), srv, now)
 	if err != nil {
@@ -129,7 +129,7 @@ func TestRefreshRoundTripsThroughTheCache(t *testing.T) {
 func TestCachedTableIsReverifiedNotTrusted(t *testing.T) {
 	isolate(t)
 	srv := bundleServer(t, nil)
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	if _, err := refreshVia(context.Background(), srv, now); err != nil {
 		t.Fatalf("Refresh: %v", err)
@@ -156,7 +156,7 @@ func TestCachedTableIsReverifiedNotTrusted(t *testing.T) {
 // TestRefreshHandlesTransportFailures checks every ordinary failure ends
 // as ErrOffline or ErrNotModified, never as a pricing change.
 func TestRefreshHandlesTransportFailures(t *testing.T) {
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	cases := map[string]struct {
 		mutate func(b, s []byte) ([]byte, []byte, int, string)
@@ -223,7 +223,7 @@ func TestRefreshRejectsTamperedBundleOverTheWire(t *testing.T) {
 		return tampered, s, http.StatusOK, ""
 	})
 
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 	if _, err := refreshVia(context.Background(), srv, now); !errors.Is(err, ErrBadSignature) {
 		t.Errorf("error = %v, want ErrBadSignature", err)
 	}
@@ -236,7 +236,7 @@ func TestRefreshRejectsTamperedBundleOverTheWire(t *testing.T) {
 func TestRefreshRejectsNonHTTPS(t *testing.T) {
 	isolate(t)
 	_, err := Refresh(context.Background(), "http://example.invalid/anthropic.json",
-		time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC))
+		fixtureNow(t))
 	if !errors.Is(err, ErrOffline) {
 		t.Errorf("error = %v, want ErrOffline", err)
 	}
