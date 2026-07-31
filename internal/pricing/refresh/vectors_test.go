@@ -67,7 +67,7 @@ func TestGoldenVectorsAcrossAllThreePaths(t *testing.T) {
 
 	vectors := loadVectors(t)
 	// After the fixture's dataModified, so the freshness gates pass.
-	now := time.Date(2026, 7, 28, 12, 0, 0, 0, time.UTC)
+	now := fixtureNow(t)
 
 	// Route 1: whatever this binary was built with.
 	pricing.RestoreBuiltIn()

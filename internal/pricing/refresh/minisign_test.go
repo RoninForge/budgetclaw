@@ -1,11 +1,13 @@
 package refresh
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // testdata holds a REAL bundle and signature fetched from the live
@@ -23,6 +25,39 @@ func liveFixture(t *testing.T) (bundle, sig []byte) {
 		t.Fatalf("read signature fixture: %v", err)
 	}
 	return b, s
+}
+
+// fixtureNow is a deterministic "now" anchored to the FIXTURE's own
+// dataModified, rather than a hardcoded calendar date.
+//
+// checkPlausible bounds an incoming bundle on BOTH sides: it must not be
+// older than the active table (anti-rollback), and it must not be more than
+// maxFutureSkew ahead of now. A hardcoded now therefore silently expires the
+// moment the fixture is refreshed, and a stale fixture trips the other end
+// once the compiled table overtakes it. Both happened on 2026-07-31, when
+// the dataset moved 2026-07-27 -> 2026-07-31 and turned six tests red with
+// nothing actually broken.
+//
+// Anchoring here means the fixture and the clock move together, so
+// refreshing testdata is all a future dataset bump has to do. The guards
+// themselves are untouched: the hostile tests still pin their own absolute
+// dates to prove each rejection fires.
+func fixtureNow(t *testing.T) time.Time {
+	t.Helper()
+	bundle, _ := liveFixture(t)
+	var meta struct {
+		DataModified string `json:"dataModified"`
+	}
+	if err := json.Unmarshal(bundle, &meta); err != nil {
+		t.Fatalf("read dataModified from the fixture: %v", err)
+	}
+	d, err := time.Parse("2006-01-02", meta.DataModified)
+	if err != nil {
+		t.Fatalf("parse the fixture's dataModified %q: %v", meta.DataModified, err)
+	}
+	// Half a day after the bundle's date: comfortably inside maxFutureSkew,
+	// and past it, so the freshness gates see a bundle that is current.
+	return d.Add(12 * time.Hour)
 }
 
 // TestVerifyLiveSignature is the headline test: the production signature

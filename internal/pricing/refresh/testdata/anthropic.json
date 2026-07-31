@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-07-27",
+  "dataModified": "2026-07-31",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -206,6 +206,39 @@
       "model": "claude-fable-5",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 1,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 20,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 12.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -237,6 +270,39 @@
       "model": "claude-haiku-4-5-20251001",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.1,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 2,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 1.25,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -374,6 +440,39 @@
       "model": "claude-opus-4-1-20250805",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 1.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 30,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 18.75,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -402,6 +501,39 @@
       "model": "claude-opus-4-20250514",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 1.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 30,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 18.75,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -433,6 +565,39 @@
       "model": "claude-opus-4-5-20251101",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6.25,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -461,6 +626,39 @@
       "model": "claude-opus-4-6",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6.25,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -489,6 +687,39 @@
       "model": "claude-opus-4-7",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6.25,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -517,6 +748,39 @@
       "model": "claude-opus-4-8",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.5,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6.25,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -606,6 +870,39 @@
       "model": "claude-sonnet-4-20250514",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.3,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 3.75,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -637,6 +934,39 @@
       "model": "claude-sonnet-4-5-20250929",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.3,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 3.75,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",
@@ -665,6 +995,39 @@
       "model": "claude-sonnet-4-6",
       "provider": "anthropic",
       "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 0.3,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 6,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-07-31",
+            "last_validated": "2026-07-31",
+            "price_usd": 3.75,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
         "input": [
           {
             "confidence": "verified",

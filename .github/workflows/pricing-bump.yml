@@ -181,6 +181,33 @@ jobs:
           #    form `./gen` fails with "build constraints exclude all Go files".
           ( cd internal/pricing && go run ./gen/main.go -fetch )
 
+          # 2b. Refresh the signed refresh-test fixture to the SAME release.
+          #
+          #     internal/pricing/refresh/testdata holds a real production-signed
+          #     bundle. checkPlausible bounds an incoming bundle on both sides -
+          #     never older than the active table (anti-rollback), never far
+          #     ahead of now - so a fixture frozen while table_gen.go advances
+          #     eventually becomes a genuine rollback and turns the refresh
+          #     tests red on an ordinary bump with nothing broken. That happened
+          #     on 2026-07-31. The bundle and its signature are PUBLIC, so the
+          #     honest fix is to move the pair forward together; the fixture
+          #     stays a real signed artifact, which is the whole point of it.
+          base="https://roninforge.org/data/ai-price-index/history/anthropic.json"
+          curl -fsSL --retry 3 --retry-delay 5 -o /tmp/fixture.json     "$base"
+          curl -fsSL --retry 3 --retry-delay 5 -o /tmp/fixture.minisig  "$base.minisig"
+
+          # The published bundle is re-signed by the dataset's own sign-history
+          # workflow. If it has not caught up to the tag we are vendoring, stop:
+          # a mismatched pair would fail the tests in a way that reads like a
+          # code bug rather than a timing one.
+          if ! grep -qF "$TARGET_TAG" /tmp/fixture.minisig; then
+            echo "::error::published bundle is not yet re-signed for $TARGET_TAG."
+            echo "Trusted comment was:"; grep -a 'trusted comment' /tmp/fixture.minisig || true
+            exit 1
+          fi
+          mv /tmp/fixture.json    internal/pricing/refresh/testdata/anthropic.json
+          mv /tmp/fixture.minisig internal/pricing/refresh/testdata/anthropic.json.minisig
+
           # 3. No-op safety: prove the offline codegen is stable against the
           #    freshly vendored data (this is exactly what CI's pricing-codegen
           #    gate runs).
@@ -206,6 +233,8 @@ jobs:
             internal/pricing/PINNED_TAG
             internal/pricing/index/**
             internal/pricing/table_gen.go
+            internal/pricing/refresh/testdata/anthropic.json
+            internal/pricing/refresh/testdata/anthropic.json.minisig
           body: |
             Automated pin bump: re-vendors the [ai-price-index](https://github.com/RoninForge/ai-price-index) dataset to `${{ steps.target.outputs.tag }}`.
 
@@ -214,6 +243,7 @@ jobs:
             - `internal/pricing/PINNED_TAG` -> `${{ steps.target.outputs.tag }}`
             - `internal/pricing/index/**` + `PROVENANCE.json` re-vendored from that tag (sha256 provenance refreshed)
             - `internal/pricing/table_gen.go` regenerated from the new vendored data
+            - `internal/pricing/refresh/testdata/**` refreshed to the same release's published signed bundle, so the fixture and the compiled table stay in step (a frozen fixture eventually reads as a rollback and fails the refresh tests)
 
             ## Why this is safe to auto-merge
 

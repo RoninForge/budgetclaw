@@ -1,0 +1,61 @@
+{
+  "model": "claude-opus-4-8",
+  "provider": "anthropic",
+  "variations": {
+    "cache_read": [
+      {
+        "confidence": "verified",
+        "from": "2026-07-31",
+        "last_validated": "2026-07-31",
+        "price_usd": 0.5,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "cache_write_1h": [
+      {
+        "confidence": "verified",
+        "from": "2026-07-31",
+        "last_validated": "2026-07-31",
+        "price_usd": 10,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "cache_write_5m": [
+      {
+        "confidence": "verified",
+        "from": "2026-07-31",
+        "last_validated": "2026-07-31",
+        "price_usd": 6.25,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "input": [
+      {
+        "confidence": "verified",
+        "from": "2026-05-28",
+        "last_validated": "2026-06-16",
+        "price_usd": 5,
+        "src": "https://www.anthropic.com/news/claude-opus-4-8",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ],
+    "output": [
+      {
+        "confidence": "verified",
+        "from": "2026-05-28",
+        "last_validated": "2026-06-16",
+        "price_usd": 25,
+        "src": "https://www.anthropic.com/news/claude-opus-4-8",
+        "to": null,
+        "unit": "usd_per_mtok"
+      }
+    ]
+  }
+}
