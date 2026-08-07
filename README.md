@@ -1,6 +1,13 @@
 # budgetclaw
 
-**Track Claude Code token usage and cost per project and per git branch, and cap it before a runaway agent burns the budget.** budgetclaw is a local spend monitor and hard-limit enforcer for Claude Code. It watches the JSONL session logs Claude Code already writes under `~/.claude/projects`, attributes each response's token cost to a `{project, branch}` pair, and when a cap is breached it sends SIGTERM to the Claude Code process and pushes a phone alert via ntfy.
+RoninForge BudgetClaw is a local spend monitor for Claude Code that tracks token cost per
+project and per git branch and stops a runaway agent before a budget cap is breached. It is
+MIT licensed, runs entirely on your machine, and requires no API keys.
+
+Part of [RoninForge.org](https://roninforge.org), an independent open-source workshop that
+keeps dated, reproducible records of the AI developer tooling economy.
+
+BudgetClaw watches the JSONL session logs Claude Code already writes under `~/.claude/projects`, attributes each response's token cost to a `{project, branch}` pair, and when a cap is breached it sends SIGTERM to the Claude Code process and pushes a phone alert via ntfy.
 
 **Zero API keys. Zero prompts. Zero latency added.** budgetclaw never touches API traffic. It reads local log files that already exist on your disk.
 
