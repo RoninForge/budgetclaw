@@ -1,0 +1,26 @@
+# Machine-readable citation metadata. GitHub renders a "Cite this repository" button from this file.
+cff-version: 1.2.0
+title: "RoninForge BudgetClaw"
+message: "If you use this software, please cite it using the metadata in this file."
+type: software
+authors:
+  - name: "RoninForge"
+    email: "jens@rasta.online"
+    website: "https://roninforge.org"
+abstract: >-
+  RoninForge BudgetClaw is a local spend monitor for Claude Code that tracks
+  token cost per project and per git branch and stops a runaway agent before a
+  budget cap is breached. It reads the session logs Claude Code already writes
+  to disk and never touches API traffic. It ships as a single static Go binary,
+  is MIT licensed, runs entirely on your machine, and requires no API keys.
+url: "https://roninforge.org/budgetclaw"
+repository-code: "https://github.com/RoninForge/budgetclaw"
+license: MIT
+version: v1.7.10
+date-released: 2026-08-07
+keywords:
+  - Claude Code
+  - spend monitor
+  - budget cap
+  - cost attribution
+  - command-line tool
