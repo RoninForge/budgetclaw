@@ -60,6 +60,29 @@ func fixtureNow(t *testing.T) time.Time {
 	return d.Add(12 * time.Hour)
 }
 
+// fixtureDataDate is the fixture's own dataModified, for tests that need a
+// table dated level with the active one so the freshness gates pass and only
+// the property under test decides the outcome.
+//
+// The companion to fixtureNow, and stale for the same reason if hardcoded: an
+// absolute date here is only "current" until the vendored table passes it. A
+// literal 2026-08-01 survived the 2026-07-31 fix and went red on the next bump
+// that crossed it, which was 2026-08-09.
+func fixtureDataDate(t *testing.T) string {
+	t.Helper()
+	bundle, _ := liveFixture(t)
+	var meta struct {
+		DataModified string `json:"dataModified"`
+	}
+	if err := json.Unmarshal(bundle, &meta); err != nil {
+		t.Fatalf("read dataModified from the fixture: %v", err)
+	}
+	if _, err := time.Parse("2006-01-02", meta.DataModified); err != nil {
+		t.Fatalf("parse the fixture's dataModified %q: %v", meta.DataModified, err)
+	}
+	return meta.DataModified
+}
+
 // TestVerifyLiveSignature is the headline test: the production signature
 // over the production bundle verifies against the compiled-in key.
 func TestVerifyLiveSignature(t *testing.T) {

@@ -254,9 +254,9 @@ func TestPlausibilityGates(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse the live bundle: %v", err)
 	}
-	base.Tag = "v2026.08.01-aaaaaaa"
-	base.DataDate = "2026-08-01"
-	now := time.Date(2026, 8, 2, 0, 0, 0, 0, time.UTC)
+	base.Tag = "v" + fixtureDataDate(t) + "-aaaaaaa"
+	base.DataDate = fixtureDataDate(t)
+	now := fixtureNow(t)
 
 	t.Run("accepts the real dataset", func(t *testing.T) {
 		isolate(t)
