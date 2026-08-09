@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/RoninForge/budgetclaw/internal/pricing"
 )
@@ -77,8 +76,7 @@ func TestHostileCorpus(t *testing.T) {
 				candidate := c.mutate(t, liveTable(t))
 				before := snapshotTable()
 
-				now := time.Date(2026, 8, 2, 0, 0, 0, 0, time.UTC)
-				assertRejected(t, checkPlausible(candidate, now), c.reason, before)
+				assertRejected(t, checkPlausible(candidate, fixtureNow(t)), c.reason, before)
 			})
 			covered[c.reason] = name
 		}
@@ -238,8 +236,8 @@ func liveTable(t *testing.T) pricing.ExternalTable {
 	if err != nil {
 		t.Fatalf("the live fixture must parse: %v", err)
 	}
-	base.Tag = "v2026.08.01-aaaaaaa"
-	base.DataDate = "2026-08-01"
+	base.Tag = "v" + fixtureDataDate(t) + "-aaaaaaa"
+	base.DataDate = fixtureDataDate(t)
 	return base
 }
 
