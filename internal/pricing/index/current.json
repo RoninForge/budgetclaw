@@ -309,8 +309,8 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://aws.amazon.com/bedrock/pricing/"
     },
     {
@@ -319,8 +319,8 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
+      "last_validated": "2026-06-29",
+      "confidence": "verified",
       "src": "https://aws.amazon.com/bedrock/pricing/"
     },
     {
@@ -1229,8 +1229,8 @@
       "variation": "input",
       "price_usd": 0.435,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing"
     },
     {
@@ -1239,8 +1239,8 @@
       "variation": "output",
       "price_usd": 0.87,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing"
     },
     {
@@ -1769,9 +1769,9 @@
       "variation": "input",
       "price_usd": 1.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
-      "src": "https://mistral.ai/pricing"
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://mistral.ai/pricing/"
     },
     {
       "provider": "mistral",
@@ -1779,9 +1779,9 @@
       "variation": "output",
       "price_usd": 7.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
-      "src": "https://mistral.ai/pricing"
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://mistral.ai/pricing/"
     },
     {
       "provider": "mistral",
@@ -1929,9 +1929,9 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
-      "src": "https://developers.openai.com/api/docs/models/gpt-5"
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
@@ -1939,9 +1939,9 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "inferred",
-      "src": "https://developers.openai.com/api/docs/models/gpt-5"
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
@@ -1959,8 +1959,8 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -1969,8 +1969,8 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -1989,8 +1989,8 @@
       "variation": "input",
       "price_usd": 1.75,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -1999,8 +1999,8 @@
       "variation": "output",
       "price_usd": 14,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -2009,8 +2009,8 @@
       "variation": "input",
       "price_usd": 21,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -2019,8 +2019,8 @@
       "variation": "output",
       "price_usd": 168,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-06-22",
+      "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
@@ -2799,9 +2799,9 @@
       "variation": "cache_read",
       "price_usd": 0.2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
-      "src": "https://docs.x.ai/docs/models"
+      "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
     },
     {
       "provider": "xai",
@@ -2809,9 +2809,9 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
-      "src": "https://docs.x.ai/docs/models"
+      "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
     },
     {
       "provider": "xai",
@@ -2819,9 +2819,9 @@
       "variation": "output",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
-      "confidence": "inferred",
-      "src": "https://docs.x.ai/docs/models"
+      "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
     },
     {
       "provider": "xai",
@@ -3059,9 +3059,9 @@
       "variation": "input",
       "price_usd": 1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
-      "src": "https://docs.x.ai/docs/models/grok-build-0.1"
+      "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
     },
     {
       "provider": "xai",
@@ -3069,9 +3069,9 @@
       "variation": "output",
       "price_usd": 2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
-      "src": "https://docs.x.ai/docs/models/grok-build-0.1"
+      "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
     },
     {
       "provider": "xai",
