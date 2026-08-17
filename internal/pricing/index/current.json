@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-08-07",
+  "dataModified": "2026-08-17",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1187,61 +1187,61 @@
       "provider": "deepseek",
       "model": "deepseek-v4-flash",
       "variation": "cache_read",
-      "price_usd": 0.0028,
+      "price_usd": 0.007,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-flash",
       "variation": "input",
-      "price_usd": 0.14,
+      "price_usd": 0.22,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-flash",
       "variation": "output",
-      "price_usd": 0.28,
+      "price_usd": 0.66,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
       "variation": "cache_read",
-      "price_usd": 0.003625,
+      "price_usd": 0.022,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
       "variation": "input",
-      "price_usd": 0.435,
+      "price_usd": 0.66,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
       "model": "deepseek-v4-pro",
       "variation": "output",
-      "price_usd": 0.87,
+      "price_usd": 1.98,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-22",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing"
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "google",
@@ -1467,9 +1467,9 @@
       "provider": "google",
       "model": "gemini-3.6-flash",
       "variation": "input",
-      "price_usd": 1.5,
+      "price_usd": 0.75,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-22",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
@@ -1477,9 +1477,29 @@
       "provider": "google",
       "model": "gemini-3.6-flash",
       "variation": "output",
-      "price_usd": 7.5,
+      "price_usd": 3.75,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-22",
+      "last_validated": "2026-08-17",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.7-flash",
+      "variation": "input",
+      "price_usd": 0.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-17",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.7-flash",
+      "variation": "output",
+      "price_usd": 3.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-17",
       "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
