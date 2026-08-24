@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.30] - 2026-08-24
+
+### Changed
+
+- pricing: refresh vendored ai-price-index to `v2026.08.24-d74b1e2`. Point-in-time pricing means a new rate adds a new interval and does not change rows already priced at their then-effective rate, so no `backfill --rebuild` is needed.
+
+
 ## [v1.7.29] - 2026-08-23
 
 ### Changed
@@ -531,7 +538,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.29...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.30...HEAD
+[v1.7.30]: https://github.com/RoninForge/budgetclaw/compare/v1.7.29...v1.7.30
 [v1.7.29]: https://github.com/RoninForge/budgetclaw/compare/v1.7.28...v1.7.29
 [v1.7.28]: https://github.com/RoninForge/budgetclaw/compare/v1.7.27...v1.7.28
 [v1.7.27]: https://github.com/RoninForge/budgetclaw/compare/v1.7.26...v1.7.27
