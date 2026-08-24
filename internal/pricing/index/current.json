@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-08-21",
+  "dataModified": "2026-08-22",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -120,6 +120,46 @@
       "price_usd": 0.2,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-flash",
+      "variation": "input",
+      "price_usd": 0.3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-flash",
+      "variation": "output",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-next",
+      "variation": "input",
+      "price_usd": 0.3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3-coder-next",
+      "variation": "output",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
@@ -1250,6 +1290,36 @@
       "price_usd": 0.66,
       "unit": "usd_per_mtok",
       "last_validated": "2026-08-17",
+      "confidence": "verified",
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash-vision-exp",
+      "variation": "cache_read",
+      "price_usd": 0.007,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
+      "confidence": "verified",
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash-vision-exp",
+      "variation": "input",
+      "price_usd": 0.22,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
+      "confidence": "verified",
+      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "provider": "deepseek",
+      "model": "deepseek-v4-flash-vision-exp",
+      "variation": "output",
+      "price_usd": 0.66,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
@@ -2447,9 +2517,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "cache_read",
-      "price_usd": 0.5,
+      "price_usd": 0.4,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2457,9 +2527,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "cache_write",
-      "price_usd": 6.25,
+      "price_usd": 5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2467,9 +2537,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "input",
-      "price_usd": 5,
+      "price_usd": 4,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2477,9 +2547,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "output",
-      "price_usd": 30,
+      "price_usd": 20,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2487,9 +2557,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "tier2_cache_read",
-      "price_usd": 1,
+      "price_usd": 0.8,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2497,9 +2567,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "tier2_cache_write",
-      "price_usd": 12.5,
+      "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2507,9 +2577,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "tier2_input",
-      "price_usd": 10,
+      "price_usd": 8,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -2517,9 +2587,9 @@
       "provider": "openai",
       "model": "gpt-5.6-sol",
       "variation": "tier2_output",
-      "price_usd": 45,
+      "price_usd": 30,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
+      "last_validated": "2026-08-22",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
