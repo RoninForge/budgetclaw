@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-08-22",
+  "dataModified": "2026-08-28",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -340,6 +340,26 @@
       "price_usd": 1.6,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-29",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.8-flash",
+      "variation": "input",
+      "price_usd": 0.15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen3.8-flash",
+      "variation": "output",
+      "price_usd": 0.47,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
       "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
@@ -1185,26 +1205,6 @@
     },
     {
       "provider": "cohere",
-      "model": "command-a-plus",
-      "variation": "input",
-      "price_usd": 2.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "archived",
-      "src": "https://docs.cohere.com/docs/command-a"
-    },
-    {
-      "provider": "cohere",
-      "model": "command-a-plus",
-      "variation": "output",
-      "price_usd": 10,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "archived",
-      "src": "https://docs.cohere.com/docs/command-a"
-    },
-    {
-      "provider": "cohere",
       "model": "command-r",
       "variation": "input",
       "price_usd": 0.15,
@@ -1222,26 +1222,6 @@
       "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://cohere.com/pricing"
-    },
-    {
-      "provider": "cohere",
-      "model": "command-r-plus",
-      "variation": "input",
-      "price_usd": 2.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "archived",
-      "src": "https://docs.cohere.com/docs/command-r-plus"
-    },
-    {
-      "provider": "cohere",
-      "model": "command-r-plus",
-      "variation": "output",
-      "price_usd": 10,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "archived",
-      "src": "https://docs.cohere.com/docs/command-r-plus"
     },
     {
       "provider": "cohere",
@@ -1355,53 +1335,13 @@
     },
     {
       "provider": "google",
-      "model": "gemini-1.5-flash",
-      "variation": "input",
-      "price_usd": 0.075,
-      "unit": "usd_per_mtok",
-      "last_validated": "2024-10-01",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20241001092414/https://ai.google.dev/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-1.5-flash",
-      "variation": "output",
-      "price_usd": 0.3,
-      "unit": "usd_per_mtok",
-      "last_validated": "2024-10-01",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20241001092414/https://ai.google.dev/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-1.5-pro",
-      "variation": "input",
-      "price_usd": 1.25,
-      "unit": "usd_per_mtok",
-      "last_validated": "2024-10-01",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20241001092414/https://ai.google.dev/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-1.5-pro",
-      "variation": "output",
-      "price_usd": 5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2024-10-01",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20241001092414/https://ai.google.dev/pricing"
-    },
-    {
-      "provider": "google",
       "model": "gemini-2.5-flash",
       "variation": "input",
       "price_usd": 0.3,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1409,9 +1349,9 @@
       "variation": "output",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1419,9 +1359,9 @@
       "variation": "input",
       "price_usd": 0.1,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1429,9 +1369,9 @@
       "variation": "output",
       "price_usd": 0.4,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1439,9 +1379,9 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1449,9 +1389,29 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2025-06-21",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20250621161929/https://ai.google.dev/gemini-api/docs/pricing"
+      "last_validated": "2026-08-28",
+      "confidence": "inferred",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "variation": "tier2_input",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-2.5-pro",
+      "variation": "tier2_output",
+      "price_usd": 15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
       "provider": "google",
@@ -1935,46 +1895,6 @@
     },
     {
       "provider": "openai",
-      "model": "gpt-4",
-      "variation": "input",
-      "price_usd": 30,
-      "unit": "usd_per_mtok",
-      "last_validated": "2023-04-15",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20230415223802/https://openai.com/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "gpt-4",
-      "variation": "output",
-      "price_usd": 60,
-      "unit": "usd_per_mtok",
-      "last_validated": "2023-04-15",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20230415223802/https://openai.com/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "gpt-4-turbo",
-      "variation": "input",
-      "price_usd": 10,
-      "unit": "usd_per_mtok",
-      "last_validated": "2023-11-10",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20231110022605/https://openai.com/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "gpt-4-turbo",
-      "variation": "output",
-      "price_usd": 30,
-      "unit": "usd_per_mtok",
-      "last_validated": "2023-11-10",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20231110022605/https://openai.com/pricing"
-    },
-    {
-      "provider": "openai",
       "model": "gpt-4.1",
       "variation": "cache_read",
       "price_usd": 0.5,
@@ -2006,12 +1926,22 @@
     {
       "provider": "openai",
       "model": "gpt-4o",
+      "variation": "cache_read",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o",
       "variation": "input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2024-08-12",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20240812003130/https://openai.com/pricing/"
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
@@ -2019,9 +1949,19 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2024-08-12",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20240812003130/https://openai.com/pricing/"
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-4o-mini",
+      "variation": "cache_read",
+      "price_usd": 0.075,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
@@ -2029,9 +1969,9 @@
       "variation": "input",
       "price_usd": 0.15,
       "unit": "usd_per_mtok",
-      "last_validated": "2024-07-22",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20240722005830/https://openai.com/pricing/"
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
@@ -2039,9 +1979,9 @@
       "variation": "output",
       "price_usd": 0.6,
       "unit": "usd_per_mtok",
-      "last_validated": "2024-07-22",
-      "confidence": "archived",
-      "src": "https://web.archive.org/web/20240722005830/https://openai.com/pricing/"
+      "last_validated": "2026-08-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
     },
     {
       "provider": "openai",
