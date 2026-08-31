@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-08-28",
+  "dataModified": "2026-08-31",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1339,8 +1339,8 @@
       "variation": "input",
       "price_usd": 0.3,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
@@ -1349,8 +1349,8 @@
       "variation": "output",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
@@ -1359,8 +1359,8 @@
       "variation": "input",
       "price_usd": 0.1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
@@ -1369,8 +1369,8 @@
       "variation": "output",
       "price_usd": 0.4,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
@@ -1379,8 +1379,8 @@
       "variation": "input",
       "price_usd": 1.25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
@@ -1389,8 +1389,8 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-28",
-      "confidence": "inferred",
+      "last_validated": "2026-08-31",
+      "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
