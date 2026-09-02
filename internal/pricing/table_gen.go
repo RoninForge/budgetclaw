@@ -9,7 +9,8 @@ const generatedIndexCommit = "c08c8098ea6905077f1a54e9712558e5d86a0ff0"
 const generatedDataModified = "2026-08-31"
 
 // modelSeries maps a canonical anthropic model id to its
-// point-in-time input/output price history (half-open [from,to)).
+// point-in-time input/output price history (half-open [from,to)),
+// plus the recorded cache-read series where the dataset publishes one.
 var modelSeries = map[string]modelHist{
 	"claude-3-5-haiku-20241022": {
 		input: []priceInterval{
@@ -68,6 +69,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2026, 6, 9, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 50.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 1.0},
+		},
 	},
 	"claude-haiku-4-5-20251001": {
 		input: []priceInterval{
@@ -75,6 +79,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2025, 10, 15, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 5.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.1},
 		},
 	},
 	"claude-mythos-5": {
@@ -86,6 +93,10 @@ var modelSeries = map[string]modelHist{
 			{from: time.Date(2026, 6, 22, 0, 0, 0, 0, time.UTC), to: ptrTime(time.Date(2026, 6, 29, 0, 0, 0, 0, time.UTC)), priceUSD: 50.0},
 			{from: time.Date(2026, 6, 29, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 50.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 6, 22, 0, 0, 0, 0, time.UTC), to: ptrTime(time.Date(2026, 6, 29, 0, 0, 0, 0, time.UTC)), priceUSD: 1.0},
+			{from: time.Date(2026, 6, 29, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 1.0},
+		},
 	},
 	"claude-opus-4-1-20250805": {
 		input: []priceInterval{
@@ -93,6 +104,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2025, 8, 5, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 75.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 1.5},
 		},
 	},
 	"claude-opus-4-20250514": {
@@ -102,6 +116,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2025, 5, 14, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 75.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 1.5},
+		},
 	},
 	"claude-opus-4-5-20251101": {
 		input: []priceInterval{
@@ -109,6 +126,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2025, 11, 1, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 25.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.5},
 		},
 	},
 	"claude-opus-4-6": {
@@ -118,6 +138,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2026, 2, 5, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 25.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.5},
+		},
 	},
 	"claude-opus-4-7": {
 		input: []priceInterval{
@@ -125,6 +148,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2026, 4, 16, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 25.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.5},
 		},
 	},
 	"claude-opus-4-8": {
@@ -134,6 +160,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2026, 5, 28, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 25.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.5},
+		},
 	},
 	"claude-opus-5": {
 		input: []priceInterval{
@@ -141,6 +170,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 25.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 24, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.5},
 		},
 	},
 	"claude-sonnet-4-20250514": {
@@ -150,6 +182,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2025, 5, 14, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 15.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.3},
+		},
 	},
 	"claude-sonnet-4-5-20250929": {
 		input: []priceInterval{
@@ -157,6 +192,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2025, 9, 29, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 15.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.3},
 		},
 	},
 	"claude-sonnet-4-6": {
@@ -166,6 +204,9 @@ var modelSeries = map[string]modelHist{
 		output: []priceInterval{
 			{from: time.Date(2026, 2, 17, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 15.0},
 		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.3},
+		},
 	},
 	"claude-sonnet-5": {
 		input: []priceInterval{
@@ -173,6 +214,9 @@ var modelSeries = map[string]modelHist{
 		},
 		output: []priceInterval{
 			{from: time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 10.0},
+		},
+		cacheRead: []priceInterval{
+			{from: time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC), to: nil, priceUSD: 0.2},
 		},
 	},
 }

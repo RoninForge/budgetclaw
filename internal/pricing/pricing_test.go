@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"testing"
+	"time"
 )
 
 // epsilon is the floating-point tolerance used for monetary
@@ -60,11 +61,17 @@ func TestRatesForUnknownModel(t *testing.T) {
 	}
 }
 
-// TestCacheMultipliersDerived verifies cache rates are correctly
-// derived from the input rate via the published Anthropic
-// multipliers. Tests all three cache kinds for every tier so a
-// refactor of the multiplier constants can't accidentally break
-// one tier while leaving others passing.
+// TestCacheMultipliersDerived verifies the cache WRITE rates are
+// derived from the input rate via the published Anthropic multipliers,
+// for every tier, so a refactor of the multiplier constants can't
+// break one tier while leaving others passing.
+//
+// Cache READ is deliberately not asserted here: it is no longer a fixed
+// derivation. The dataset's recorded cache_read wins when present and
+// 0.1x is only the fallback, because not every model uses that
+// multiplier (Claude Fable 5.1 and Mythos 5.1 are priced at 0.025x).
+// Engine-vs-dataset agreement on cache_read is covered by
+// TestParityWithCurrentJSON; the precedence rule by TestCacheReadPrefersRecordedRate.
 //
 // KnownModels now includes historical models the vendored dataset
 // retired (their newest interval is closed before "now"). Those are
@@ -82,12 +89,8 @@ func TestCacheMultipliersDerived(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			wantRead := r.InputPerMTok * 0.10
 			wantWrite5m := r.InputPerMTok * 1.25
 			wantWrite1h := r.InputPerMTok * 2.00
-			if math.Abs(r.CacheReadPerMTok-wantRead) > epsilon {
-				t.Errorf("cache_read: got %v, want %v", r.CacheReadPerMTok, wantRead)
-			}
 			if math.Abs(r.CacheWrite5mPerMTok-wantWrite5m) > epsilon {
 				t.Errorf("cache_write_5m: got %v, want %v", r.CacheWrite5mPerMTok, wantWrite5m)
 			}
@@ -261,5 +264,38 @@ func TestAllKnownModelsPriceable(t *testing.T) {
 				t.Errorf("non-zero usage: got $%v, want > 0", c)
 			}
 		})
+	}
+}
+
+// TestCacheReadPrefersRecordedRate pins the precedence rule that the
+// 0.1x multiplier is a FALLBACK, not the definition. A model whose
+// dataset rate is not 0.1x of input (Claude Fable 5.1 and Mythos 5.1
+// are priced at 0.025x) must price at the recorded rate. This test owns
+// its input, so it holds regardless of which models the vendored
+// dataset happens to carry.
+func TestCacheReadPrefersRecordedRate(t *testing.T) {
+	at := time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC)
+	from := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	input := []priceInterval{{from: from, to: nil, priceUSD: 10}}
+
+	recorded := modelHist{
+		input:     input,
+		output:    []priceInterval{{from: from, to: nil, priceUSD: 50}},
+		cacheRead: []priceInterval{{from: from, to: nil, priceUSD: 0.25}},
+	}
+	if got := cacheReadAt(recorded, at, 10); math.Abs(got-0.25) > epsilon {
+		t.Errorf("recorded cache_read: got %v, want 0.25 (must not derive 0.1x = 1.0)", got)
+	}
+
+	derived := modelHist{input: input, output: recorded.output}
+	if got := cacheReadAt(derived, at, 10); math.Abs(got-1.0) > epsilon {
+		t.Errorf("fallback cache_read: got %v, want 1.0 (0.1 x 10)", got)
+	}
+
+	// Before the recorded interval opens there is no rate to prefer, so
+	// the multiplier fallback still applies.
+	before := time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC)
+	if got := cacheReadAt(recorded, before, 10); math.Abs(got-1.0) > epsilon {
+		t.Errorf("pre-interval cache_read: got %v, want 1.0 (0.1 x 10)", got)
 	}
 }

@@ -94,6 +94,9 @@ type priceInterval struct {
 type modelHist struct {
 	input  []priceInterval
 	output []priceInterval
+	// cacheRead is the RECORDED cache-read series when the dataset
+	// publishes one. Empty means fall back to cacheReadMultiplier.
+	cacheRead []priceInterval
 }
 
 // ptrTime is a tiny helper used by the generated table to take the
@@ -155,10 +158,22 @@ func RatesForAt(model string, at time.Time) (Rates, error) {
 	return Rates{
 		InputPerMTok:        in,
 		OutputPerMTok:       out,
-		CacheReadPerMTok:    in * cacheReadMultiplier,
+		CacheReadPerMTok:    cacheReadAt(hist, t, in),
 		CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
 		CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
 	}, nil
+}
+
+// cacheReadAt resolves the cache-read rate for a model at an instant.
+// The dataset's own recorded rate wins; cacheReadMultiplier is only a
+// fallback for models that carry no cache_read series. Deriving it
+// unconditionally would misprice any model that does not use the 0.1x
+// multiplier (Claude Fable 5.1 and Mythos 5.1 are priced at 0.025x).
+func cacheReadAt(h modelHist, t time.Time, input float64) float64 {
+	if rate, ok := priceAt(h.cacheRead, t); ok {
+		return rate
+	}
+	return input * cacheReadMultiplier
 }
 
 // RatesFor returns the current pricing rates for a model (rates as of
@@ -238,6 +253,12 @@ func History(model string) ([]Interval, error) {
 			bounds[*iv.to] = struct{}{}
 		}
 	}
+	for _, iv := range hist.cacheRead {
+		bounds[iv.from] = struct{}{}
+		if iv.to != nil {
+			bounds[*iv.to] = struct{}{}
+		}
+	}
 	starts := make([]time.Time, 0, len(bounds))
 	for t := range bounds {
 		starts = append(starts, t)
@@ -258,10 +279,16 @@ func History(model string) ([]Interval, error) {
 			Rates: Rates{
 				InputPerMTok:        in,
 				OutputPerMTok:       o,
-				CacheReadPerMTok:    in * cacheReadMultiplier,
+				CacheReadPerMTok:    cacheReadAt(hist, from, in),
 				CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
 				CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
 			},
+		}
+		// A cache_read record that merely starts being tracked mid-life
+		// (same rate the multiplier already derived) must not split the
+		// history into two identical intervals.
+		if n := len(out); n > 0 && out[n-1].Rates == iv.Rates {
+			continue
 		}
 		out = append(out, iv)
 	}
@@ -296,7 +323,7 @@ func lastUpperBound(h modelHist, from time.Time) *time.Time {
 		}
 		return priceInterval{}, false
 	}
-	for _, series := range [][]priceInterval{h.input, h.output} {
+	for _, series := range [][]priceInterval{h.input, h.output, h.cacheRead} {
 		iv, ok := covering(series)
 		if !ok {
 			continue

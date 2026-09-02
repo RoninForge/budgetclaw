@@ -107,9 +107,9 @@ func TestParityWithCurrentJSON(t *testing.T) {
 		case "output":
 			got = r.OutputPerMTok
 		case "cache_read":
-			// Some models publish explicit cache rows. BudgetClaw derives
-			// cache rates from the input rate via fixed multipliers; assert
-			// the derivation reproduces the dataset's published value.
+			// The engine prefers the dataset's recorded cache_read and
+			// only falls back to the 0.1x multiplier when a model has no
+			// such row, so this asserts the published value either way.
 			got = r.CacheReadPerMTok
 		case "cache_write_5m":
 			got = r.CacheWrite5mPerMTok
