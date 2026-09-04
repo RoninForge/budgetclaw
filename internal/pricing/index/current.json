@@ -1674,6 +1674,26 @@
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
     {
+      "provider": "google",
+      "model": "gemini-3.8-flash",
+      "variation": "input",
+      "price_usd": 0.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.8-flash",
+      "variation": "output",
+      "price_usd": 3.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
       "provider": "meta-llama",
       "model": "llama-3.1-405b",
       "variation": "input",
