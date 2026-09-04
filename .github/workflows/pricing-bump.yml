@@ -212,25 +212,35 @@ jobs:
           #     appears within seconds of the release and stays authoritative.
           base="https://raw.githubusercontent.com/RoninForge/ai-price-index/main/data/ai-price-index/history/anthropic.json"
 
-          # The signature is pushed moments after the tag, and raw.githubusercontent
-          # caches briefly, so a fresh dispatch can arrive a beat early. Poll rather
-          # than fail on the first miss; a genuine mismatch still errors out loudly
-          # instead of silently vendoring a mismatched pair.
+          # The signature is pushed moments after the tag and raw.githubusercontent caches briefly,
+          # so a fresh dispatch can arrive a beat early. Poll rather than fail on the first miss.
+          #
+          # A FETCH FAILURE MUST STAY INSIDE THE LOOP. The step runs under `bash -e` and `curl -f`
+          # exits 22 on a 404, so bare curl calls killed the run on attempt 1 and the remaining
+          # five never happened. That window serves a 404, not a stale signature, so the one case
+          # this loop exists for was the one case it could not survive (lived 2026-09-04: two
+          # releases a minute apart, both dispatches dead on `curl: (22) ... 404`). --retry does
+          # not cover it either; curl skips 404 without --retry-all-errors.
           signed_for_target=false
           for attempt in 1 2 3 4 5 6; do
-            curl -fsSL --retry 3 --retry-delay 5 -H 'Cache-Control: no-cache' -o /tmp/fixture.json    "$base"
-            curl -fsSL --retry 3 --retry-delay 5 -H 'Cache-Control: no-cache' -o /tmp/fixture.minisig "$base.minisig"
-            if grep -qF "$TARGET_TAG" /tmp/fixture.minisig; then
+            if curl -fsSL --retry 3 --retry-delay 5 --retry-all-errors -H 'Cache-Control: no-cache' -o /tmp/fixture.json    "$base" \
+              && curl -fsSL --retry 3 --retry-delay 5 --retry-all-errors -H 'Cache-Control: no-cache' -o /tmp/fixture.minisig "$base.minisig" \
+              && grep -qF "$TARGET_TAG" /tmp/fixture.minisig; then
               signed_for_target=true
               break
             fi
-            echo "attempt $attempt: signature does not name $TARGET_TAG yet; waiting."
+            echo "attempt $attempt: no fetchable bundle+signature naming $TARGET_TAG yet (fetch error, or the signature still names an earlier release); waiting."
             sleep 20
           done
 
           if [ "$signed_for_target" != "true" ]; then
-            echo "::error::the dataset's published bundle is still not re-signed for $TARGET_TAG."
-            echo "Trusted comment was:"; grep -a 'trusted comment' /tmp/fixture.minisig || true
+            echo "::error::could not fetch a bundle+signature naming $TARGET_TAG after 6 attempts."
+            echo "Either the signature is still not published, or the fetch kept failing."
+            if [ -s /tmp/fixture.minisig ]; then
+              echo "Last trusted comment seen was:"; grep -a 'trusted comment' /tmp/fixture.minisig || true
+            else
+              echo "No signature was ever fetched (see the curl errors above)."
+            fi
             echo "Check that RoninForge/ai-price-index's sign-history workflow succeeded for this release."
             exit 1
           fi
