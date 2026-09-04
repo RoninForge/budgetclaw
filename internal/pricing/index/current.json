@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-08-31",
+  "dataModified": "2026-09-04",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -555,6 +555,56 @@
     },
     {
       "provider": "anthropic",
+      "model": "claude-fable-5-1",
+      "variation": "cache_read",
+      "price_usd": 0.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-fable-5-1",
+      "variation": "cache_write_1h",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-fable-5-1",
+      "variation": "cache_write_5m",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-fable-5-1",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-fable-5-1",
+      "variation": "output",
+      "price_usd": 50,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
       "model": "claude-haiku-4-5-20251001",
       "variation": "cache_read",
       "price_usd": 0.1,
@@ -650,6 +700,56 @@
       "price_usd": 50,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-29",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5-1",
+      "variation": "cache_read",
+      "price_usd": 0.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5-1",
+      "variation": "cache_write_1h",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5-1",
+      "variation": "cache_write_5m",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5-1",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-mythos-5-1",
+      "variation": "output",
+      "price_usd": 50,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1159,7 +1259,7 @@
       "variation": "cache_read",
       "price_usd": 0.2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-01",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1169,7 +1269,7 @@
       "variation": "cache_write_1h",
       "price_usd": 4,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-01",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1179,7 +1279,7 @@
       "variation": "cache_write_5m",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-01",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1189,7 +1289,7 @@
       "variation": "input",
       "price_usd": 2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-01",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1199,7 +1299,7 @@
       "variation": "output",
       "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-07-01",
+      "last_validated": "2026-09-02",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -2615,6 +2715,86 @@
     },
     {
       "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "cache_read",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "cache_write",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "output",
+      "price_usd": 50,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "tier2_cache_read",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "tier2_cache_write",
+      "price_usd": 25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "tier2_input",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "variation": "tier2_output",
+      "price_usd": 75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-04",
+      "confidence": "inferred",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
       "model": "o1",
       "variation": "cache_read",
       "price_usd": 7.5,
@@ -2896,6 +3076,16 @@
     {
       "provider": "xai",
       "model": "grok-4.20-0309-non-reasoning",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
       "variation": "tier2_input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
@@ -2946,6 +3136,16 @@
     {
       "provider": "xai",
       "model": "grok-4.20-0309-reasoning",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-0309-reasoning",
       "variation": "tier2_input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
@@ -2996,6 +3196,16 @@
     {
       "provider": "xai",
       "model": "grok-4.20-multi-agent-0309",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.20-multi-agent-0309",
       "variation": "tier2_input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
@@ -3046,6 +3256,16 @@
     {
       "provider": "xai",
       "model": "grok-4.3",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.3",
       "variation": "tier2_input",
       "price_usd": 2.5,
       "unit": "usd_per_mtok",
@@ -3090,6 +3310,16 @@
       "price_usd": 6,
       "unit": "usd_per_mtok",
       "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.5",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.6,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
       "confidence": "verified",
       "src": "https://docs.x.ai/developers/models"
     },
@@ -3146,6 +3376,16 @@
     {
       "provider": "xai",
       "model": "grok-4.6",
+      "variation": "tier2_cache_read",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-4.6",
       "variation": "tier2_input",
       "price_usd": 4,
       "unit": "usd_per_mtok",
@@ -3190,6 +3430,16 @@
       "price_usd": 2,
       "unit": "usd_per_mtok",
       "last_validated": "2026-07-27",
+      "confidence": "verified",
+      "src": "https://docs.x.ai/developers/models"
+    },
+    {
+      "provider": "xai",
+      "model": "grok-build-0.1",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-03",
       "confidence": "verified",
       "src": "https://docs.x.ai/developers/models"
     },

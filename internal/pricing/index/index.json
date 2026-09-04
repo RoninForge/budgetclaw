@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-08-31",
+  "dataModified": "2026-09-04",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -45,6 +45,12 @@
       "latestRev": "53dd2802"
     },
     {
+      "id": "claude-fable-5-1",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-fable-5-1.vc7819a3d.json",
+      "latestRev": "c7819a3d"
+    },
+    {
       "id": "claude-haiku-4-5-20251001",
       "provider": "anthropic",
       "file": "models/anthropic/claude-haiku-4-5-20251001.v49c6b4f8.json",
@@ -58,6 +64,12 @@
       "provider": "anthropic",
       "file": "models/anthropic/claude-mythos-5.vfd6a94c9.json",
       "latestRev": "fd6a94c9"
+    },
+    {
+      "id": "claude-mythos-5-1",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-mythos-5-1.vdb0fa21b.json",
+      "latestRev": "db0fa21b"
     },
     {
       "id": "claude-opus-4-1-20250805",
@@ -131,8 +143,8 @@
     {
       "id": "claude-sonnet-5",
       "provider": "anthropic",
-      "file": "models/anthropic/claude-sonnet-5.vf72dcc34.json",
-      "latestRev": "f72dcc34"
+      "file": "models/anthropic/claude-sonnet-5.v20f92871.json",
+      "latestRev": "20f92871"
     }
   ],
   "schemaVersion": "1.0.0"
