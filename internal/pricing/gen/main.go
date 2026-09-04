@@ -427,16 +427,17 @@ type modelDoc struct {
 	Provider   string   `json:"provider"`
 	Aliases    []string `json:"aliases,omitempty"`
 	Variations struct {
-		Input  []interval `json:"input"`
-		Output []interval `json:"output"`
+		Input     []interval `json:"input"`
+		Output    []interval `json:"output"`
+		CacheRead []interval `json:"cache_read"`
 	} `json:"variations"`
 }
 
 type interval struct {
-	From     string   `json:"from"`
-	To       *string  `json:"to"`
-	PriceUSD float64  `json:"price_usd"`
-	Unit     string   `json:"unit"`
+	From     string  `json:"from"`
+	To       *string `json:"to"`
+	PriceUSD float64 `json:"price_usd"`
+	Unit     string  `json:"unit"`
 }
 
 // genInterval is the parsed, generation-ready interval.
@@ -451,6 +452,10 @@ type genModel struct {
 	ID     string
 	Input  []genInterval
 	Output []genInterval
+	// CacheRead is optional: not every model in the dataset carries a
+	// recorded cache_read series. The engine falls back to the 0.1x
+	// multiplier when it is empty.
+	CacheRead []genInterval
 }
 
 // parseSeries reads the vendored anthropic per-model files (resolved via
@@ -495,6 +500,9 @@ func parseSeries() (map[string]genModel, map[string]string, error) {
 		}
 		if gm.Output, err = parseIntervals(doc.Variations.Output); err != nil {
 			return nil, nil, fmt.Errorf("%s output: %w", doc.Model, err)
+		}
+		if gm.CacheRead, err = parseIntervals(doc.Variations.CacheRead); err != nil {
+			return nil, nil, fmt.Errorf("%s cache_read: %w", doc.Model, err)
 		}
 		if len(gm.Input) == 0 || len(gm.Output) == 0 {
 			return nil, nil, fmt.Errorf("%s: missing input or output intervals", doc.Model)
@@ -636,7 +644,8 @@ func renderTable(tag, commit, dataModified string, series map[string]genModel, a
 	sort.Strings(ids)
 
 	b.WriteString("// modelSeries maps a canonical anthropic model id to its\n")
-	b.WriteString("// point-in-time input/output price history (half-open [from,to)).\n")
+	b.WriteString("// point-in-time input/output price history (half-open [from,to)),\n")
+	b.WriteString("// plus the recorded cache-read series where the dataset publishes one.\n")
 	b.WriteString("var modelSeries = map[string]modelHist{\n")
 	for _, id := range ids {
 		gm := series[id]
@@ -647,6 +656,11 @@ func renderTable(tag, commit, dataModified string, series map[string]genModel, a
 		b.WriteString("\t\toutput: []priceInterval{\n")
 		writeIntervals(&b, gm.Output)
 		b.WriteString("\t\t},\n")
+		if len(gm.CacheRead) > 0 {
+			b.WriteString("\t\tcacheRead: []priceInterval{\n")
+			writeIntervals(&b, gm.CacheRead)
+			b.WriteString("\t\t},\n")
+		}
 		b.WriteString("\t},\n")
 	}
 	b.WriteString("}\n\n")
