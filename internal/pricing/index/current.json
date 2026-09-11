@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-09-09",
+  "dataModified": "2026-09-11",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1585,61 +1585,31 @@
     },
     {
       "provider": "deepseek",
-      "model": "deepseek-v4-flash",
+      "model": "deepseek-flash",
       "variation": "cache_read",
-      "price_usd": 0.007,
+      "price_usd": 0.003,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-17",
+      "last_validated": "2026-09-11",
       "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
-      "model": "deepseek-v4-flash",
+      "model": "deepseek-flash",
       "variation": "input",
-      "price_usd": 0.22,
+      "price_usd": 0.15,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-17",
+      "last_validated": "2026-09-11",
       "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
     {
       "provider": "deepseek",
-      "model": "deepseek-v4-flash",
+      "model": "deepseek-flash",
       "variation": "output",
-      "price_usd": 0.66,
+      "price_usd": 0.6,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-08-17",
-      "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
-    },
-    {
-      "provider": "deepseek",
-      "model": "deepseek-v4-flash-vision-exp",
-      "variation": "cache_read",
-      "price_usd": 0.007,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-22",
-      "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
-    },
-    {
-      "provider": "deepseek",
-      "model": "deepseek-v4-flash-vision-exp",
-      "variation": "input",
-      "price_usd": 0.22,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-22",
-      "confidence": "verified",
-      "src": "https://api-docs.deepseek.com/quick_start/pricing/"
-    },
-    {
-      "provider": "deepseek",
-      "model": "deepseek-v4-flash-vision-exp",
-      "variation": "output",
-      "price_usd": 0.66,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-22",
+      "last_validated": "2026-09-11",
       "confidence": "verified",
       "src": "https://api-docs.deepseek.com/quick_start/pricing/"
     },
