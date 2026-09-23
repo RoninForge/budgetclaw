@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-09-21",
+  "dataModified": "2026-09-22",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -118,6 +118,12 @@
       "provider": "anthropic",
       "file": "models/anthropic/claude-opus-5.vf179801b.json",
       "latestRev": "f179801b"
+    },
+    {
+      "id": "claude-opus-5-5",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-opus-5-5.v95bba16d.json",
+      "latestRev": "95bba16d"
     },
     {
       "id": "claude-sonnet-4-20250514",
