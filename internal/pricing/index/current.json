@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-09-21",
+  "dataModified": "2026-09-22",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -1340,6 +1340,56 @@
       "price_usd": 25,
       "unit": "usd_per_mtok",
       "last_validated": "2026-07-25",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "variation": "cache_read",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-22",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "variation": "cache_write_1h",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-22",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "variation": "cache_write_5m",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-22",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "variation": "input",
+      "price_usd": 4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-22",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "variation": "output",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-09-22",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
