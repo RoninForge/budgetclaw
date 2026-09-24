@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-09-23",
+  "dataModified": "2026-09-24",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -29,8 +29,8 @@
       "variation": "input",
       "price_usd": 0.2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-09-24",
+      "confidence": "verified",
       "src": "https://www.ai21.com/pricing/"
     },
     {
@@ -39,8 +39,8 @@
       "variation": "output",
       "price_usd": 0.4,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "inferred",
+      "last_validated": "2026-09-24",
+      "confidence": "verified",
       "src": "https://www.ai21.com/pricing/"
     },
     {
