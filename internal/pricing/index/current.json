@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-09-30",
+  "dataModified": "2026-10-05",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -3420,6 +3420,36 @@
       "price_usd": 15,
       "unit": "usd_per_mtok",
       "last_validated": "2026-09-30",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-research",
+      "variation": "cache_read",
+      "price_usd": 0.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-research",
+      "variation": "input",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-research",
+      "variation": "output",
+      "price_usd": 25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-05",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
