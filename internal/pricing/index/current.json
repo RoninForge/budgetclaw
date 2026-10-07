@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-10-05",
+  "dataModified": "2026-10-07",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -2236,6 +2236,16 @@
     {
       "provider": "mistral",
       "model": "codestral-25.08",
+      "variation": "cache_read",
+      "price_usd": 0.03,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "codestral-25.08",
       "variation": "input",
       "price_usd": 0.3,
       "unit": "usd_per_mtok",
@@ -2256,6 +2266,16 @@
     {
       "provider": "mistral",
       "model": "ministral-3-14b",
+      "variation": "cache_read",
+      "price_usd": 0.02,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "ministral-3-14b",
       "variation": "input",
       "price_usd": 0.2,
       "unit": "usd_per_mtok",
@@ -2276,6 +2296,16 @@
     {
       "provider": "mistral",
       "model": "ministral-3-3b",
+      "variation": "cache_read",
+      "price_usd": 0.01,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "ministral-3-3b",
       "variation": "input",
       "price_usd": 0.1,
       "unit": "usd_per_mtok",
@@ -2296,6 +2326,16 @@
     {
       "provider": "mistral",
       "model": "ministral-3-8b",
+      "variation": "cache_read",
+      "price_usd": 0.015,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "ministral-3-8b",
       "variation": "input",
       "price_usd": 0.15,
       "unit": "usd_per_mtok",
@@ -2312,6 +2352,16 @@
       "last_validated": "2026-06-15",
       "confidence": "verified",
       "src": "https://mistral.ai/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-3",
+      "variation": "cache_read",
+      "price_usd": 0.05,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
     },
     {
       "provider": "mistral",
@@ -2335,6 +2385,46 @@
     },
     {
       "provider": "mistral",
+      "model": "mistral-large-4",
+      "variation": "cache_read",
+      "price_usd": 0.07,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-4",
+      "variation": "input",
+      "price_usd": 0.68,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-large-4",
+      "variation": "output",
+      "price_usd": 2.09,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-medium-3.5",
+      "variation": "cache_read",
+      "price_usd": 0.15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "provider": "mistral",
       "model": "mistral-medium-3.5",
       "variation": "input",
       "price_usd": 1.5,
@@ -2352,6 +2442,16 @@
       "last_validated": "2026-06-22",
       "confidence": "verified",
       "src": "https://mistral.ai/pricing/"
+    },
+    {
+      "provider": "mistral",
+      "model": "mistral-small-4",
+      "variation": "cache_read",
+      "price_usd": 0.015,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-07",
+      "confidence": "verified",
+      "src": "https://docs.mistral.ai/inference/pricing"
     },
     {
       "provider": "mistral",
