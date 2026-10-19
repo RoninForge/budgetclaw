@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.84] - 2026-10-19
+
 ### Fixed
 
 - pricing: bill Claude Haiku 5.5's prompt-length tier. A request whose prompt (input + cache read + cache write tokens) exceeds 100,000 tokens is now priced entirely at the tier2 rates ($0.50 in / $2.50 out per MTok, 5x the base tier), matching Anthropic's pricing page. Haiku 5.5 events stored unpriced by earlier versions are priced automatically on upgrade.
@@ -920,7 +922,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.83...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.84...HEAD
+[v1.7.84]: https://github.com/RoninForge/budgetclaw/compare/v1.7.83...v1.7.84
 [v1.7.83]: https://github.com/RoninForge/budgetclaw/compare/v1.7.82...v1.7.83
 [v1.7.82]: https://github.com/RoninForge/budgetclaw/compare/v1.7.81...v1.7.82
 [v1.7.81]: https://github.com/RoninForge/budgetclaw/compare/v1.7.80...v1.7.81
