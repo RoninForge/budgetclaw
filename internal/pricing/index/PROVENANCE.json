@@ -1,11 +1,11 @@
 {
-  "tag": "v2026.10.07-f0f2dfb",
-  "commit": "f0f2dfb79e4f23811778301fbea0103745d7608d",
-  "fetched_at": "2026-10-07T05:11:04Z",
+  "tag": "v2026.10.19-d3ec7f9",
+  "commit": "d3ec7f928fb7f9d0be8dcc40596eb332efbc4e7d",
+  "fetched_at": "2026-10-19T07:47:55Z",
   "files": {
     "LICENSE": "5ccbe94b1e7a301bc98322360bf45e5c8265f4c446588098de3f5dc2b775a7bf",
-    "current.json": "6cc3d1b9e2d5a36c25dbe5ef0cd7882afbe66428114997e63daa1ea80cf41a63",
-    "index.json": "5fbee13fba36d4e2ac258e6a608c3d212d7c3026ae53986f27cf11bf520f0fef",
+    "current.json": "18c2020a5c8360ca242a0c99998f2a0e4d950c3a68c17f0c29b8f3d626cbaa35",
+    "index.json": "effe8dd85c76f8143920b1e117d80f1880dfa10752a30b9c5537d9196745cbd6",
     "models/anthropic/claude-3-5-haiku-20241022.vdcd25c2f.json": "301e13f9bddd2856bd039592ab91d4f2f4a9b0f4a9b9ed0306a206305f7422cf",
     "models/anthropic/claude-3-5-sonnet-20240620.v0269d672.json": "d130c5c0afb3b1f3cda32b540fdbf7d2d63851a080e848c69a39902bc2e01aac",
     "models/anthropic/claude-3-7-sonnet-20250219.va4cfdfe6.json": "e12db1a580a31bf0a3e72dce9fc226f2ed71507b0b339eae0212caa3c3ac1456",
@@ -15,6 +15,7 @@
     "models/anthropic/claude-fable-5-1.vc7819a3d.json": "16fabbfe7926be5fe71dac1179ae5a0eafc6d75e47d8f6396d012785cfcdc8d7",
     "models/anthropic/claude-fable-5.v53dd2802.json": "7ef14651374c577a3f747ed323bcab769c74d4794395d4c2240b9cad47a89707",
     "models/anthropic/claude-haiku-4-5-20251001.v49c6b4f8.json": "3e0867909cd9497b2569bf51f2eecbac5575d7e6fdd69c471e143316dc9614b7",
+    "models/anthropic/claude-haiku-5-5.v88e4c30e.json": "2af75976368d2d94e64b14c4f940b384f1c8bd5b9b8ad93a51b0772d95729561",
     "models/anthropic/claude-mythos-5-1.vdb0fa21b.json": "c9ababe56dc3af96093ce89f3b99973220ea5f182f9a677053cbf0879c8f5102",
     "models/anthropic/claude-mythos-5.vfd6a94c9.json": "59c6ff5257053a786ddadf520d0519ba6ea2aebc17878ee689b5fa2079005198",
     "models/anthropic/claude-opus-4-1-20250805.v64b89250.json": "7fae8f7c0805aa243a6ed962333843cbfe504fd27741826faab8629204f86918",
@@ -28,7 +29,7 @@
     "models/anthropic/claude-sonnet-4-20250514.v36ca608a.json": "1b0bda006a982286849d7ed658f0cfcf9044dce166f5c03e43adda4ea2820c53",
     "models/anthropic/claude-sonnet-4-5-20250929.v693a1b02.json": "3b0b9763b83bedf18ef56cd59f3727e7558f33f4ab14aa5486d2dd4f7ab510c6",
     "models/anthropic/claude-sonnet-4-6.vda220fc4.json": "048dcb56bdc3a6c291adb493b3079bc00a6052f2e41892810cd01833c68e856b",
-    "models/anthropic/claude-sonnet-5-5.v3ac5279e.json": "0ea3088b545f8422cfbb8c95c4c2aa330196549c376aeda4752d41aa900d7daa",
+    "models/anthropic/claude-sonnet-5-5.v9319bed5.json": "ada93c32e0cfd7c9e9b49193ddeddcd726a92b171d6313108a8092c7706ab06a",
     "models/anthropic/claude-sonnet-5.v20f92871.json": "63c8ac5f1283983e219148e2503fcddd79e51d6511ee321c52f115edcbe780b6",
     "pricing-vectors.json": "86b66a890df8336760a1c50330347cbf77ce0fa4d75cfa06e820d71f6b2bcc8c"
   }

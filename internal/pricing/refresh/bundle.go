@@ -121,12 +121,26 @@ func parseBundle(raw []byte) (pricing.ExternalTable, string, error) {
 		if len(in) == 0 || len(outIvs) == 0 {
 			continue
 		}
-		out.Models = append(out.Models, pricing.ExternalModel{
+		em := pricing.ExternalModel{
 			ID:      m.Model,
 			Aliases: m.Aliases,
 			Input:   in,
 			Output:  outIvs,
-		})
+		}
+		for _, opt := range []struct {
+			variation string
+			dst       *[]pricing.ExternalInterval
+		}{
+			{"cache_read", &em.CacheRead},
+			{"tier2_input", &em.Tier2Input},
+			{"tier2_output", &em.Tier2Output},
+			{"tier2_cache_read", &em.Tier2CacheRead},
+		} {
+			if *opt.dst, err = convertWire(m.Model, opt.variation, m.Variations[opt.variation]); err != nil {
+				return pricing.ExternalTable{}, "", err
+			}
+		}
+		out.Models = append(out.Models, em)
 	}
 	if len(out.Models) == 0 {
 		return pricing.ExternalTable{}, "", reject(ReasonNoPriceableModel, "no model had both input and output rates")

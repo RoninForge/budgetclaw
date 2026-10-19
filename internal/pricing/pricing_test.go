@@ -283,19 +283,83 @@ func TestCacheReadPrefersRecordedRate(t *testing.T) {
 		output:    []priceInterval{{from: from, to: nil, priceUSD: 50}},
 		cacheRead: []priceInterval{{from: from, to: nil, priceUSD: 0.25}},
 	}
-	if got := cacheReadAt(recorded, at, 10); math.Abs(got-0.25) > epsilon {
+	if got := cacheReadAt(recorded.cacheRead, at, 10); math.Abs(got-0.25) > epsilon {
 		t.Errorf("recorded cache_read: got %v, want 0.25 (must not derive 0.1x = 1.0)", got)
 	}
 
 	derived := modelHist{input: input, output: recorded.output}
-	if got := cacheReadAt(derived, at, 10); math.Abs(got-1.0) > epsilon {
+	if got := cacheReadAt(derived.cacheRead, at, 10); math.Abs(got-1.0) > epsilon {
 		t.Errorf("fallback cache_read: got %v, want 1.0 (0.1 x 10)", got)
 	}
 
 	// Before the recorded interval opens there is no rate to prefer, so
 	// the multiplier fallback still applies.
 	before := time.Date(2026, 8, 31, 0, 0, 0, 0, time.UTC)
-	if got := cacheReadAt(recorded, before, 10); math.Abs(got-1.0) > epsilon {
+	if got := cacheReadAt(recorded.cacheRead, before, 10); math.Abs(got-1.0) > epsilon {
 		t.Errorf("pre-interval cache_read: got %v, want 1.0 (0.1 x 10)", got)
+	}
+}
+
+// TestPromptTierSelection pins prompt-length tier billing: a request
+// whose prompt (input + cache read + cache writes) exceeds the threshold
+// is priced entirely at the tier2 rates, one at or below it at the base
+// rates, and a model without a tier never switches.
+func TestPromptTierSelection(t *testing.T) {
+	from := time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC)
+	at := from.Add(24 * time.Hour)
+	open := func(p float64) []priceInterval { return []priceInterval{{from: from, priceUSD: p}} }
+
+	saved := current()
+	t.Cleanup(func() { active.Store(saved) })
+	active.Store(&table{series: map[string]modelHist{
+		"tiered": {
+			input: open(0.1), output: open(0.5), cacheRead: open(0.01),
+			tier2Input: open(0.5), tier2Output: open(2.5), tier2CacheRead: open(0.05),
+		},
+		"flat": {input: open(0.1), output: open(0.5), cacheRead: open(0.01)},
+	}})
+
+	cases := []struct {
+		name  string
+		model string
+		u     Usage
+		want  float64
+	}{
+		{"at threshold stays base", "tiered", Usage{Input: 100_000, Output: 1_000_000}, 0.01 + 0.5},
+		{"over threshold bills tier2", "tiered", Usage{Input: 100_001, Output: 1_000_000}, 100_001*0.5/1e6 + 2.5},
+		{"cache reads count toward the prompt", "tiered", Usage{Input: 1, CacheRead: 100_000}, 0.5/1e6 + 100_000*0.05/1e6},
+		{"cache writes count toward the prompt", "tiered", Usage{CacheWrite5m: 60_000, CacheWrite1h: 40_001},
+			60_000*0.5*cacheWrite5mMultiplier/1e6 + 40_001*0.5*cacheWrite1hMultiplier/1e6},
+		{"output does not count toward the prompt", "tiered", Usage{Input: 10, Output: 500_000}, 10*0.1/1e6 + 500_000*0.5/1e6},
+		{"flat model never switches", "flat", Usage{Input: 200_000}, 200_000 * 0.1 / 1e6},
+	}
+	for _, c := range cases {
+		got, err := CostForModelAt(c.model, at, c.u)
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		if math.Abs(got-c.want) > epsilon {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// TestHaiku55PromptTierFromDataset checks the vendored dataset end to
+// end: Claude Haiku 5.5 bills 5x over 100,000 prompt tokens.
+func TestHaiku55PromptTierFromDataset(t *testing.T) {
+	at := time.Date(2026, 10, 19, 0, 0, 0, 0, time.UTC)
+	short, err := CostForModelAt("claude-haiku-5-5", at, Usage{Input: 100_000, Output: 1_000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	long, err := CostForModelAt("claude-haiku-5-5", at, Usage{Input: 200_000, Output: 1_000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (100_000*0.1 + 1_000*0.5) / 1e6; math.Abs(short-want) > epsilon {
+		t.Errorf("base tier: got %v, want %v", short, want)
+	}
+	if want := (200_000*0.5 + 1_000*2.5) / 1e6; math.Abs(long-want) > epsilon {
+		t.Errorf("tier2: got %v, want %v", long, want)
 	}
 }

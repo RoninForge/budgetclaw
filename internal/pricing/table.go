@@ -88,6 +88,11 @@ type ExternalModel struct {
 	Aliases []string
 	Input   []ExternalInterval
 	Output  []ExternalInterval
+	// Optional series; empty means the model does not record them.
+	CacheRead      []ExternalInterval
+	Tier2Input     []ExternalInterval
+	Tier2Output    []ExternalInterval
+	Tier2CacheRead []ExternalInterval
 }
 
 // ExternalTable is verified pricing data ready to overlay.
@@ -127,7 +132,28 @@ func Install(t ExternalTable) error {
 		if err != nil {
 			return err
 		}
-		overlay[m.ID] = modelHist{input: in, output: out}
+		h := modelHist{input: in, output: out}
+		for _, opt := range []struct {
+			variation string
+			src       []ExternalInterval
+			dst       *[]priceInterval
+		}{
+			{"cache_read", m.CacheRead, &h.cacheRead},
+			{"tier2_input", m.Tier2Input, &h.tier2Input},
+			{"tier2_output", m.Tier2Output, &h.tier2Output},
+			{"tier2_cache_read", m.Tier2CacheRead, &h.tier2CacheRead},
+		} {
+			if len(opt.src) == 0 {
+				continue
+			}
+			if *opt.dst, err = convertSeries(m.ID, opt.variation, opt.src); err != nil {
+				return err
+			}
+		}
+		if (len(h.tier2Input) == 0) != (len(h.tier2Output) == 0) {
+			return fmt.Errorf("%w: %s has only one of tier2_input and tier2_output", ErrInvalidTable, m.ID)
+		}
+		overlay[m.ID] = h
 	}
 
 	// Start from the compiled-in table so it acts as a floor, then let

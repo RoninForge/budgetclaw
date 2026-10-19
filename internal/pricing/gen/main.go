@@ -430,6 +430,11 @@ type modelDoc struct {
 		Input     []interval `json:"input"`
 		Output    []interval `json:"output"`
 		CacheRead []interval `json:"cache_read"`
+		// Prompt-length tier: rates that apply to the whole request once
+		// its prompt exceeds the provider's tier threshold.
+		Tier2Input     []interval `json:"tier2_input"`
+		Tier2Output    []interval `json:"tier2_output"`
+		Tier2CacheRead []interval `json:"tier2_cache_read"`
 	} `json:"variations"`
 }
 
@@ -456,6 +461,12 @@ type genModel struct {
 	// recorded cache_read series. The engine falls back to the 0.1x
 	// multiplier when it is empty.
 	CacheRead []genInterval
+	// Tier2* are the optional prompt-length tier series. Input and output
+	// come as a pair; cache read falls back to the multiplier like the
+	// base tier does.
+	Tier2Input     []genInterval
+	Tier2Output    []genInterval
+	Tier2CacheRead []genInterval
 }
 
 // parseSeries reads the vendored anthropic per-model files (resolved via
@@ -506,6 +517,18 @@ func parseSeries() (map[string]genModel, map[string]string, error) {
 		}
 		if len(gm.Input) == 0 || len(gm.Output) == 0 {
 			return nil, nil, fmt.Errorf("%s: missing input or output intervals", doc.Model)
+		}
+		if gm.Tier2Input, err = parseIntervals(doc.Variations.Tier2Input); err != nil {
+			return nil, nil, fmt.Errorf("%s tier2_input: %w", doc.Model, err)
+		}
+		if gm.Tier2Output, err = parseIntervals(doc.Variations.Tier2Output); err != nil {
+			return nil, nil, fmt.Errorf("%s tier2_output: %w", doc.Model, err)
+		}
+		if gm.Tier2CacheRead, err = parseIntervals(doc.Variations.Tier2CacheRead); err != nil {
+			return nil, nil, fmt.Errorf("%s tier2_cache_read: %w", doc.Model, err)
+		}
+		if (len(gm.Tier2Input) == 0) != (len(gm.Tier2Output) == 0) {
+			return nil, nil, fmt.Errorf("%s: tier2_input and tier2_output must both be present or both absent", doc.Model)
 		}
 		series[doc.Model] = gm
 
@@ -611,6 +634,17 @@ func parseIntervals(in []interval) ([]genInterval, error) {
 	return out, nil
 }
 
+// writeOptional emits a modelHist field only when the series is non-empty,
+// so models without it keep the zero value.
+func writeOptional(b *bytes.Buffer, field string, ivs []genInterval) {
+	if len(ivs) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "\t\t%s: []priceInterval{\n", field)
+	writeIntervals(b, ivs)
+	b.WriteString("\t\t},\n")
+}
+
 func parseDate(s string) (y, m, d int, err error) {
 	t, err := time.Parse("2006-01-02", s)
 	if err != nil {
@@ -656,11 +690,10 @@ func renderTable(tag, commit, dataModified string, series map[string]genModel, a
 		b.WriteString("\t\toutput: []priceInterval{\n")
 		writeIntervals(&b, gm.Output)
 		b.WriteString("\t\t},\n")
-		if len(gm.CacheRead) > 0 {
-			b.WriteString("\t\tcacheRead: []priceInterval{\n")
-			writeIntervals(&b, gm.CacheRead)
-			b.WriteString("\t\t},\n")
-		}
+		writeOptional(&b, "cacheRead", gm.CacheRead)
+		writeOptional(&b, "tier2Input", gm.Tier2Input)
+		writeOptional(&b, "tier2Output", gm.Tier2Output)
+		writeOptional(&b, "tier2CacheRead", gm.Tier2CacheRead)
 		b.WriteString("\t},\n")
 	}
 	b.WriteString("}\n\n")

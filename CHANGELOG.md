@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- pricing: bill Claude Haiku 5.5's prompt-length tier. A request whose prompt (input + cache read + cache write tokens) exceeds 100,000 tokens is now priced entirely at the tier2 rates ($0.50 in / $2.50 out per MTok, 5x the base tier), matching Anthropic's pricing page. Haiku 5.5 events stored unpriced by earlier versions are priced automatically on upgrade.
+- pricing: Claude Sonnet 5.5 cache reads cost $0.10 per MTok since 2026-10-08 (was $0.20). Earlier versions kept the old rate because the ai-price-index bump that carried the cut failed its parity test. Run `budgetclaw backfill --rebuild` to re-price Sonnet 5.5 events stored since 2026-10-08.
+- pricing: the opt-in refreshed table now keeps recorded cache-read rates and prompt-length tiers. Before, a fetched table fell back to 0.1x of input for cache reads and dropped tiers, so totals differed from the built-in table.
+
+### Changed
+
+- pricing: refresh vendored ai-price-index to `v2026.10.19-d3ec7f9`.
+- `budgetclaw pricing history` shows the cache-read rate per interval, so a split caused by a cache-read change alone is visible.
+
 ## [v1.7.83] - 2026-10-07
 
 ### Changed
