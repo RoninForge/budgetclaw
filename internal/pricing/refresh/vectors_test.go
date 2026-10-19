@@ -273,3 +273,50 @@ func TestFetchedBundleCarriesItsAliases(t *testing.T) {
 		}
 	}
 }
+
+// TestFetchedTableKeepsOptionalSeries guards the overlay against dropping
+// what input and output alone cannot express: a recorded cache-read rate
+// (Claude Sonnet 5.5 bills 0.05x, not the 0.1x fallback) and a
+// prompt-length tier (Claude Haiku 5.5 bills 5x over 100,000 prompt
+// tokens). A fetched table that lost either would bill differently from
+// the built-in one for the same request.
+func TestFetchedTableKeepsOptionalSeries(t *testing.T) {
+	isolate(t)
+	now := fixtureNow(t)
+	at, err := time.Parse("2006-01-02", fixtureDataDate(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	probes := []struct {
+		model string
+		usage pricing.Usage
+	}{
+		{"claude-sonnet-5-5", pricing.Usage{CacheRead: 1_000_000}},
+		{"claude-haiku-5-5", pricing.Usage{Input: 150_000, Output: 10_000}},
+		{"claude-haiku-5-5", pricing.Usage{Input: 50_000, CacheRead: 60_000}},
+	}
+	cost := func() []float64 {
+		out := make([]float64, len(probes))
+		for i, p := range probes {
+			c, err := pricing.CostForModelAt(p.model, at, p.usage)
+			if err != nil {
+				t.Fatalf("%s: %v", p.model, err)
+			}
+			out[i] = c
+		}
+		return out
+	}
+
+	pricing.RestoreBuiltIn()
+	builtIn := cost()
+	if _, err := refreshVia(context.Background(), bundleServer(t, nil), now); err != nil {
+		t.Fatalf("fetch the live fixture: %v", err)
+	}
+	fetched := cost()
+	for i, p := range probes {
+		if math.Abs(builtIn[i]-fetched[i]) > vectorEpsilon {
+			t.Errorf("%s %+v: built-in %v, fetched %v", p.model, p.usage, builtIn[i], fetched[i])
+		}
+	}
+}

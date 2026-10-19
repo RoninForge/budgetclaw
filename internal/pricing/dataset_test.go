@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -30,14 +31,15 @@ import (
 var asOf = latestOpenIntervalDate()
 
 // latestOpenIntervalDate returns the maximum `from` among all open
-// (still-current) intervals across every model's input and output series.
+// (still-current) intervals across every series of every model, so a
+// change recorded on one variation alone (a cache-read cut) still moves it.
 // It panics if no open interval exists, which would mean the embedded
 // table has no currently-priced model and parity has nothing to assert.
 func latestOpenIntervalDate() time.Time {
 	var max time.Time
 	found := false
 	for _, hist := range modelSeries {
-		for _, series := range [][]priceInterval{hist.input, hist.output} {
+		for _, series := range [][]priceInterval{hist.input, hist.output, hist.cacheRead, hist.tier2Input, hist.tier2Output, hist.tier2CacheRead} {
 			for _, iv := range series {
 				if iv.to != nil {
 					continue // closed (retired) interval, not "current"
@@ -100,8 +102,17 @@ func TestParityWithCurrentJSON(t *testing.T) {
 			t.Errorf("%s: RatesForAt error: %v", p.Model, err)
 			continue
 		}
+		variation := p.Variation
+		if base, ok := strings.CutPrefix(variation, "tier2_"); ok {
+			t2, ok := tier2RatesAt(p.Model, asOf)
+			if !ok {
+				t.Errorf("%s: %s published but no tier2 rates in the table", p.Model, p.Variation)
+				continue
+			}
+			r, variation = t2, base
+		}
 		var got float64
-		switch p.Variation {
+		switch variation {
 		case "input":
 			got = r.InputPerMTok
 		case "output":

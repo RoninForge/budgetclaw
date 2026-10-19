@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-10-07",
+  "dataModified": "2026-10-16",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -58,6 +58,12 @@
       "aliases": [
         "claude-haiku-4-5"
       ]
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "provider": "anthropic",
+      "file": "models/anthropic/claude-haiku-5-5.v88e4c30e.json",
+      "latestRev": "88e4c30e"
     },
     {
       "id": "claude-mythos-5",
@@ -155,8 +161,8 @@
     {
       "id": "claude-sonnet-5-5",
       "provider": "anthropic",
-      "file": "models/anthropic/claude-sonnet-5-5.v3ac5279e.json",
-      "latestRev": "3ac5279e"
+      "file": "models/anthropic/claude-sonnet-5-5.v9319bed5.json",
+      "latestRev": "9319bed5"
     }
   ],
   "schemaVersion": "1.0.0"

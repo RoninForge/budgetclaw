@@ -128,6 +128,9 @@ type pricingHistoryRow struct {
 	To            string  `json:"to,omitempty"`
 	InputPerMTok  float64 `json:"input_per_mtok"`
 	OutputPerMTok float64 `json:"output_per_mtok"`
+	// CacheReadPerMTok shows why an interval can split with input and
+	// output unchanged: a recorded cache-read cut.
+	CacheReadPerMTok float64 `json:"cache_read_per_mtok"`
 }
 
 func newPricingHistoryCmd() *cobra.Command {
@@ -156,6 +159,8 @@ alias (claude-opus-4-1). Use --json for the machine-readable form.`,
 					From:          iv.From.UTC().Format("2006-01-02"),
 					InputPerMTok:  iv.Rates.InputPerMTok,
 					OutputPerMTok: iv.Rates.OutputPerMTok,
+
+					CacheReadPerMTok: iv.Rates.CacheReadPerMTok,
 				}
 				if iv.To != nil {
 					row.To = iv.To.UTC().Format("2006-01-02")
@@ -168,13 +173,13 @@ alias (claude-opus-4-1). Use --json for the machine-readable form.`,
 				return json.NewEncoder(out).Encode(rows)
 			}
 			tw := tabwriter.NewWriter(out, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(tw, "FROM\tTO\tINPUT/MTOK\tOUTPUT/MTOK")
+			fmt.Fprintln(tw, "FROM\tTO\tINPUT/MTOK\tOUTPUT/MTOK\tCACHE READ/MTOK")
 			for _, r := range rows {
 				to := r.To
 				if to == "" {
 					to = "current"
 				}
-				fmt.Fprintf(tw, "%s\t%s\t$%.2f\t$%.2f\n", r.From, to, r.InputPerMTok, r.OutputPerMTok)
+				fmt.Fprintf(tw, "%s\t%s\t$%.2f\t$%.2f\t$%s\n", r.From, to, r.InputPerMTok, r.OutputPerMTok, subCentRate(r.CacheReadPerMTok))
 			}
 			return tw.Flush()
 		},
@@ -399,4 +404,14 @@ func scanModelsFromJSONL(dir string) (map[string]int, error) {
 		return nil, fmt.Errorf("scan %s: %w", dir, err)
 	}
 	return counts, nil
+}
+
+// subCentRate formats a per-MTok rate with at least two decimals and up to
+// four, so cache rates such as $0.01 and $0.125 print exactly.
+func subCentRate(v float64) string {
+	s := strings.TrimRight(fmt.Sprintf("%.4f", v), "0")
+	if i := strings.IndexByte(s, '.'); len(s)-i < 3 {
+		s += strings.Repeat("0", 3-(len(s)-i))
+	}
+	return s
 }

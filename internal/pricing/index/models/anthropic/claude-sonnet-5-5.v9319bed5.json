@@ -9,6 +9,15 @@
         "last_validated": "2026-09-30",
         "price_usd": 0.2,
         "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+        "to": "2026-10-08",
+        "unit": "usd_per_mtok"
+      },
+      {
+        "confidence": "verified",
+        "from": "2026-10-08",
+        "last_validated": "2026-10-08",
+        "price_usd": 0.1,
+        "src": "https://docs.claude.com/en/docs/about-claude/pricing",
         "to": null,
         "unit": "usd_per_mtok"
       }

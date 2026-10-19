@@ -30,6 +30,11 @@
 //
 // The multipliers are centralized in one place (below) so a future
 // Anthropic change only needs a single edit.
+//
+// A model may also carry a prompt-length tier (tier2_* in the dataset;
+// Claude Haiku 5.5 is the first). CostForModelAt bills a request whose
+// prompt exceeds promptTierThreshold entirely at the tier2 rates, which is
+// why it must be called per request, never on a rollup.
 package pricing
 
 //go:generate go run ./gen/main.go
@@ -79,6 +84,12 @@ const (
 	cacheWrite1hMultiplier = 2.00
 )
 
+// promptTierThreshold is the prompt size above which a model with a
+// recorded prompt-length tier bills the whole request at its tier2 rates.
+// Anthropic prices Claude Haiku 5.5 "for prompts over 100,000 tokens";
+// the dataset records the tier2 rates but not the threshold itself.
+const promptTierThreshold = 100_000
+
 // priceInterval is one half-open [from, to) price window for a single
 // variation (input or output). to == nil means the interval is open
 // (still current). Generated into table_gen.go.
@@ -97,6 +108,11 @@ type modelHist struct {
 	// cacheRead is the RECORDED cache-read series when the dataset
 	// publishes one. Empty means fall back to cacheReadMultiplier.
 	cacheRead []priceInterval
+	// tier2Input / tier2Output / tier2CacheRead are the prompt-length tier
+	// series, empty for models priced flat. See promptTierThreshold.
+	tier2Input     []priceInterval
+	tier2Output    []priceInterval
+	tier2CacheRead []priceInterval
 }
 
 // ptrTime is a tiny helper used by the generated table to take the
@@ -143,25 +159,56 @@ func RatesForAt(model string, at time.Time) (Rates, error) {
 	if !ok {
 		return Rates{}, fmt.Errorf("%w: %q", ErrUnknownModel, model)
 	}
-	hist := current().series[canon]
 	t := at.UTC()
-
-	in, ok := priceAt(hist.input, t)
+	r, ok := ratesFromSeries(current().series[canon].baseSeries(), t)
 	if !ok {
 		return Rates{}, fmt.Errorf("%w: %q at %s", ErrNoRateAtTime, canon, t.Format("2006-01-02"))
 	}
-	out, ok := priceAt(hist.output, t)
-	if !ok {
-		return Rates{}, fmt.Errorf("%w: %q at %s", ErrNoRateAtTime, canon, t.Format("2006-01-02"))
-	}
+	return r, nil
+}
 
+// tier2RatesAt returns the prompt-length tier rates for a model as of
+// instant at, and false when the model has no tier effective then.
+func tier2RatesAt(model string, at time.Time) (Rates, bool) {
+	canon, ok := canonicalModel(model)
+	if !ok {
+		return Rates{}, false
+	}
+	return ratesFromSeries(current().series[canon].tier2Series(), at.UTC())
+}
+
+// tierSeries is one pricing tier's input, output and recorded cache-read
+// series.
+type tierSeries struct {
+	input, output, cacheRead []priceInterval
+}
+
+func (h modelHist) baseSeries() tierSeries {
+	return tierSeries{input: h.input, output: h.output, cacheRead: h.cacheRead}
+}
+
+func (h modelHist) tier2Series() tierSeries {
+	return tierSeries{input: h.tier2Input, output: h.tier2Output, cacheRead: h.tier2CacheRead}
+}
+
+// ratesFromSeries resolves one tier's rates at t, deriving cache writes
+// from the input rate and preferring the recorded cache-read rate.
+func ratesFromSeries(s tierSeries, t time.Time) (Rates, bool) {
+	in, ok := priceAt(s.input, t)
+	if !ok {
+		return Rates{}, false
+	}
+	out, ok := priceAt(s.output, t)
+	if !ok {
+		return Rates{}, false
+	}
 	return Rates{
 		InputPerMTok:        in,
 		OutputPerMTok:       out,
-		CacheReadPerMTok:    cacheReadAt(hist, t, in),
+		CacheReadPerMTok:    cacheReadAt(s.cacheRead, t, in),
 		CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
 		CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
-	}, nil
+	}, true
 }
 
 // cacheReadAt resolves the cache-read rate for a model at an instant.
@@ -169,8 +216,8 @@ func RatesForAt(model string, at time.Time) (Rates, error) {
 // fallback for models that carry no cache_read series. Deriving it
 // unconditionally would misprice any model that does not use the 0.1x
 // multiplier (Claude Fable 5.1 and Mythos 5.1 are priced at 0.025x).
-func cacheReadAt(h modelHist, t time.Time, input float64) float64 {
-	if rate, ok := priceAt(h.cacheRead, t); ok {
+func cacheReadAt(cacheRead []priceInterval, t time.Time, input float64) float64 {
+	if rate, ok := priceAt(cacheRead, t); ok {
 		return rate
 	}
 	return input * cacheReadMultiplier
@@ -194,13 +241,27 @@ func Cost(r Rates, u Usage) float64 {
 		float64(u.CacheWrite1h)*r.CacheWrite1hPerMTok/perMillion
 }
 
+// promptTokens is the request's prompt size as Anthropic counts it for
+// prompt-length tiers: fresh input plus cache reads and cache writes.
+func (u Usage) promptTokens() int {
+	return u.Input + u.CacheRead + u.CacheWrite5m + u.CacheWrite1h
+}
+
 // CostForModelAt is the point-in-time one-shot: resolve the model's
-// rates as of at, then price the usage. Returns ErrUnknownModel for an
-// unknown model or ErrNoRateAtTime if no interval covers at.
+// rates as of at, then price the usage. A request whose prompt exceeds
+// promptTierThreshold on a model with a prompt-length tier is priced
+// entirely at the tier2 rates, so u must describe ONE request. Returns
+// ErrUnknownModel for an unknown model or ErrNoRateAtTime if no interval
+// covers at.
 func CostForModelAt(model string, at time.Time, u Usage) (float64, error) {
 	r, err := RatesForAt(model, at)
 	if err != nil {
 		return 0, err
+	}
+	if u.promptTokens() > promptTierThreshold {
+		if t2, ok := tier2RatesAt(model, at); ok {
+			r = t2
+		}
 	}
 	return Cost(r, u), nil
 }
@@ -279,7 +340,7 @@ func History(model string) ([]Interval, error) {
 			Rates: Rates{
 				InputPerMTok:        in,
 				OutputPerMTok:       o,
-				CacheReadPerMTok:    cacheReadAt(hist, from, in),
+				CacheReadPerMTok:    cacheReadAt(hist.cacheRead, from, in),
 				CacheWrite5mPerMTok: in * cacheWrite5mMultiplier,
 				CacheWrite1hPerMTok: in * cacheWrite1hMultiplier,
 			},

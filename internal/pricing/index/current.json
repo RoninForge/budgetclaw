@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-10-07",
+  "dataModified": "2026-10-16",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -145,26 +145,6 @@
     },
     {
       "provider": "alibaba",
-      "model": "qwen-turbo",
-      "variation": "input",
-      "price_usd": 0.05,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen-turbo",
-      "variation": "output",
-      "price_usd": 0.2,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
       "model": "qwen3-coder-flash",
       "variation": "cache_read",
       "price_usd": 0.03,
@@ -200,106 +180,6 @@
       "price_usd": 1.5,
       "unit": "usd_per_mtok",
       "last_validated": "2026-08-22",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-next",
-      "variation": "input",
-      "price_usd": 0.3,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-22",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-next",
-      "variation": "output",
-      "price_usd": 1.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-22",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-plus",
-      "variation": "cache_read",
-      "price_usd": 0.1,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-07",
-      "confidence": "inferred",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/context-cache"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-plus",
-      "variation": "cache_write",
-      "price_usd": 1.25,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-07",
-      "confidence": "inferred",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/context-cache"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-plus",
-      "variation": "input",
-      "price_usd": 1,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-coder-plus",
-      "variation": "output",
-      "price_usd": 5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-max",
-      "variation": "cache_read",
-      "price_usd": 0.12,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-07",
-      "confidence": "inferred",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/context-cache"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-max",
-      "variation": "cache_write",
-      "price_usd": 1.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-07",
-      "confidence": "inferred",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/context-cache"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-max",
-      "variation": "input",
-      "price_usd": 1.2,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
-    },
-    {
-      "provider": "alibaba",
-      "model": "qwen3-max",
-      "variation": "output",
-      "price_usd": 6,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
       "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
@@ -895,6 +775,106 @@
     },
     {
       "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "cache_read",
+      "price_usd": 0.01,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "cache_write_1h",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "cache_write_5m",
+      "price_usd": 0.125,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "input",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "output",
+      "price_usd": 0.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.05,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "tier2_cache_write_1h",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "tier2_cache_write_5m",
+      "price_usd": 0.625,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "tier2_input",
+      "price_usd": 0.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-haiku-5-5",
+      "variation": "tier2_output",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-08",
+      "confidence": "verified",
+      "src": "https://docs.claude.com/en/docs/about-claude/pricing"
+    },
+    {
+      "provider": "anthropic",
       "model": "claude-mythos-5",
       "variation": "cache_read",
       "price_usd": 1,
@@ -1597,9 +1577,9 @@
       "provider": "anthropic",
       "model": "claude-sonnet-5-5",
       "variation": "cache_read",
-      "price_usd": 0.2,
+      "price_usd": 0.1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-09-30",
+      "last_validated": "2026-10-08",
       "confidence": "verified",
       "src": "https://docs.claude.com/en/docs/about-claude/pricing"
     },
@@ -1985,36 +1965,6 @@
     },
     {
       "provider": "google",
-      "model": "gemini-3.5-flash",
-      "variation": "cache_read",
-      "price_usd": 0.15,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-09",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-3.5-flash",
-      "variation": "input",
-      "price_usd": 1.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-3.5-flash",
-      "variation": "output",
-      "price_usd": 9,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-15",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
       "model": "gemini-3.5-flash-lite",
       "variation": "cache_read",
       "price_usd": 0.03,
@@ -2075,36 +2025,6 @@
     },
     {
       "provider": "google",
-      "model": "gemini-3.7-flash",
-      "variation": "cache_read",
-      "price_usd": 0.075,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-09-09",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-3.7-flash",
-      "variation": "input",
-      "price_usd": 0.75,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-17",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
-      "model": "gemini-3.7-flash",
-      "variation": "output",
-      "price_usd": 3.75,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-08-17",
-      "confidence": "verified",
-      "src": "https://ai.google.dev/gemini-api/docs/pricing"
-    },
-    {
-      "provider": "google",
       "model": "gemini-3.8-flash",
       "variation": "cache_read",
       "price_usd": 0.075,
@@ -2130,6 +2050,36 @@
       "price_usd": 3.75,
       "unit": "usd_per_mtok",
       "last_validated": "2026-09-04",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-argon",
+      "variation": "cache_read",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-16",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-argon",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-16",
+      "confidence": "verified",
+      "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-argon",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-16",
       "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
     },
@@ -2965,6 +2915,46 @@
     },
     {
       "provider": "openai",
+      "model": "gpt-5.6-cyber",
+      "variation": "cache_read",
+      "price_usd": 1.25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-cyber",
+      "variation": "cache_write",
+      "price_usd": 15.625,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-cyber",
+      "variation": "input",
+      "price_usd": 12.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-cyber",
+      "variation": "output",
+      "price_usd": 75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
       "model": "gpt-5.6-luna",
       "variation": "cache_read",
       "price_usd": 0.02,
@@ -3520,6 +3510,36 @@
       "price_usd": 15,
       "unit": "usd_per_mtok",
       "last_validated": "2026-09-30",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-discovery",
+      "variation": "cache_read",
+      "price_usd": 0.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-discovery",
+      "variation": "input",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-rosalind-discovery",
+      "variation": "output",
+      "price_usd": 25,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-10-12",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
