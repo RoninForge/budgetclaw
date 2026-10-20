@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -689,5 +690,57 @@ func TestOpenDefaultPath(t *testing.T) {
 	want := filepath.Join(dir, "budgetclaw", "state.db")
 	if _, err := osStat(want); err != nil {
 		t.Errorf("expected db at %s, stat err: %v", want, err)
+	}
+}
+
+// TestConcurrentWritersOnOneFile reproduces the watcher and a backfill
+// writing the same database at once. Every connection in either pool
+// must wait out the other's write lock instead of failing with
+// "database is locked".
+func TestConcurrentWritersOnOneFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state? #1.db")
+	a, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	b, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = b.Close() })
+
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	const perWriter, goroutines = 60, 4
+	errs := make(chan error, 2*goroutines*perWriter)
+	var wg sync.WaitGroup
+	for w, store := range []*DB{a, b} {
+		for g := 0; g < goroutines; g++ {
+			wg.Add(1)
+			go func(w, g int, store *DB) {
+				defer wg.Done()
+				for i := 0; i < perWriter; i++ {
+					e := testEvent(fmt.Sprintf("w%d-g%d-%d", w, g, i), "myapp", "main", ts)
+					e.MessageID = fmt.Sprintf("msg-%d-%d", g, i)
+					e.RequestID = "req"
+					errs <- store.Insert(context.Background(), e, 0.01)
+				}
+			}(w, g, store)
+		}
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		if err != nil {
+			t.Fatalf("concurrent insert: %v", err)
+		}
+	}
+
+	r, err := a.RollupForDay(context.Background(), "myapp", "main", ts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.EventCount != goroutines*perWriter {
+		t.Errorf("EventCount = %d, want %d (one per message)", r.EventCount, goroutines*perWriter)
 	}
 }

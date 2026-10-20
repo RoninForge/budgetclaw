@@ -47,6 +47,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -201,7 +202,7 @@ func Open(path string) (*DB, error) {
 		path = filepath.Join(dir, "state.db")
 	}
 
-	sqlDB, err := sql.Open("sqlite", path)
+	sqlDB, err := sql.Open("sqlite", dsn(path, memory))
 	if err != nil {
 		return nil, fmt.Errorf("open sqlite: %w", err)
 	}
@@ -355,18 +356,35 @@ func (d *DB) Reset(ctx context.Context) error {
 	return tx.Commit()
 }
 
-// applyPragmas sets the pragmas we rely on. WAL and synchronous are
-// skipped for in-memory databases where they're meaningless.
-func applyPragmas(db *sql.DB, memory bool) error {
-	pragmas := []string{
-		"PRAGMA foreign_keys=ON",
-		"PRAGMA busy_timeout=5000",
-	}
+// dsn builds the connection string. Connection-scoped pragmas go here
+// rather than through Exec: database/sql pools connections, and a pragma
+// run with Exec reaches only the one connection that ran it, so every
+// other connection had busy_timeout 0 and failed at once with "database
+// is locked" whenever the watcher held the write lock. _txlock=immediate
+// takes the write lock at BEGIN, because a deferred transaction that
+// reads before it writes cannot be retried by busy_timeout once another
+// writer commits in between.
+func dsn(path string, memory bool) string {
+	q := url.Values{}
+	q.Add("_pragma", "foreign_keys(1)")
+	q.Add("_pragma", "busy_timeout(5000)")
 	if !memory {
-		pragmas = append(pragmas,
-			"PRAGMA journal_mode=WAL",
-			"PRAGMA synchronous=NORMAL",
-		)
+		q.Add("_pragma", "synchronous(NORMAL)")
+	}
+	q.Set("_txlock", "immediate")
+	if memory {
+		return "file::memory:?" + q.Encode()
+	}
+	return (&url.URL{Scheme: "file", Path: path, RawQuery: q.Encode()}).String()
+}
+
+// applyPragmas sets the database-scoped pragmas. WAL persists in the file
+// itself, so running it on one connection is enough; it is skipped for
+// in-memory databases where it is meaningless.
+func applyPragmas(db *sql.DB, memory bool) error {
+	var pragmas []string
+	if !memory {
+		pragmas = append(pragmas, "PRAGMA journal_mode=WAL")
 	}
 	for _, p := range pragmas {
 		if _, err := db.Exec(p); err != nil {
