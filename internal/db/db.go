@@ -472,6 +472,15 @@ func (d *DB) insert(ctx context.Context, e *parser.Event, costUSD float64, price
 		return tx.Commit()
 	}
 
+	// A streamed response's usage only grows, so a line with fewer output
+	// tokens is an earlier partial of the row already stored. Keeping the
+	// larger one makes the result independent of read order: the same
+	// response can sit in several session files, and backfill walks them
+	// in an order unrelated to when each line was written.
+	if e.OutputTokens < existing.output {
+		return tx.Commit()
+	}
+
 	// Already-stored response. Replace its row with this line's values
 	// and fold the delta into the rollup. The old contribution is
 	// removed from its original rollup key (project/branch/day from the

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `backfill` could undercount spend. Claude Code writes one streamed response on several log lines with growing output tokens, and the same response can appear in more than one session file. Dedupe kept whichever line it read last, so a backfill that walked an earlier partial line after the final one replaced the final usage with the partial (seen: 546 output tokens stored as 5). The stored line is now replaced only by one with at least as many output tokens, so the result no longer depends on read order. If you ran `budgetclaw backfill` on an earlier version, run it once more after upgrading: it restores the final lines.
+
 ## [v1.7.85] - 2026-10-20
 
 ### Fixed
