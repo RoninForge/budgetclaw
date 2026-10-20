@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.86] - 2026-10-20
+
 ### Fixed
 
 - `backfill` could undercount spend. Claude Code writes one streamed response on several log lines with growing output tokens, and the same response can appear in more than one session file. Dedupe kept whichever line it read last, so a backfill that walked an earlier partial line after the final one replaced the final usage with the partial (seen: 546 output tokens stored as 5). The stored line is now replaced only by one with at least as many output tokens, so the result no longer depends on read order. If you ran `budgetclaw backfill` on an earlier version, run it once more after upgrading: it restores the final lines.
@@ -932,7 +934,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.85...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.86...HEAD
+[v1.7.86]: https://github.com/RoninForge/budgetclaw/compare/v1.7.85...v1.7.86
 [v1.7.85]: https://github.com/RoninForge/budgetclaw/compare/v1.7.84...v1.7.85
 [v1.7.84]: https://github.com/RoninForge/budgetclaw/compare/v1.7.83...v1.7.84
 [v1.7.83]: https://github.com/RoninForge/budgetclaw/compare/v1.7.82...v1.7.83
