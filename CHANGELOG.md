@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.87] - 2026-10-20
+
 ### Fixed
 
 - `backfill` run while the watcher is active no longer drops events with "database is locked". The SQLite busy timeout was applied to one pooled connection only, so every other connection failed at once while the watcher held the write lock (seen: 9,431 of 40,229 events failed in one backfill). Connection pragmas now go in the connection string so every connection waits, and transactions take the write lock at BEGIN so a read-then-write cannot fail mid-transaction.
@@ -938,7 +940,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `budgetclaw config path` diagnostic helper
 - Claude Code plugin manifest with `/spend` skill and session-start hook
 
-[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.86...HEAD
+[Unreleased]: https://github.com/RoninForge/budgetclaw/compare/v1.7.87...HEAD
+[v1.7.87]: https://github.com/RoninForge/budgetclaw/compare/v1.7.86...v1.7.87
 [v1.7.86]: https://github.com/RoninForge/budgetclaw/compare/v1.7.85...v1.7.86
 [v1.7.85]: https://github.com/RoninForge/budgetclaw/compare/v1.7.84...v1.7.85
 [v1.7.84]: https://github.com/RoninForge/budgetclaw/compare/v1.7.83...v1.7.84
