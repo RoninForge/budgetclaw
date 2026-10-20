@@ -17,6 +17,8 @@ package reconcile
 import (
 	"context"
 	"fmt"
+	"math"
+	"strings"
 
 	"github.com/RoninForge/budgetclaw/internal/db"
 	"github.com/RoninForge/budgetclaw/internal/pricing"
@@ -42,32 +44,32 @@ type Result struct {
 	Recovered float64
 	Models    []string
 	Remaining int
+	// Corrected counts priced events whose stored cost the current table
+	// disagrees with (a rate fixed upstream after the event was priced);
+	// Adjustment is the net dollar change applied to them.
+	Corrected  int
+	Adjustment float64
 }
 
-// Any reports whether the pass changed anything worth telling the user.
-func (r Result) Any() bool { return r.Repriced > 0 }
+// correctionEpsilon ignores float noise when comparing a stored cost
+// with a recomputed one; a real rate change moves it by far more.
+const correctionEpsilon = 1e-9
 
-// Run prices whatever it can of the unpriced backlog.
+// Any reports whether the pass changed anything worth telling the user.
+func (r Result) Any() bool { return r.Repriced > 0 || r.Corrected > 0 }
+
+// Run prices whatever it can of the unpriced backlog, then corrects
+// priced events whose stored cost the current table disagrees with.
 //
-// It is cheap to call unconditionally. The healthy case costs one
-// indexed existence probe and returns immediately, so callers can run it
-// at startup without thinking about it.
+// It is cheap to call unconditionally. While the pricing table is the
+// one the last completed pass ran against, it costs one meta read and
+// returns, so callers can run it at startup without thinking about it.
 //
 // force skips the watermark check. Use it when the effective pricing
 // table may have changed in a way the tag does not capture, or when the
 // user explicitly asked for a repair pass.
 func Run(ctx context.Context, store *db.DB, force bool) (Result, error) {
 	var res Result
-
-	// Fast path: nothing is unpriced, so there is nothing to do. The
-	// partial index is empty here, which makes this close to free.
-	has, err := store.HasUnpriced(ctx)
-	if err != nil {
-		return res, err
-	}
-	if !has {
-		return res, nil
-	}
 
 	pricingID := identity()
 
@@ -78,15 +80,40 @@ func Run(ctx context.Context, store *db.DB, force bool) (Result, error) {
 		}
 		if last == pricingID {
 			// Same table as the last completed pass. Anything still
-			// unpriced was already rejected by it, so a rescan would
-			// only burn IO to reach the same answer.
+			// unpriced was already rejected by it and every priced cost
+			// already agrees with it, so a rescan would only burn IO.
 			return res, nil
 		}
 	}
 
-	models, err := store.UnpricedModels(ctx)
+	has, err := store.HasUnpriced(ctx)
 	if err != nil {
 		return res, err
+	}
+	if has {
+		if err := priceBacklog(ctx, store, &res); err != nil {
+			return res, err
+		}
+	}
+
+	if res.Corrected, res.Adjustment, err = correctPriced(ctx, store); err != nil {
+		return res, err
+	}
+
+	// Record the watermark only after a complete pass, so a crash
+	// halfway through resumes on the next run instead of being skipped.
+	if err := store.MetaSet(ctx, watermarkKey, pricingID); err != nil {
+		return res, err
+	}
+	return res, nil
+}
+
+// priceBacklog prices every unpriced event the table now knows and
+// records how many remain unpriceable.
+func priceBacklog(ctx context.Context, store *db.DB, res *Result) error {
+	models, err := store.UnpricedModels(ctx)
+	if err != nil {
+		return err
 	}
 
 	known := knownSet()
@@ -98,7 +125,7 @@ func Run(ctx context.Context, store *db.DB, force bool) (Result, error) {
 		}
 		n, usd, err := repriceModel(ctx, store, model)
 		if err != nil {
-			return res, err
+			return err
 		}
 		if n > 0 {
 			res.Repriced += n
@@ -107,20 +134,66 @@ func Run(ctx context.Context, store *db.DB, force bool) (Result, error) {
 		}
 	}
 
-	// Record the watermark only after a complete pass, so a crash
-	// halfway through resumes on the next run instead of being skipped.
-	if err := store.MetaSet(ctx, watermarkKey, pricingID); err != nil {
-		return res, err
-	}
-
 	remaining, err := store.UnpricedByModel(ctx)
 	if err != nil {
-		return res, err
+		return err
 	}
 	for _, m := range remaining {
 		res.Remaining += m.EventCount
 	}
-	return res, nil
+	return nil
+}
+
+// correctPriced re-prices every priced event at its own timestamp and
+// rewrites the ones whose stored cost no longer matches. Point-in-time
+// pricing means an unchanged rate reproduces the stored cost exactly, so
+// only events touched by an upstream correction move. An event the
+// table can no longer price keeps its stored cost.
+func correctPriced(ctx context.Context, store *db.DB) (int, float64, error) {
+	var (
+		count   int
+		delta   float64
+		afterID string
+	)
+	for {
+		batch, err := store.PricedBatch(ctx, afterID, batchSize)
+		if err != nil {
+			return count, delta, err
+		}
+		if len(batch) == 0 {
+			return count, delta, nil
+		}
+
+		var fixes []db.CorrectedEvent
+		for _, e := range batch {
+			cost, err := pricing.CostForModelAt(e.Model, e.Timestamp, pricing.Usage{
+				Input:        e.Input,
+				Output:       e.Output,
+				CacheRead:    e.CacheRead,
+				CacheWrite5m: e.CacheWrite5m,
+				CacheWrite1h: e.CacheWrite1h,
+			})
+			if err != nil || math.Abs(cost-e.CostUSD) <= correctionEpsilon {
+				continue
+			}
+			fixes = append(fixes, db.CorrectedEvent{
+				UUID:      e.UUID,
+				Project:   e.Project,
+				GitBranch: e.GitBranch,
+				Timestamp: e.Timestamp,
+				OldCost:   e.CostUSD,
+				NewCost:   cost,
+			})
+		}
+
+		n, d, err := store.ApplyCorrection(ctx, fixes)
+		if err != nil {
+			return count, delta, err
+		}
+		count += n
+		delta += d
+		afterID = batch[len(batch)-1].UUID
+	}
 }
 
 // repriceModel walks one model's backlog in keyset-paginated batches and
@@ -217,6 +290,14 @@ func (r Result) Summary() string {
 	default:
 		models = fmt.Sprintf(" (%s and %d more)", r.Models[0], len(r.Models)-1)
 	}
-	return fmt.Sprintf("repriced %d previously unpriced event(s): $%.2f recovered%s",
-		r.Repriced, r.Recovered, models)
+	var parts []string
+	if r.Repriced > 0 {
+		parts = append(parts, fmt.Sprintf("repriced %d previously unpriced event(s): $%.2f recovered%s",
+			r.Repriced, r.Recovered, models))
+	}
+	if r.Corrected > 0 {
+		parts = append(parts, fmt.Sprintf("corrected %d event(s) priced at a since-revised rate: %+.2f USD",
+			r.Corrected, r.Adjustment))
+	}
+	return strings.Join(parts, "; ")
 }

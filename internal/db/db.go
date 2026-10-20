@@ -1000,6 +1000,112 @@ func (d *DB) ApplyReprice(ctx context.Context, priced []RepricedEvent) (int, err
 	return applied, nil
 }
 
+// PricedEvent is a stored, priced event with its recorded cost, read
+// back so a newer pricing table can check that cost.
+type PricedEvent struct {
+	UnpricedEvent
+	CostUSD float64
+}
+
+// PricedBatch returns up to limit priced events with uuid > afterUUID,
+// ordered by uuid, for keyset pagination over the whole events table.
+func (d *DB) PricedBatch(ctx context.Context, afterUUID string, limit int) ([]PricedEvent, error) {
+	rows, err := d.sql.QueryContext(ctx, `
+		SELECT uuid, model, ts, project, git_branch,
+		       input_tokens, output_tokens,
+		       cache_read_tokens, cache_write_5m_tokens, cache_write_1h_tokens,
+		       cost_usd
+		FROM events
+		WHERE priced = 1 AND uuid > ?
+		ORDER BY uuid
+		LIMIT ?
+	`, afterUUID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("query priced batch: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []PricedEvent
+	for rows.Next() {
+		var e PricedEvent
+		if err := rows.Scan(
+			&e.UUID, &e.Model, &e.Timestamp, &e.Project, &e.GitBranch,
+			&e.Input, &e.Output,
+			&e.CacheRead, &e.CacheWrite5m, &e.CacheWrite1h,
+			&e.CostUSD,
+		); err != nil {
+			return nil, fmt.Errorf("scan priced batch row: %w", err)
+		}
+		out = append(out, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("priced batch rows: %w", err)
+	}
+	return out, nil
+}
+
+// CorrectedEvent is a priced event whose stored cost differs from what
+// the current pricing table computes for it.
+type CorrectedEvent struct {
+	UUID      string
+	Project   string
+	GitBranch string
+	Timestamp time.Time
+	OldCost   float64
+	NewCost   float64
+}
+
+// ApplyCorrection rewrites the cost of already-priced events and moves
+// each difference into the matching rollup, in one transaction.
+//
+// Each update is guarded by the cost it was computed against, so a row
+// another writer changed in between is skipped rather than corrected
+// from a stale base, and a second pass applies nothing.
+//
+// Returns how many events were corrected and the net dollar change.
+func (d *DB) ApplyCorrection(ctx context.Context, fixes []CorrectedEvent) (int, float64, error) {
+	if len(fixes) == 0 {
+		return 0, 0, nil
+	}
+
+	tx, err := d.sql.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, 0, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	applied, delta := 0, 0.0
+	for _, f := range fixes {
+		res, err := tx.ExecContext(ctx,
+			`UPDATE events SET cost_usd = ? WHERE uuid = ? AND priced = 1 AND cost_usd = ?`,
+			f.NewCost, f.UUID, f.OldCost)
+		if err != nil {
+			return 0, 0, fmt.Errorf("correct event %s: %w", f.UUID, err)
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return 0, 0, fmt.Errorf("correct rows affected %s: %w", f.UUID, err)
+		}
+		if n != 1 {
+			continue
+		}
+		if err := applyRollupDelta(ctx, tx, f.Project, f.GitBranch,
+			f.Timestamp, 0,
+			0, 0, 0, 0, 0,
+			f.NewCost-f.OldCost, 0,
+		); err != nil {
+			return 0, 0, err
+		}
+		applied++
+		delta += f.NewCost - f.OldCost
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, 0, fmt.Errorf("commit correction: %w", err)
+	}
+	return applied, delta, nil
+}
+
 // PendingGuardEvent is one queued audit record awaiting sync.
 type PendingGuardEvent struct {
 	ID   int64
