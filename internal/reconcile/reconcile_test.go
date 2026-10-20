@@ -302,14 +302,57 @@ func TestRunSkipsWhenPricingUnchanged(t *testing.T) {
 	}
 }
 
-// TestRunNoBacklogIsFree confirms the healthy path does nothing at all,
-// including not writing a watermark, so an untouched database stays
-// untouched.
+// TestRunNoBacklogIsFree confirms the healthy path changes nothing: a
+// fully priced database whose costs already match the table keeps every
+// cost, and once the pass has run against this table the next call
+// short-circuits on the watermark.
 func TestRunNoBacklogIsFree(t *testing.T) {
 	store := newStore(t)
 	ctx := context.Background()
 
-	if err := store.Insert(ctx, event("ok", knownModel, day), 2.50); err != nil {
+	cost, err := pricing.CostForModelAt(knownModel, day, pricing.Usage{Input: 1_000_000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Insert(ctx, event("ok", knownModel, day), cost); err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 2; i++ {
+		res, err := Run(ctx, store, false)
+		if err != nil {
+			t.Fatalf("Run: %v", err)
+		}
+		if res.Any() {
+			t.Errorf("pass %d: expected a no-op on a fully priced database, got %+v", i, res)
+		}
+	}
+
+	r, err := store.RollupForDay(ctx, "app", "main", day)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !nearly(r.CostUSD, cost) {
+		t.Errorf("existing cost disturbed: %v, want %v", r.CostUSD, cost)
+	}
+}
+
+// TestRunCorrectsStalePricedCost is the in-place repair: an event priced
+// at a rate the table has since revised is re-priced at its own
+// timestamp, and the rollup moves by exactly the difference.
+func TestRunCorrectsStalePricedCost(t *testing.T) {
+	store := newStore(t)
+	ctx := context.Background()
+
+	want, err := pricing.CostForModelAt(knownModel, day, pricing.Usage{Input: 1_000_000})
+	if err != nil {
+		t.Fatal(err)
+	}
+	stale := want * 2
+	if err := store.Insert(ctx, event("stale", knownModel, day), stale); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Insert(ctx, event("gone", unpriceableModel, day), 1.25); err != nil {
 		t.Fatal(err)
 	}
 
@@ -317,24 +360,27 @@ func TestRunNoBacklogIsFree(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	if res.Any() || res.Repriced != 0 {
-		t.Errorf("expected a no-op on a fully priced database, got %+v", res)
-	}
-	mark, err := store.MetaGet(ctx, watermarkKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if mark != "" {
-		t.Errorf("watermark written on a database with no backlog: %q", mark)
+	if res.Corrected != 1 || !nearly(res.Adjustment, want-stale) {
+		t.Errorf("got %+v, want 1 correction of %v", res, want-stale)
 	}
 
 	r, err := store.RollupForDay(ctx, "app", "main", day)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.CostUSD != 2.50 {
-		t.Errorf("existing cost disturbed: %v", r.CostUSD)
+	// The unpriceable model keeps its stored cost; only the stale row moves.
+	if !nearly(r.CostUSD, want+1.25) {
+		t.Errorf("rollup cost = %v, want %v", r.CostUSD, want+1.25)
 	}
+
+	again, err := Run(ctx, store, true)
+	if err != nil {
+		t.Fatalf("second Run: %v", err)
+	}
+	if again.Corrected != 0 {
+		t.Errorf("second pass corrected %d events, want 0", again.Corrected)
+	}
+	assertInvariant(t, store)
 }
 
 // TestSummaryWording checks the user-facing line, including that it is
@@ -351,6 +397,10 @@ func TestSummaryWording(t *testing.T) {
 	two := Result{Repriced: 5, Recovered: 1, Models: []string{"a", "b", "c"}}
 	if got := two.Summary(); got != "repriced 5 previously unpriced event(s): $1.00 recovered (a and 2 more)" {
 		t.Errorf("multi-model Summary() = %q", got)
+	}
+	fix := Result{Corrected: 129, Adjustment: -1.153}
+	if got := fix.Summary(); got != "corrected 129 event(s) priced at a since-revised rate: -1.15 USD" {
+		t.Errorf("correction Summary() = %q", got)
 	}
 }
 
