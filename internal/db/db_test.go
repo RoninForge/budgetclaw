@@ -247,6 +247,56 @@ func TestInsertDedupesByMessageRequestID(t *testing.T) {
 	}
 }
 
+// TestInsertKeepsFinalLineInAnyOrder pins the dedupe to content, not
+// read order. The same streamed response can appear in more than one
+// session file, so backfill may read its final line before an earlier
+// partial; the partial must not replace it.
+func TestInsertKeepsFinalLineInAnyOrder(t *testing.T) {
+	ts := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	final := struct {
+		uuid   string
+		output int
+		cost   float64
+	}{"final", 546, 0.12}
+	partial := struct {
+		uuid   string
+		output int
+		cost   float64
+	}{"partial", 5, 0.09}
+
+	for _, order := range [][]int{{0, 1}, {1, 0}} {
+		d := newTestDB(t)
+		ctx := context.Background()
+		lines := []struct {
+			uuid   string
+			output int
+			cost   float64
+		}{final, partial}
+		for _, i := range order {
+			e := testEvent(lines[i].uuid, "myapp", "main", ts)
+			e.MessageID = "msg_aaa"
+			e.RequestID = "req_bbb"
+			e.OutputTokens = lines[i].output
+			if err := d.Insert(ctx, e, lines[i].cost); err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		var gotUUID string
+		if err := d.sql.QueryRow(`SELECT uuid FROM events`).Scan(&gotUUID); err != nil {
+			t.Fatal(err)
+		}
+		r, err := d.RollupForDay(ctx, "myapp", "main", ts)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if gotUUID != "final" || r.OutputTokens != 546 || math.Abs(r.CostUSD-0.12) > epsilon || r.EventCount != 1 {
+			t.Errorf("order %v: kept %q, rollup output %d cost %v count %d; want final, 546, 0.12, 1",
+				order, gotUUID, r.OutputTokens, r.CostUSD, r.EventCount)
+		}
+	}
+}
+
 // TestInsertIdenticalDuplicateLinesNetZero proves the common case where
 // the duplicate lines carry IDENTICAL usage (not growing): the rollup
 // must stay at one response's worth, and re-inserting is a net-zero
