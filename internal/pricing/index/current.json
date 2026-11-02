@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-10-30",
+  "dataModified": "2026-11-02",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -3270,6 +3270,36 @@
       "price_usd": 75,
       "unit": "usd_per_mtok",
       "last_validated": "2026-09-06",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "cache_read",
+      "price_usd": 1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-02",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "input",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-02",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "output",
+      "price_usd": 50,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-02",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
