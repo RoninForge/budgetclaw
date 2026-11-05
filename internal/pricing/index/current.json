@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-11-02",
+  "dataModified": "2026-11-05",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -3385,6 +3385,86 @@
     },
     {
       "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "cache_read",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "cache_write",
+      "price_usd": 18.75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "input",
+      "price_usd": 15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "output",
+      "price_usd": 75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "tier2_cache_read",
+      "price_usd": 3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "tier2_cache_write",
+      "price_usd": 37.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "tier2_input",
+      "price_usd": 30,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-rosalind",
+      "variation": "tier2_output",
+      "price_usd": 112.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-05",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
       "model": "gpt-6-sol",
       "variation": "cache_read",
       "price_usd": 0.2,
@@ -3685,56 +3765,6 @@
     },
     {
       "provider": "openai",
-      "model": "o1",
-      "variation": "cache_read",
-      "price_usd": 7.5,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o1",
-      "variation": "input",
-      "price_usd": 15,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o1",
-      "variation": "output",
-      "price_usd": 60,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o1-pro",
-      "variation": "input",
-      "price_usd": 150,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o1-pro",
-      "variation": "output",
-      "price_usd": 600,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
       "model": "o3",
       "variation": "cache_read",
       "price_usd": 0.5,
@@ -3765,36 +3795,6 @@
     },
     {
       "provider": "openai",
-      "model": "o3-mini",
-      "variation": "cache_read",
-      "price_usd": 0.55,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o3-mini",
-      "variation": "input",
-      "price_usd": 1.1,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o3-mini",
-      "variation": "output",
-      "price_usd": 4.4,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
       "model": "o3-pro",
       "variation": "input",
       "price_usd": 20,
@@ -3808,36 +3808,6 @@
       "model": "o3-pro",
       "variation": "output",
       "price_usd": 80,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o4-mini",
-      "variation": "cache_read",
-      "price_usd": 0.275,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-07-31",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o4-mini",
-      "variation": "input",
-      "price_usd": 1.1,
-      "unit": "usd_per_mtok",
-      "last_validated": "2026-06-17",
-      "confidence": "verified",
-      "src": "https://developers.openai.com/api/docs/pricing"
-    },
-    {
-      "provider": "openai",
-      "model": "o4-mini",
-      "variation": "output",
-      "price_usd": 4.4,
       "unit": "usd_per_mtok",
       "last_validated": "2026-06-17",
       "confidence": "verified",
