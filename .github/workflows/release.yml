@@ -30,14 +30,9 @@ jobs:
         uses: anchore/sbom-action/download-syft@v0
         with:
           syft-version: v1.57.0
-      - name: Wait before retrying the syft download
+      - name: Install syft for SBOMs (build from the Go module proxy)
         if: steps.syft.outcome == 'failure'
-        run: sleep 30
-      - name: Install syft for SBOMs (second attempt)
-        if: steps.syft.outcome == 'failure'
-        uses: anchore/sbom-action/download-syft@v0
-        with:
-          syft-version: v1.57.0
+        run: go install github.com/anchore/syft/cmd/syft@v1.57.0 && syft version
       - name: Run goreleaser
         uses: goreleaser/goreleaser-action@v7
         with:
