@@ -2185,6 +2185,66 @@
     },
     {
       "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "cache_read",
+      "price_usd": 0.004,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "input",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "output",
+      "price_usd": 0.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.012,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "tier2_input",
+      "price_usd": 0.3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
+      "model": "muse-ember-1.0",
+      "variation": "tier2_output",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-10",
+      "confidence": "verified",
+      "src": "https://dev.meta.ai/docs/pricing-rate-limits"
+    },
+    {
+      "provider": "meta",
       "model": "muse-spark-1.1",
       "variation": "cache_read",
       "price_usd": 0.15,
