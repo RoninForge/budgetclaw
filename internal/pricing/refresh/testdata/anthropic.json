@@ -1,5 +1,5 @@
 {
-  "dataModified": "2026-11-09",
+  "dataModified": "2026-11-10",
   "license": "CC-BY-4.0",
   "models": [
     {
@@ -317,6 +317,67 @@
             "from": "2026-09-02",
             "last_validated": "2026-09-02",
             "price_usd": 50,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ]
+      }
+    },
+    {
+      "model": "claude-fable-5-2",
+      "provider": "anthropic",
+      "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 0.2,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 16,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "input": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 8,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "output": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 40,
             "src": "https://docs.claude.com/en/docs/about-claude/pricing",
             "to": null,
             "unit": "usd_per_mtok"
@@ -664,6 +725,67 @@
             "from": "2026-09-02",
             "last_validated": "2026-09-02",
             "price_usd": 50,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ]
+      }
+    },
+    {
+      "model": "claude-mythos-5-2",
+      "provider": "anthropic",
+      "variations": {
+        "cache_read": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 0.2,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_1h": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 16,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "cache_write_5m": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 10,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "input": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 8,
+            "src": "https://docs.claude.com/en/docs/about-claude/pricing",
+            "to": null,
+            "unit": "usd_per_mtok"
+          }
+        ],
+        "output": [
+          {
+            "confidence": "verified",
+            "from": "2026-11-09",
+            "last_validated": "2026-11-10",
+            "price_usd": 40,
             "src": "https://docs.claude.com/en/docs/about-claude/pricing",
             "to": null,
             "unit": "usd_per_mtok"
