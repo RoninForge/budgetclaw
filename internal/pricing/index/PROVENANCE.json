@@ -1,7 +1,7 @@
 {
-  "tag": "v2026.11.14-1e23b7b",
-  "commit": "1e23b7be8b242e38f3bba4f7a1dd346b13b8ed7f",
-  "fetched_at": "2026-11-14T13:20:45Z",
+  "tag": "v2026.11.15-0272d70",
+  "commit": "0272d708ded31c02b897c7ea545d7498d37340a1",
+  "fetched_at": "2026-11-15T13:48:29Z",
   "files": {
     "LICENSE": "5ccbe94b1e7a301bc98322360bf45e5c8265f4c446588098de3f5dc2b775a7bf",
     "current.json": "09a8f15a7a40e304aaa56c016bfbd1f936fe130227e7ecc33554b39ab8d644b8",
