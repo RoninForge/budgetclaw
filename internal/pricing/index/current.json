@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-11-10",
+  "dataModified": "2026-11-16",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -500,6 +500,56 @@
       "price_usd": 6,
       "unit": "usd_per_mtok",
       "last_validated": "2026-08-21",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen4-max",
+      "variation": "cache_read",
+      "price_usd": 0.075,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen4-max",
+      "variation": "cache_write_1h",
+      "price_usd": 3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen4-max",
+      "variation": "cache_write_5m",
+      "price_usd": 1.875,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen4-max",
+      "variation": "input",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "provider": "alibaba",
+      "model": "qwen4-max",
+      "variation": "output",
+      "price_usd": 4.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
       "confidence": "verified",
       "src": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
     },
@@ -2182,6 +2232,66 @@
       "last_validated": "2026-10-16",
       "confidence": "verified",
       "src": "https://ai.google.dev/gemini-api/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-carbon",
+      "variation": "cache_read",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-carbon",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-carbon",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-hydrogen",
+      "variation": "cache_read",
+      "price_usd": 0.075,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-hydrogen",
+      "variation": "input",
+      "price_usd": 1.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-hydrogen",
+      "variation": "output",
+      "price_usd": 7.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-16",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
     },
     {
       "provider": "meta",
