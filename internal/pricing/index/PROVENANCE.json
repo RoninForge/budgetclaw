@@ -1,7 +1,7 @@
 {
-  "tag": "v2026.11.17-3bf2c76",
-  "commit": "3bf2c7699df20f01d78b742991b899e43ae3750b",
-  "fetched_at": "2026-11-17T15:50:39Z",
+  "tag": "v2026.11.18-9af0f77",
+  "commit": "9af0f77e04141be2ba613c36ba19b075fb4369c5",
+  "fetched_at": "2026-11-18T15:29:32Z",
   "files": {
     "LICENSE": "5ccbe94b1e7a301bc98322360bf45e5c8265f4c446588098de3f5dc2b775a7bf",
     "current.json": "db059de7b5f5673bc35eba067205eb06a2b403d8fa16a02400461ddfdef3a3a4",
@@ -33,6 +33,6 @@
     "models/anthropic/claude-sonnet-4-6.vda220fc4.json": "048dcb56bdc3a6c291adb493b3079bc00a6052f2e41892810cd01833c68e856b",
     "models/anthropic/claude-sonnet-5-5.v9319bed5.json": "ada93c32e0cfd7c9e9b49193ddeddcd726a92b171d6313108a8092c7706ab06a",
     "models/anthropic/claude-sonnet-5.v20f92871.json": "63c8ac5f1283983e219148e2503fcddd79e51d6511ee321c52f115edcbe780b6",
-    "pricing-vectors.json": "86b66a890df8336760a1c50330347cbf77ce0fa4d75cfa06e820d71f6b2bcc8c"
+    "pricing-vectors.json": "3459d099cbf5be51f8a475da13a3e86e13db0e6b883c2d3f851ffd24ad65656c"
   }
 }

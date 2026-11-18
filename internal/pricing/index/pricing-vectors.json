@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "description": "Cross-engine golden vectors. Every pricing engine must reproduce expected_usd exactly. Cache rates derived from input rate: read 0.10, write_5m 1.25, write_1h 2.00.",
+  "description": "Cross-engine golden vectors. Each vector is ONE request; every pricing engine must reproduce expected_usd exactly. Cache rates derived from input rate: read 0.10, write_5m 1.25, write_1h 2.00. A request whose prompt (input + cache_read + cache_write_5m + cache_write_1h) is over 100,000 tokens on a model with a prompt-length tier bills entirely at its tier2_* rates.",
   "cache_multipliers": { "read": 0.10, "write_5m": 1.25, "write_1h": 2.00 },
   "vectors": [
     {
@@ -61,6 +61,20 @@
       "at": "2024-12-15",
       "usage": { "input": 1000000, "output": 1000000, "cache_read": 0, "cache_write_5m": 0, "cache_write_1h": 0 },
       "expected_usd": 4.8
+    },
+    {
+      "name": "haiku-5-5 prompt of exactly 100,000 tokens stays on the base tier ($0.10/$0.50)",
+      "model": "claude-haiku-5-5",
+      "at": "2026-10-15",
+      "usage": { "input": 60000, "output": 10000, "cache_read": 40000, "cache_write_5m": 0, "cache_write_1h": 0 },
+      "expected_usd": 0.0114
+    },
+    {
+      "name": "haiku-5-5 prompt over 100,000 tokens bills the whole request at tier2 ($0.50/$2.50)",
+      "model": "claude-haiku-5-5",
+      "at": "2026-10-15",
+      "usage": { "input": 60000, "output": 10000, "cache_read": 40000, "cache_write_5m": 1000, "cache_write_1h": 0 },
+      "expected_usd": 0.057625
     },
     {
       "name": "unknown model is an error, not silent zero",
