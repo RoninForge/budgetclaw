@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "dataModified": "2026-11-16",
+  "dataModified": "2026-11-20",
   "license": "CC-BY-4.0",
   "prices": [
     {
@@ -2294,6 +2294,36 @@
       "src": "https://aistudio.google.com/docs/pricing"
     },
     {
+      "provider": "google",
+      "model": "gemini-4-neon",
+      "variation": "cache_read",
+      "price_usd": 0.15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-neon",
+      "variation": "input",
+      "price_usd": 3,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-4-neon",
+      "variation": "output",
+      "price_usd": 15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://aistudio.google.com/docs/pricing"
+    },
+    {
       "provider": "meta",
       "model": "muse-ember-1.0",
       "variation": "cache_read",
@@ -3745,6 +3775,36 @@
     },
     {
       "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "tier2_cache_read",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "tier2_input",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra-law",
+      "variation": "tier2_output",
+      "price_usd": 75,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
       "model": "gpt-6-cyber",
       "variation": "cache_read",
       "price_usd": 2,
@@ -3927,9 +3987,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "cache_read",
-      "price_usd": 1.5,
+      "price_usd": 1,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3937,9 +3997,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "cache_write",
-      "price_usd": 18.75,
+      "price_usd": 12.5,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3947,9 +4007,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "cache_write_12h",
-      "price_usd": 37.5,
+      "price_usd": 25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-09",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3957,9 +4017,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "input",
-      "price_usd": 15,
+      "price_usd": 10,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3967,9 +4027,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "output",
-      "price_usd": 75,
+      "price_usd": 50,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3977,9 +4037,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "tier2_cache_read",
-      "price_usd": 3,
+      "price_usd": 2,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3987,9 +4047,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "tier2_cache_write",
-      "price_usd": 37.5,
+      "price_usd": 25,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -3997,9 +4057,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "tier2_cache_write_12h",
-      "price_usd": 75,
+      "price_usd": 50,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-09",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -4007,9 +4067,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "tier2_input",
-      "price_usd": 30,
+      "price_usd": 20,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -4017,9 +4077,9 @@
       "provider": "openai",
       "model": "gpt-6-rosalind",
       "variation": "tier2_output",
-      "price_usd": 112.5,
+      "price_usd": 75,
       "unit": "usd_per_mtok",
-      "last_validated": "2026-11-05",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
@@ -4320,6 +4380,306 @@
       "price_usd": 7.5,
       "unit": "usd_per_mtok",
       "last_validated": "2026-10-28",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "cache_write",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "cache_write_12h",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "input",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "output",
+      "price_usd": 40,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "tier2_cache_write",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "tier2_cache_write_12h",
+      "price_usd": 40,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "tier2_input",
+      "price_usd": 16,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra",
+      "variation": "tier2_output",
+      "price_usd": 60,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "cache_read",
+      "price_usd": 0.4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "cache_write",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "cache_write_12h",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "input",
+      "price_usd": 8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "output",
+      "price_usd": 40,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.8,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "tier2_cache_write",
+      "price_usd": 20,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "tier2_cache_write_12h",
+      "price_usd": 40,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "tier2_input",
+      "price_usd": 16,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-astra-law",
+      "variation": "tier2_output",
+      "price_usd": 60,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "cache_read",
+      "price_usd": 0.1,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "cache_write",
+      "price_usd": 2.5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "cache_write_12h",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "input",
+      "price_usd": 2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "output",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "tier2_cache_read",
+      "price_usd": 0.2,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "tier2_cache_write",
+      "price_usd": 5,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "tier2_cache_write_12h",
+      "price_usd": 10,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "tier2_input",
+      "price_usd": 4,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
+      "confidence": "verified",
+      "src": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-6.2-sol",
+      "variation": "tier2_output",
+      "price_usd": 15,
+      "unit": "usd_per_mtok",
+      "last_validated": "2026-11-20",
       "confidence": "verified",
       "src": "https://developers.openai.com/api/docs/pricing"
     },
